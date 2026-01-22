@@ -8,7 +8,7 @@ export class ProductService {
     log('SELECT', 'products');
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return (data as DbProduct[]).map(Mappers.toProduct);
+    return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }
 
   async getById(id: string): Promise<Product | null> {
@@ -67,7 +67,24 @@ export class CategoryService {
     log('SELECT', 'categories');
     const { data, error } = await supabase.from('categories').select('*');
     if (error) throw error;
-    return (data as DbCategory[]).map(Mappers.toCategory);
+    return ((data || []) as DbCategory[]).map(Mappers.toCategory);
+  }
+
+  async create(category: Category): Promise<void> {
+    log('INSERT', 'categories', category);
+    const { error } = await supabase.from('categories').insert({
+      key: category.key,
+      label: category.label,
+      color: category.color,
+      bg_class: category.bgColorClass
+    });
+    if (error) throw error;
+  }
+
+  async delete(key: string): Promise<void> {
+    log('DELETE', 'categories', key);
+    const { error } = await supabase.from('categories').delete().eq('key', key);
+    if (error) throw error;
   }
 }
 
@@ -81,7 +98,7 @@ export class ReviewService {
       .order('created_at', { ascending: false });
       
     if (error) throw error;
-    return (data as any[]).map(Mappers.toProductReview);
+    return ((data || []) as any[]).map(Mappers.toProductReview);
   }
 
   async add(review: Partial<ProductReview>): Promise<void> {

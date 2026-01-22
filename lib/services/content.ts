@@ -1,14 +1,14 @@
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { BlogPost, BlogCategory, AppSettings, DbBlogPost, DbBlogCategory, DbAppSettings } from '../../types';
+import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission } from '../../types';
 
 export class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
     log('SELECT', 'blog_posts');
     const { data, error } = await supabase.from('blog_posts').select('*').order('date', { ascending: false });
     if (error) throw error;
-    return (data as DbBlogPost[]).map(Mappers.toBlogPost);
+    return ((data || []) as DbBlogPost[]).map(Mappers.toBlogPost);
   }
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
@@ -22,7 +22,23 @@ export class BlogService {
     log('SELECT', 'blog_categories');
     const { data, error } = await supabase.from('blog_categories').select('*');
     if (error) throw error;
-    return (data as DbBlogCategory[]).map(Mappers.toBlogCategory);
+    return ((data || []) as DbBlogCategory[]).map(Mappers.toBlogCategory);
+  }
+
+  async createCategory(category: Partial<BlogCategory>): Promise<void> {
+    log('INSERT', 'blog_categories', category);
+    const { error } = await supabase.from('blog_categories').insert({
+      name: category.name,
+      slug: category.slug,
+      description: category.description
+    });
+    if (error) throw error;
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    log('DELETE', 'blog_categories', id);
+    const { error } = await supabase.from('blog_categories').delete().eq('id', id);
+    if (error) throw error;
   }
 
   async createPost(post: Partial<BlogPost>): Promise<void> {
@@ -103,7 +119,9 @@ export class SettingsService {
       return_policy: settings.returnPolicy,
       shipping_policy: settings.shippingPolicy,
       tax_rate: settings.taxRate,
-      free_shipping_threshold: settings.freeShippingThreshold
+      free_shipping_threshold: settings.freeShippingThreshold,
+      featured_categories: settings.featuredCategories,
+      smtp_settings: settings.smtpSettings
     };
     const { error } = await supabase.from('app_settings').update(dbSettings).eq('id', id);
     if (error) throw error;
@@ -130,6 +148,46 @@ export class SupportService {
         message: data.message,
         subject: data.subject
     });
+    if (error) throw error;
+  }
+
+  // --- ADMIN METHODS ---
+
+  async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    log('SELECT', 'newsletter_subscribers');
+    const { data, error } = await supabase
+        .from('newsletter_subscribers')
+        .select('*')
+        .order('subscribed_at', { ascending: false });
+    if (error) throw error;
+    return ((data || []) as DbNewsletterSubscriber[]).map(Mappers.toNewsletterSubscriber);
+  }
+
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    log('SELECT', 'contact_submissions');
+    const { data, error } = await supabase
+        .from('contact_submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return ((data || []) as DbContactSubmission[]).map(Mappers.toContactSubmission);
+  }
+
+  async markContactSubmissionAsRead(id: string): Promise<void> {
+    log('UPDATE', 'contact_submissions', { id, is_read: true });
+    const { error } = await supabase.from('contact_submissions').update({ is_read: true }).eq('id', id);
+    if (error) throw error;
+  }
+
+  async deleteContactSubmission(id: string): Promise<void> {
+    log('DELETE', 'contact_submissions', id);
+    const { error } = await supabase.from('contact_submissions').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async deleteNewsletterSubscriber(id: string): Promise<void> {
+    log('DELETE', 'newsletter_subscribers', id);
+    const { error } = await supabase.from('newsletter_subscribers').delete().eq('id', id);
     if (error) throw error;
   }
 }

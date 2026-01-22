@@ -2,7 +2,8 @@ import {
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
   DbBlogPost, DbOrder, ProductReview, DiscountCode, ShippingZone, CartItem,
-  BlogCategory, DbBlogCategory
+  BlogCategory, DbBlogCategory, NewsletterSubscriber, ContactSubmission,
+  DbNewsletterSubscriber, DbContactSubmission
 } from '../types';
 
 export const Mappers = {
@@ -188,5 +189,25 @@ export const Mappers = {
     email: u.email,
     role: u.role,
     createdAt: u.created_at
+  }),
+
+  toNewsletterSubscriber: (n: DbNewsletterSubscriber): NewsletterSubscriber => ({
+    id: n.id,
+    email: n.email,
+    name: n.name || undefined,
+    source: n.source || undefined,
+    isSubscribed: n.is_subscribed || false,
+    subscribedAt: n.subscribed_at || new Date().toISOString()
+  }),
+
+  toContactSubmission: (c: DbContactSubmission): ContactSubmission => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    message: c.message,
+    subject: c.subject || undefined,
+    phone: c.phone || undefined,
+    isRead: c.is_read || false,
+    createdAt: c.created_at || new Date().toISOString()
   })
 };

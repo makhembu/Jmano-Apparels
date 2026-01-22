@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
+import { api } from '../../lib/db';
+import { Category, BlogCategory } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 export const AdminSettings: React.FC = () => {
   const { settings, updateSettings } = useApp();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(settings);
   const [saving, setSaving] = useState(false);
+
+  // Categories State
+  const [prodCats, setProdCats] = useState<Category[]>([]);
+  const [blogCats, setBlogCats] = useState<BlogCategory[]>([]);
+  
+  // New Category Forms
+  const [newProdCat, setNewProdCat] = useState({ key: '', label: '', color: '#000000', bgColorClass: '' });
+  const [newBlogCat, setNewBlogCat] = useState({ name: '', slug: '', description: '' });
+  const [catSaving, setCatSaving] = useState(false);
 
   // Local state for JSON fields to make them editable as individual inputs
   const [socials, setSocials] = useState({ facebook: '', instagram: '', twitter: '', tiktok: '', linkedin: '' });
@@ -44,6 +57,16 @@ export const AdminSettings: React.FC = () => {
         setFeaturedCats(settings.featuredCategories.join(', '));
     }
   }, [settings]);
+
+  // Load Categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = () => {
+    api.getCategories().then(setProdCats);
+    api.getBlogCategories().then(setBlogCats);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -91,6 +114,67 @@ export const AdminSettings: React.FC = () => {
     setSaving(false);
   };
 
+  // --- Category Handlers ---
+
+  const handleAddProductCat = async () => {
+    if (!newProdCat.key || !newProdCat.label) {
+      showToast('Key and Label are required', 'error');
+      return;
+    }
+    setCatSaving(true);
+    try {
+      await api.createCategory(newProdCat);
+      showToast('Category created', 'success');
+      setNewProdCat({ key: '', label: '', color: '#000000', bgColorClass: '' });
+      api.getCategories().then(setProdCats);
+    } catch (e) {
+      showToast('Failed to create category', 'error');
+    } finally {
+      setCatSaving(false);
+    }
+  };
+
+  const handleDeleteProductCat = async (key: string) => {
+    if(!window.confirm(`Delete category ${key}?`)) return;
+    try {
+      await api.deleteCategory(key);
+      showToast('Category deleted', 'success');
+      api.getCategories().then(setProdCats);
+    } catch(e) {
+      showToast('Failed to delete', 'error');
+    }
+  };
+
+  const handleAddBlogCat = async () => {
+    if (!newBlogCat.name) {
+      showToast('Name is required', 'error');
+      return;
+    }
+    const slug = newBlogCat.slug || newBlogCat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    setCatSaving(true);
+    try {
+      await api.createBlogCategory({ ...newBlogCat, slug });
+      showToast('Blog Category created', 'success');
+      setNewBlogCat({ name: '', slug: '', description: '' });
+      api.getBlogCategories().then(setBlogCats);
+    } catch (e) {
+      showToast('Failed to create category', 'error');
+    } finally {
+      setCatSaving(false);
+    }
+  };
+
+  const handleDeleteBlogCat = async (id: string) => {
+    if(!window.confirm(`Delete blog category?`)) return;
+    try {
+      await api.deleteBlogCategory(id);
+      showToast('Category deleted', 'success');
+      api.getBlogCategories().then(setBlogCats);
+    } catch(e) {
+      showToast('Failed to delete', 'error');
+    }
+  };
+
   return (
     <div className="max-w-4xl pb-20">
       <div className="flex justify-between items-center mb-6">
@@ -127,6 +211,115 @@ export const AdminSettings: React.FC = () => {
             </div>
         </div>
         
+        {/* Category Management */}
+        <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-8">
+            <h3 className="text-lg font-medium border-b pb-2 text-brand-green">Manage Categories</h3>
+            
+            {/* Product Categories */}
+            <div>
+               <h4 className="text-md font-bold text-gray-700 mb-4">Product Categories</h4>
+               <div className="space-y-4">
+                  {/* List */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                       <thead className="bg-gray-50">
+                          <tr>
+                             <th className="px-4 py-2 text-left">Key</th>
+                             <th className="px-4 py-2 text-left">Label</th>
+                             <th className="px-4 py-2 text-left">Color</th>
+                             <th className="px-4 py-2 text-left">Class</th>
+                             <th className="px-4 py-2"></th>
+                          </tr>
+                       </thead>
+                       <tbody className="divide-y">
+                          {prodCats.map(cat => (
+                             <tr key={cat.key}>
+                                <td className="px-4 py-2">{cat.key}</td>
+                                <td className="px-4 py-2">{cat.label}</td>
+                                <td className="px-4 py-2 flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded-full" style={{backgroundColor: cat.color}}></div>
+                                  {cat.color}
+                                </td>
+                                <td className="px-4 py-2 font-mono text-xs">{cat.bgColorClass}</td>
+                                <td className="px-4 py-2 text-right">
+                                   <button type="button" onClick={() => handleDeleteProductCat(cat.key)} className="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                                </td>
+                             </tr>
+                          ))}
+                       </tbody>
+                    </table>
+                  </div>
+                  {/* Add Form */}
+                  <div className="bg-gray-50 p-4 rounded border grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Key (e.g. HOODIES)</label>
+                        <input type="text" value={newProdCat.key} onChange={e => setNewProdCat({...newProdCat, key: e.target.value.toUpperCase()})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Label</label>
+                        <input type="text" value={newProdCat.label} onChange={e => setNewProdCat({...newProdCat, label: e.target.value})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Hex Color</label>
+                        <input type="color" value={newProdCat.color} onChange={e => setNewProdCat({...newProdCat, color: e.target.value})} className="w-full h-8 border rounded cursor-pointer" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Tailwind Class</label>
+                        <input type="text" placeholder="bg-brand-hope" value={newProdCat.bgColorClass} onChange={e => setNewProdCat({...newProdCat, bgColorClass: e.target.value})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <Button type="button" onClick={handleAddProductCat} disabled={catSaving} variant="secondary" className="h-8">Add</Button>
+                  </div>
+               </div>
+            </div>
+
+            <div className="border-t pt-6">
+               <h4 className="text-md font-bold text-gray-700 mb-4">Blog Categories</h4>
+               <div className="space-y-4">
+                  {/* List */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                       <thead className="bg-gray-50">
+                          <tr>
+                             <th className="px-4 py-2 text-left">Name</th>
+                             <th className="px-4 py-2 text-left">Slug</th>
+                             <th className="px-4 py-2 text-left">Description</th>
+                             <th className="px-4 py-2"></th>
+                          </tr>
+                       </thead>
+                       <tbody className="divide-y">
+                          {blogCats.map(cat => (
+                             <tr key={cat.id}>
+                                <td className="px-4 py-2">{cat.name}</td>
+                                <td className="px-4 py-2 text-gray-500">{cat.slug}</td>
+                                <td className="px-4 py-2 text-gray-500 truncate max-w-xs">{cat.description}</td>
+                                <td className="px-4 py-2 text-right">
+                                   <button type="button" onClick={() => handleDeleteBlogCat(cat.id)} className="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                                </td>
+                             </tr>
+                          ))}
+                       </tbody>
+                    </table>
+                  </div>
+                  {/* Add Form */}
+                  <div className="bg-gray-50 p-4 rounded border grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Name</label>
+                        <input type="text" value={newBlogCat.name} onChange={e => setNewBlogCat({...newBlogCat, name: e.target.value})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Slug (Optional)</label>
+                        <input type="text" value={newBlogCat.slug} onChange={e => setNewBlogCat({...newBlogCat, slug: e.target.value})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-500">Description</label>
+                        <input type="text" value={newBlogCat.description} onChange={e => setNewBlogCat({...newBlogCat, description: e.target.value})} className="w-full border rounded p-1 text-sm" />
+                     </div>
+                     <Button type="button" onClick={handleAddBlogCat} disabled={catSaving} variant="secondary" className="h-8">Add</Button>
+                  </div>
+               </div>
+            </div>
+        </div>
+
         {/* Commerce */}
         <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
            <h3 className="text-lg font-medium border-b pb-2 text-brand-green">Commerce Settings</h3>

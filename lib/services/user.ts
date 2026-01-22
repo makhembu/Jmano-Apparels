@@ -8,7 +8,7 @@ export class UserService {
     log('SELECT', 'users', 'ALL');
     const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return (data as any[]).map(Mappers.toUser);
+    return ((data || []) as any[]).map(Mappers.toUser);
   }
 
   async getProfile(userId: string): Promise<User | null> {
@@ -42,7 +42,7 @@ export class WishlistService {
     log('SELECT', 'wishlists', userId);
     const { data, error } = await supabase.from('wishlists').select('product_id').eq('user_id', userId);
     if (error) throw error;
-    return data.map((d: any) => d.product_id);
+    return (data || []).map((d: any) => d.product_id);
   }
 
   async getProducts(userId: string): Promise<Product[]> {
@@ -53,7 +53,7 @@ export class WishlistService {
       .eq('user_id', userId);
       
     if (error) throw error;
-    return data
+    return (data || [])
       .filter((row: any) => row.product)
       .map((row: any) => Mappers.toProduct(row.product as DbProduct));
   }

@@ -196,6 +196,26 @@ export interface AppSettings {
   smtpSettings?: Record<string, any>; // Mapped from smtp_settings
 }
 
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  name?: string; // Mapped from name
+  source?: string; // Mapped from source
+  isSubscribed: boolean; // Mapped from is_subscribed
+  subscribedAt: string; // Mapped from subscribed_at
+}
+
+export interface ContactSubmission {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  subject?: string;
+  phone?: string;
+  isRead: boolean; // Mapped from is_read
+  createdAt: string; // Mapped from created_at
+}
+
 // --- DB Raw Types (for internal mapping) ---
 
 export type DbProduct = Tables<'products'>;
@@ -206,3 +226,5 @@ export type DbBlogPost = Tables<'blog_posts'>;
 export type DbOrder = Tables<'orders'>;
 export type DbProductReview = Tables<'product_reviews'>;
 export type DbUser = Tables<'users'>;
+export type DbNewsletterSubscriber = Tables<'newsletter_subscribers'>;
+export type DbContactSubmission = Tables<'contact_submissions'>;

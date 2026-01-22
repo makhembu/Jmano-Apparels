@@ -20,7 +20,9 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl border-t-4 border-red-600 p-8">
           <h1 className="text-2xl font-bold text-red-700 mb-2">System Check Failed</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-gray-600 mb-6">
+            {typeof error === 'string' ? error : (error ? JSON.stringify(error) : 'Unknown error occurred')}
+          </p>
           
           <div className="bg-gray-100 rounded-lg p-4 mb-6 max-h-60 overflow-y-auto">
             <table className="min-w-full text-sm">
@@ -32,7 +34,7 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
                 </tr>
               </thead>
               <tbody>
-                {results.map((r) => (
+                {(results || []).map((r) => (
                   <tr key={r.table} className="border-t border-gray-200">
                     <td className="py-2 font-mono">{r.table}</td>
                     <td className="py-2">

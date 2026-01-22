@@ -46,8 +46,8 @@ export const BlogPost: React.FC = () => {
         </div>
       </header>
 
-      <article className="prose prose-lg max-w-none text-gray-700 font-light leading-relaxed whitespace-pre-wrap">
-        {post.content}
+      <article className="prose prose-lg max-w-none text-gray-700 font-light leading-relaxed">
+        <div dangerouslySetInnerHTML={{ __html: post.content }} />
       </article>
 
       <div className="mt-12 pt-8 border-t">

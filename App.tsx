@@ -17,7 +17,8 @@ import { BlogPost } from './pages/BlogPost';
 import { Login } from './pages/Login';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminAppSettings } from './pages/admin/AdminAppSettings';
+import { AdminShopSettings } from './pages/admin/AdminShopSettings';
 import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminProductEditor } from './pages/admin/AdminProductEditor';
 import { AdminOrders } from './pages/admin/AdminOrders';
@@ -25,6 +26,8 @@ import { AdminOrderDetails } from './pages/admin/AdminOrderDetails';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminBlog } from './pages/admin/AdminBlog';
 import { AdminBlogEditor } from './pages/admin/AdminBlogEditor';
+import { AdminNewsletter } from './pages/admin/AdminNewsletter';
+import { AdminContact } from './pages/admin/AdminContact';
 import { Terms, Privacy, Cookies, Returns } from './pages/Legal';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
@@ -63,7 +66,8 @@ const App: React.FC = () => {
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
-                    <Route path="settings" element={<AdminSettings />} />
+                    <Route path="app-settings" element={<AdminAppSettings />} />
+                    <Route path="shop-settings" element={<AdminShopSettings />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="products/new" element={<AdminProductEditor />} />
                     <Route path="products/:id" element={<AdminProductEditor />} />
@@ -73,6 +77,8 @@ const App: React.FC = () => {
                     <Route path="blog" element={<AdminBlog />} />
                     <Route path="blog/new" element={<AdminBlogEditor />} />
                     <Route path="blog/:id" element={<AdminBlogEditor />} />
+                    <Route path="newsletter" element={<AdminNewsletter />} />
+                    <Route path="contact" element={<AdminContact />} />
                   </Route>
                 </Routes>
               </Router>

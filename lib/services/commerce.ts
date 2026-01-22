@@ -8,14 +8,14 @@ export class OrderService {
     log('SELECT', 'orders', { userId });
     const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId).order('date', { ascending: false });
     if (error) throw error;
-    return (data as DbOrder[]).map(Mappers.toOrder);
+    return ((data || []) as DbOrder[]).map(Mappers.toOrder);
   }
 
   async getAll(): Promise<Order[]> {
     log('SELECT', 'orders', 'ALL');
     const { data, error } = await supabase.from('orders').select('*').order('date', { ascending: false });
     if (error) throw error;
-    return (data as DbOrder[]).map(Mappers.toOrder);
+    return ((data || []) as DbOrder[]).map(Mappers.toOrder);
   }
 
   async getById(id: string): Promise<Order | null> {
@@ -29,7 +29,6 @@ export class OrderService {
     log('RPC', 'create_order_secure', order);
     
     // Map products to ensure correct field names for the RPC
-    // RPC expects: product_id, quantity, size, selected_color (optional)
     const itemsPayload = (order.products || []).map((item: any) => ({
         product_id: item.productId,
         quantity: item.quantity,
@@ -91,7 +90,10 @@ export class CartService {
     `).eq('user_id', userId);
     
     if (error) throw error;
-    return data.map(Mappers.toCartItem);
+    // Safely map, filtering out any items where the joined product might be null (if product deleted)
+    return (data || [])
+        .filter((item: any) => item.product)
+        .map(Mappers.toCartItem);
   }
 }
 
@@ -100,14 +102,33 @@ export class ShippingService {
     log('SELECT', 'shipping_zones');
     const { data, error } = await supabase.from('shipping_zones').select('*').eq('is_active', true);
     if (error) throw error;
-    return data.map(Mappers.toShippingZone);
+    return ((data || []) as any[]).map(Mappers.toShippingZone);
+  }
+
+  async createZone(zone: Partial<ShippingZone>): Promise<void> {
+    log('INSERT', 'shipping_zones', zone);
+    const { error } = await supabase.from('shipping_zones').insert({
+      name: zone.name,
+      countries: zone.countries,
+      base_rate: zone.baseRate,
+      per_kg_rate: zone.perKgRate,
+      free_shipping_threshold: zone.freeShippingThreshold,
+      estimated_days: zone.estimatedDays,
+      is_active: true
+    });
+    if (error) throw error;
+  }
+
+  async deleteZone(id: string): Promise<void> {
+    log('DELETE', 'shipping_zones', id);
+    const { error } = await supabase.from('shipping_zones').delete().eq('id', id);
+    if (error) throw error;
   }
 }
 
 export class DiscountService {
   async validate(code: string, total: number): Promise<DiscountCode | null> {
     log('RPC', 'validate_discount_code', code);
-    // Try RPC first
     const { data, error } = await supabase.rpc('validate_discount_code', { code_input: code, order_total: total });
     
     if (!error && data) {
@@ -124,14 +145,40 @@ export class DiscountService {
 
     if (tableError || !codeData) return null;
 
-    // Check expiry
     const now = new Date();
     if (codeData.valid_from && new Date(codeData.valid_from) > now) return null;
     if (codeData.valid_until && new Date(codeData.valid_until) < now) return null;
-    
-    // Check minimum purchase
     if (codeData.minimum_purchase && total < codeData.minimum_purchase) return null;
 
     return Mappers.toDiscountCode(codeData);
+  }
+
+  async getAll(): Promise<DiscountCode[]> {
+    log('SELECT', 'discount_codes');
+    const { data, error } = await supabase.from('discount_codes').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return ((data || []) as any[]).map(Mappers.toDiscountCode);
+  }
+
+  async create(code: Partial<DiscountCode>): Promise<void> {
+    log('INSERT', 'discount_codes', code.code);
+    const { error } = await supabase.from('discount_codes').insert({
+      code: code.code,
+      discount_type: code.discountType,
+      discount_value: code.discountValue,
+      description: code.description,
+      minimum_purchase: code.minimumPurchase,
+      valid_from: code.validFrom || new Date().toISOString(),
+      valid_until: code.validUntil,
+      max_uses: code.maxUses,
+      is_active: true
+    });
+    if (error) throw error;
+  }
+
+  async delete(id: string): Promise<void> {
+    log('DELETE', 'discount_codes', id);
+    const { error } = await supabase.from('discount_codes').delete().eq('id', id);
+    if (error) throw error;
   }
 }

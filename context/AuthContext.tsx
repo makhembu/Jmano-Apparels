@@ -37,12 +37,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(profile);
     } catch (error) {
       console.error("Profile sync failed", error);
+      // Fallback if DB fetch fails but session exists
+      // We don't want to log them out, but user data might be incomplete
     }
   };
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
+
+    // Initial check
+    const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
@@ -54,14 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) setLoading(false);
       }
     };
-    init();
+    
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchProfile(session.user);
+      if (!mounted) return;
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          await fetchProfile(session.user);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
+      
+      setLoading(false);
     });
 
     return () => {
@@ -93,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) showToast("Error signing out", 'error');
+    setUser(null);
   };
 
   const refreshProfile = async () => {

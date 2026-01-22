@@ -1,4 +1,4 @@
-import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem } from '../types';
+import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode } from '../types';
 import { ProductService, CategoryService, ReviewService } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { BlogService, SettingsService, SupportService } from './services/content';
@@ -22,7 +22,6 @@ const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
 // --- PUBLIC API AGGREGATOR ---
-// This acts as a facade to the underlying services, ensuring the rest of the app doesn't need to change imports.
 
 export const api = {
   // PRODUCTS
@@ -32,8 +31,10 @@ export const api = {
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
 
-  // CATEGORIES
+  // CATEGORIES (PRODUCTS)
   getCategories: () => categoryService.getAll(),
+  createCategory: (c: Category) => categoryService.create(c),
+  deleteCategory: (key: string) => categoryService.delete(key),
 
   // APP SETTINGS
   getAppSettings: () => settingsService.get(),
@@ -43,6 +44,8 @@ export const api = {
   getBlogPosts: () => blogService.getAllPosts(),
   getBlogPostBySlug: (slug: string) => blogService.getPostBySlug(slug),
   getBlogCategories: () => blogService.getCategories(),
+  createBlogCategory: (c: Partial<BlogCategory>) => blogService.createCategory(c),
+  deleteBlogCategory: (id: string) => blogService.deleteCategory(id),
   adminCreateBlogPost: (p: Partial<BlogPost>) => blogService.createPost(p),
   adminUpdateBlogPost: (id: string, p: Partial<BlogPost>) => blogService.updatePost(id, p),
   adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
@@ -76,11 +79,23 @@ export const api = {
 
   // SHIPPING & DISCOUNTS
   getShippingZones: () => shippingService.getZones(),
+  createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
+  deleteShippingZone: (id: string) => shippingService.deleteZone(id),
+  
   validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
+  getDiscountCodes: () => discountService.getAll(),
+  createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
+  deleteDiscountCode: (id: string) => discountService.delete(id),
   
   // SUPPORT
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
   submitContact: (data: { name: string, email: string, message: string, subject?: string }) => supportService.submitContact(data),
+  // Admin Support Methods
+  getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
+  getContactSubmissions: () => supportService.getContactSubmissions(),
+  markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
+  deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
+  deleteNewsletterSubscriber: (id: string) => supportService.deleteNewsletterSubscriber(id),
 
   // STORAGE
   uploadImage: (file: File) => storageService.uploadImage(file),

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { api } from '../lib/db';
 import { supabase } from '../lib/supabaseClient';
 
 export type HealthStatus = 'idle' | 'checking' | 'healthy' | 'error';
@@ -83,12 +82,11 @@ export const useDBHealthCheck = () => {
       } else {
         // Verify seeded data existence (simple check)
         const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
+        // Even if count is 0, we treat it as healthy so the app loads and admin can add data
         if (count === 0) {
-           setStatus('error');
-           setError("Database tables exist but appear empty. Please run seed.sql.");
-        } else {
-           setStatus('healthy');
+           console.warn("Database appears empty. Ready for initial data entry.");
         }
+        setStatus('healthy');
       }
     } catch (e: any) {
       setStatus('error');
