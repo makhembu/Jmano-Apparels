@@ -23,6 +23,11 @@ export const AdminProductEditor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Quick Add Category State
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
   useEffect(() => {
     if (id && products.length > 0) {
       const p = products.find(prod => prod.id === id);
@@ -68,6 +73,37 @@ export const AdminProductEditor: React.FC = () => {
       showToast(error.message || 'Failed to upload image', 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleQuickAddCategory = async () => {
+    if (!newCategoryLabel.trim()) return;
+    
+    // Generate simple key
+    const key = newCategoryLabel.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    
+    if (key.length < 2) {
+        showToast('Invalid category name', 'error');
+        return;
+    }
+
+    setCreatingCategory(true);
+    try {
+        await api.createCategory({
+            key,
+            label: newCategoryLabel,
+            color: '#000000', 
+            bgColorClass: 'bg-gray-800'
+        });
+        await refreshData();
+        setFormData(prev => ({ ...prev, categoryKey: key }));
+        setIsAddingCategory(false);
+        setNewCategoryLabel('');
+        showToast('Category created', 'success');
+    } catch (e: any) {
+        showToast('Failed to create category. Key might exist.', 'error');
+    } finally {
+        setCreatingCategory(false);
     }
   };
 
@@ -124,11 +160,42 @@ export const AdminProductEditor: React.FC = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Category</label>
-                            <select name="categoryKey" value={formData.categoryKey} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green">
-                                <option value="">Select Category...</option>
-                                {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                            </select>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-medium text-gray-700">Category</label>
+                                {!isAddingCategory && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsAddingCategory(true)} 
+                                        className="text-xs text-brand-green hover:underline font-medium"
+                                    >
+                                        + New Category
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {isAddingCategory ? (
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={newCategoryLabel}
+                                        onChange={(e) => setNewCategoryLabel(e.target.value)}
+                                        placeholder="New Category Name"
+                                        className="flex-grow border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-green focus:border-brand-green"
+                                    />
+                                    <Button type="button" onClick={handleQuickAddCategory} isLoading={creatingCategory} className="px-3" variant="primary">✓</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddingCategory(false)} className="px-3">✕</Button>
+                                </div>
+                            ) : (
+                                <select 
+                                    name="categoryKey" 
+                                    value={formData.categoryKey} 
+                                    onChange={handleChange} 
+                                    className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green"
+                                >
+                                    <option value="">Select Category...</option>
+                                    {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                                </select>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Description</label>

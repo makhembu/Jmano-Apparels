@@ -26,9 +26,6 @@ export const AdminProducts: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold font-serif">Products</h1>
         <div className="flex gap-2">
-            <Link to="/admin/settings">
-                <Button variant="outline">Manage Categories</Button>
-            </Link>
             <Link to="/admin/products/new">
                 <Button variant="primary">Add New Product</Button>
             </Link>
