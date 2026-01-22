@@ -40,7 +40,7 @@ export class OrderService {
     const { data, error } = await supabase.rpc('create_order_secure', {
       p_user_id: order.userId,
       p_items: itemsPayload,
-      p_shipping_address: order.shippingAddress,
+      p_shipping_address: order.shippingAddress as any,
       p_discount_code: order.discountCode || null,
       p_notes: order.notes || null
     });
