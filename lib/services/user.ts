@@ -18,22 +18,28 @@ export class UserService {
     return Mappers.toUser(data);
   }
 
-  async updateProfile(userId: string, updates: { name: string, email: string }): Promise<void> {
+  async updateProfile(userId: string, updates: { name: string, email: string, role?: string }): Promise<void> {
      log('UPDATE', 'users', userId);
-     const { error } = await supabase.from('users').update({ name: updates.name, email: updates.email }).eq('id', userId);
+     const { error } = await supabase.from('users').update(updates).eq('id', userId);
      if (error) throw error;
   }
 
   async createProfile(user: Partial<User>): Promise<User> {
     log('INSERT', 'users', user);
     const { data, error } = await supabase.from('users').insert({
-        id: user.id!,
+        id: user.id || crypto.randomUUID(),
         name: user.name!,
         email: user.email!,
         role: user.role || 'user'
       }).select().single();
     if (error) throw error;
     return Mappers.toUser(data);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    log('DELETE', 'users', userId);
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+    if (error) throw error;
   }
 }
 

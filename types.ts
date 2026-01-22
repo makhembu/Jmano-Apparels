@@ -112,6 +112,7 @@ export interface OrderItem {
   size: string;
   title: string;
   price: number;
+  selectedColor?: string;
 }
 
 export interface Order {
