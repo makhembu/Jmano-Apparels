@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { api } from '../lib/db';
@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,9 +29,16 @@ export const BlogPost: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
-      <Link to="/blog" className="text-brand-green hover:underline mb-6 inline-block">
-        &larr; Back to Journal
-      </Link>
+      {/* Back Button for Touch Users */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="flex items-center text-sm font-medium text-gray-500 hover:text-brand-green mb-6 transition-colors group"
+      >
+        <svg className="w-5 h-5 mr-1 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back
+      </button>
 
       {post.featuredImage && (
         <div className="w-full h-64 md:h-96 rounded-xl overflow-hidden mb-8 shadow-lg">
