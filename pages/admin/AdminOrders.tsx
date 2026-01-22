@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { Order } from '../../types';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { Button } from '../../components/ui/Button';
 
 export const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -16,7 +17,13 @@ export const AdminOrders: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold font-serif mb-6">Orders</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold font-serif">Orders</h1>
+        <Link to="/admin/orders/new">
+            <Button variant="primary">+ New Order</Button>
+        </Link>
+      </div>
+      
       <div className="bg-white shadow overflow-hidden sm:rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
