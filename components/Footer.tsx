@@ -74,14 +74,32 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-4 text-brand-hope">Help</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/returns" className="hover:text-brand-hope">Returns & Refunds</Link></li>
-              <li><Link to="/cookies" className="hover:text-brand-hope">Cookie Policy</Link></li>
-              <li className="pt-2 text-brand-light">support@jamboapparels.com</li>
-              <li className="text-brand-light text-xs mt-1">London, UK</li>
-            </ul>
-          </div>
+  <h4 className="font-semibold mb-4 text-brand-hope">Help</h4>
+  <ul className="space-y-2 text-sm">
+    <li>
+      <Link to="/returns" className="hover:text-brand-hope">
+        Returns & Refunds
+      </Link>
+    </li>
+    <li>
+      <Link to="/cookies" className="hover:text-brand-hope">
+        Cookie Policy
+      </Link>
+    </li>
+    <li className="pt-2 text-brand-light">
+      support@jamboapparels.com
+    </li>
+    <li className="text-brand-light">
+      <a href="tel:+447938065717" className="hover:text-brand-hope">
+        +44 7938 065717
+      </a>
+    </li>
+    <li className="text-brand-light text-xs mt-1">
+      London, UK
+    </li>
+  </ul>
+</div>
+
         </div>
         <div className="mt-8 pt-8 border-t border-green-800 text-center text-xs text-brand-light">
           &copy; {new Date().getFullYear()} Jambo Apparels. All rights reserved. Registered in England & Wales.
