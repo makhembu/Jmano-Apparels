@@ -17,8 +17,13 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-serif font-bold text-brand-dark tracking-wide">Jambo Apparels</span>
-            </Link>
+            <img
+              src="https://i.imgur.com/pkaScEv.png"
+              alt="Jambo Apparels"
+              className="h-8 w-auto"
+            />
+          </Link>
+          
           </div>
           
           <div className="hidden md:flex md:items-center md:space-x-8">

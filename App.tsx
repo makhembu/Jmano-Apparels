@@ -23,7 +23,6 @@ import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminProductEditor } from './pages/admin/AdminProductEditor';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminOrderDetails } from './pages/admin/AdminOrderDetails';
-import { AdminOrderNew } from './pages/admin/AdminOrderNew';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminBlog } from './pages/admin/AdminBlog';
 import { AdminBlogEditor } from './pages/admin/AdminBlogEditor';
@@ -73,7 +72,6 @@ const App: React.FC = () => {
                     <Route path="products/new" element={<AdminProductEditor />} />
                     <Route path="products/:id" element={<AdminProductEditor />} />
                     <Route path="orders" element={<AdminOrders />} />
-                    <Route path="orders/new" element={<AdminOrderNew />} />
                     <Route path="orders/:id" element={<AdminOrderDetails />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="blog" element={<AdminBlog />} />

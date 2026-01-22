@@ -63,17 +63,15 @@ export const AdminContact: React.FC = () => {
                 <li key={sub.id} className={`transition-colors duration-150 ${!sub.isRead ? 'bg-blue-50' : 'bg-white'}`}>
                     <div 
                         onClick={() => handleRowClick(sub.id, sub.isRead)}
-                        className="px-4 sm:px-6 py-4 cursor-pointer hover:bg-gray-50 block"
+                        className="px-6 py-4 cursor-pointer hover:bg-gray-50 block"
                     >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
-                             <div className="flex items-center gap-3 overflow-hidden">
-                                <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${sub.isRead ? 'bg-transparent' : 'bg-blue-600'}`}></span>
-                                <h3 className="text-sm font-bold text-gray-900 truncate">
-                                    {sub.name} <span className="font-normal text-gray-500 hidden sm:inline">&lt;{sub.email}&gt;</span>
-                                </h3>
+                        <div className="flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-3">
+                                <span className={`h-2.5 w-2.5 rounded-full ${sub.isRead ? 'bg-transparent' : 'bg-blue-600'}`}></span>
+                                <h3 className="text-sm font-bold text-gray-900">{sub.name} <span className="font-normal text-gray-500">&lt;{sub.email}&gt;</span></h3>
                              </div>
-                             <div className="text-sm text-gray-500 flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                                <span className="text-xs">{new Date(sub.createdAt).toLocaleString()}</span>
+                             <div className="text-sm text-gray-500 flex items-center gap-4">
+                                <span>{new Date(sub.createdAt).toLocaleString()}</span>
                                 <button 
                                     onClick={(e) => handleDelete(e, sub.id)} 
                                     className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50"
@@ -82,7 +80,6 @@ export const AdminContact: React.FC = () => {
                                 </button>
                              </div>
                         </div>
-                        <p className="text-sm text-gray-500 sm:hidden mb-1">{sub.email}</p>
                         <p className="text-sm font-medium text-gray-900 truncate mb-1">{sub.subject || '(No Subject)'}</p>
                         
                         {/* Expanded Content */}

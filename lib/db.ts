@@ -61,9 +61,8 @@ export const api = {
   // USERS
   getAllUsers: () => userService.getAll(),
   getUserProfile: (id: string) => userService.getProfile(id),
-  updateUserProfile: (id: string, u: { name: string, email: string, role?: string }) => userService.updateProfile(id, u),
+  updateUserProfile: (id: string, u: { name: string, email: string }) => userService.updateProfile(id, u),
   createUserProfile: (u: Partial<User>) => userService.createProfile(u),
-  adminDeleteUser: (id: string) => userService.deleteUser(id),
 
   // REVIEWS
   getProductReviews: (id: string) => reviewService.getByProduct(id),

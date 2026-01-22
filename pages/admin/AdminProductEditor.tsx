@@ -5,7 +5,6 @@ import { Button } from '../../components/ui/Button';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { Product } from '../../types';
-import { ProductPreview } from '../../components/admin/products/ProductPreview';
 
 const emptyProduct: Partial<Product> = {
   title: '', price: 0, salePrice: undefined, isOnSale: false, categoryKey: '',
@@ -22,11 +21,6 @@ export const AdminProductEditor: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Product>>(emptyProduct);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  // Quick Add Category State
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryLabel, setNewCategoryLabel] = useState('');
-  const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
     if (id && products.length > 0) {
@@ -76,37 +70,6 @@ export const AdminProductEditor: React.FC = () => {
     }
   };
 
-  const handleQuickAddCategory = async () => {
-    if (!newCategoryLabel.trim()) return;
-    
-    // Generate simple key
-    const key = newCategoryLabel.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    
-    if (key.length < 2) {
-        showToast('Invalid category name', 'error');
-        return;
-    }
-
-    setCreatingCategory(true);
-    try {
-        await api.createCategory({
-            key,
-            label: newCategoryLabel,
-            color: '#000000', 
-            bgColorClass: 'bg-gray-800'
-        });
-        await refreshData();
-        setFormData(prev => ({ ...prev, categoryKey: key }));
-        setIsAddingCategory(false);
-        setNewCategoryLabel('');
-        showToast('Category created', 'success');
-    } catch (e: any) {
-        showToast('Failed to create category. Key might exist.', 'error');
-    } finally {
-        setCreatingCategory(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -127,201 +90,162 @@ export const AdminProductEditor: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-       <div className="flex justify-between items-center mb-6">
-         <h1 className="text-2xl font-bold font-serif">{id ? 'Edit Product' : 'Add New Product'}</h1>
-         <div className="flex gap-3">
-             <Button variant="outline" onClick={() => navigate('/admin/products')}>Cancel</Button>
-             <Button onClick={handleSubmit} isLoading={loading}>Save Product</Button>
+    <div className="max-w-4xl mx-auto">
+       <h1 className="text-2xl font-bold mb-6">{id ? 'Edit Product' : 'New Product'}</h1>
+       
+       {/* Read-Only Stats for Existing Products */}
+       {id && (
+         <div className="grid grid-cols-3 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="text-center">
+               <span className="block text-xs text-gray-500 uppercase font-bold">Total Sales</span>
+               <span className="text-xl font-bold text-gray-900">{formData.totalSales || 0}</span>
+            </div>
+            <div className="text-center border-l border-r border-gray-200">
+               <span className="block text-xs text-gray-500 uppercase font-bold">Avg Rating</span>
+               <span className="text-xl font-bold text-yellow-500">{formData.averageRating?.toFixed(1) || '-'} ★</span>
+            </div>
+            <div className="text-center">
+               <span className="block text-xs text-gray-500 uppercase font-bold">Reviews</span>
+               <span className="text-xl font-bold text-gray-900">{formData.reviewCount || 0}</span>
+            </div>
          </div>
-       </div>
+       )}
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Form */}
-          <div className="lg:col-span-2 space-y-6">
-             <form id="product-form" onSubmit={handleSubmit} className="space-y-6">
-                
-                {/* Basic Info */}
-                <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Basic Information</h2>
-                    <div className="grid grid-cols-1 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Product Title</label>
-                            <input type="text" name="title" value={formData.title} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" placeholder="e.g. Hope Hoodie Gold" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Price (£)</label>
-                                <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Sale Price (£)</label>
-                                <input type="number" step="0.01" name="salePrice" value={formData.salePrice || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                            </div>
-                        </div>
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="block text-sm font-medium text-gray-700">Category</label>
-                                {!isAddingCategory && (
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsAddingCategory(true)} 
-                                        className="text-xs text-brand-green hover:underline font-medium"
-                                    >
-                                        + New Category
-                                    </button>
-                                )}
-                            </div>
-                            
-                            {isAddingCategory ? (
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        value={newCategoryLabel}
-                                        onChange={(e) => setNewCategoryLabel(e.target.value)}
-                                        placeholder="New Category Name"
-                                        className="flex-grow border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-green focus:border-brand-green"
-                                    />
-                                    <Button type="button" onClick={handleQuickAddCategory} isLoading={creatingCategory} className="px-3" variant="primary">✓</Button>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddingCategory(false)} className="px-3">✕</Button>
-                                </div>
-                            ) : (
-                                <select 
-                                    name="categoryKey" 
-                                    value={formData.categoryKey} 
-                                    onChange={handleChange} 
-                                    className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green"
-                                >
-                                    <option value="">Select Category...</option>
-                                    {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                                </select>
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Description</label>
-                            <textarea name="description" rows={4} value={formData.description} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                    </div>
+       <form onSubmit={handleSubmit} className="bg-white p-6 shadow rounded space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             {/* Basic Info */}
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <input type="text" name="title" value={formData.title} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <select name="categoryKey" value={formData.categoryKey} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900">
+                   <option value="">Select...</option>
+                   {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+             </div>
+             
+             {/* Pricing */}
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Price (£)</label>
+                <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Sale Price (£)</label>
+                <input type="number" step="0.01" name="salePrice" value={formData.salePrice || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div className="flex flex-col space-y-2 pt-5">
+                <div className="flex items-center">
+                    <input type="checkbox" name="isOnSale" checked={formData.isOnSale} onChange={handleChange} className="h-4 w-4 text-brand-green bg-white border-gray-300 rounded focus:ring-brand-green" />
+                    <label className="ml-2 text-sm text-gray-700">On Sale</label>
                 </div>
-
-                {/* Media */}
-                <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Media</h2>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Product Image URL</label>
-                        <div className="mt-1 flex items-center space-x-4">
-                            <input type="text" name="image" value={formData.image} onChange={handleChange} required className="flex-grow border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" placeholder="https://..." />
-                            <div className="relative">
-                                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                <Button type="button" variant="outline" isLoading={uploading}>{uploading ? 'Uploading...' : 'Upload'}</Button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="flex items-center">
+                    <input type="checkbox" name="isFeatured" checked={formData.isFeatured} onChange={handleChange} className="h-4 w-4 text-brand-green bg-white border-gray-300 rounded focus:ring-brand-green" />
+                    <label className="ml-2 text-sm text-gray-700">Featured</label>
                 </div>
-
-                {/* Inventory & Variants */}
-                <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Inventory & Variants</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">SKU</label>
-                            <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
-                            <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Low Stock Warning</label>
-                            <input type="number" name="lowStockThreshold" value={formData.lowStockThreshold || 5} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Weight (kg)</label>
-                            <input type="number" step="0.01" name="weight" value={formData.weight || 0} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700">Sizes (Comma separated, e.g. S, M, L)</label>
-                          <input type="text" value={formData.sizes?.join(', ')} onChange={(e) => handleArrayChange(e, 'sizes')} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                       </div>
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700">Colors (Comma separated, e.g. Red, Blue)</label>
-                          <input type="text" value={formData.colors?.join(', ')} onChange={(e) => handleArrayChange(e, 'colors')} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                       </div>
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700">Tags (Comma separated)</label>
-                          <input type="text" value={formData.tags?.join(', ')} onChange={(e) => handleArrayChange(e, 'tags')} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                       </div>
-                    </div>
+                <div className="flex items-center">
+                    <input type="checkbox" name="isPublished" checked={formData.isPublished ?? true} onChange={handleChange} className="h-4 w-4 text-brand-green bg-white border-gray-300 rounded focus:ring-brand-green" />
+                    <label className="ml-2 text-sm text-gray-700">Published</label>
                 </div>
+             </div>
 
-                {/* Visibility */}
-                <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Visibility & Status</h2>
-                     <div className="space-y-3">
-                        <label className="flex items-center">
-                            <input type="checkbox" name="isPublished" checked={formData.isPublished ?? true} onChange={handleChange} className="h-4 w-4 text-brand-green border-gray-300 rounded focus:ring-brand-green" />
-                            <span className="ml-2 text-sm text-gray-900">Published (Visible in shop)</span>
-                        </label>
-                        <label className="flex items-center">
-                            <input type="checkbox" name="isOnSale" checked={formData.isOnSale} onChange={handleChange} className="h-4 w-4 text-brand-green border-gray-300 rounded focus:ring-brand-green" />
-                            <span className="ml-2 text-sm text-gray-900">On Sale Badge</span>
-                        </label>
-                         <label className="flex items-center">
-                            <input type="checkbox" name="isFeatured" checked={formData.isFeatured} onChange={handleChange} className="h-4 w-4 text-brand-green border-gray-300 rounded focus:ring-brand-green" />
-                            <span className="ml-2 text-sm text-gray-900">Featured (Show on home page)</span>
-                        </label>
-                     </div>
-                </div>
+             {/* Inventory */}
+             <div>
+                <label className="block text-sm font-medium text-gray-700">SKU</label>
+                <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
+                <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Low Stock Threshold</label>
+                <input type="number" name="lowStockThreshold" value={formData.lowStockThreshold || 5} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                <input type="number" step="0.01" name="weight" value={formData.weight || 0} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
 
-                {/* SEO */}
-                <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                   <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Search Engine Optimization</h2>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Slug</label>
-                            <input type="text" name="slug" value={formData.slug || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Meta Title</label>
-                            <input type="text" name="seoTitle" value={formData.seoTitle || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Meta Description</label>
-                            <textarea name="seoDescription" rows={2} value={formData.seoDescription || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green focus:border-brand-green" />
-                        </div>
-                    </div>
-                </div>
-
-             </form>
-          </div>
-
-          {/* Right Column: Preview */}
-          <div className="lg:col-span-1">
-             <div className="sticky top-24 space-y-6">
-                <ProductPreview product={formData} categories={categories} />
-                
-                {/* Stats (if existing) */}
-                {id && (
-                  <div className="bg-white shadow rounded-lg p-4 border border-gray-200">
-                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-3">Performance</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{formData.totalSales || 0}</p>
-                          <p className="text-xs text-gray-500">Total Sales</p>
-                       </div>
-                       <div className="text-center">
-                          <p className="text-2xl font-bold text-yellow-500">{formData.averageRating?.toFixed(1) || '-'} ★</p>
-                          <p className="text-xs text-gray-500">{formData.reviewCount || 0} Reviews</p>
-                       </div>
-                    </div>
+             {/* Image Upload / URL */}
+             <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Product Image</label>
+                <div className="mt-1 flex items-center space-x-4">
+                  {/* URL Input */}
+                  <div className="flex-grow">
+                     <input 
+                       type="text" 
+                       name="image" 
+                       placeholder="https://..."
+                       value={formData.image} 
+                       onChange={handleChange} 
+                       required 
+                       className="block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" 
+                     />
                   </div>
+                  {/* Upload Button */}
+                  <div className="flex-shrink-0 relative">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <Button type="button" variant="outline" isLoading={uploading}>
+                        {uploading ? 'Uploading...' : 'Upload File'}
+                      </Button>
+                  </div>
+                </div>
+                {formData.image && (
+                   <div className="mt-2 h-32 w-32 rounded border overflow-hidden bg-gray-100">
+                      <img src={formData.image} alt="Preview" className="h-full w-full object-cover" />
+                   </div>
                 )}
              </div>
+
+             <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea name="description" rows={3} value={formData.description} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             
+             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                  <label className="block text-sm font-medium text-gray-700">Sizes (comma separated)</label>
+                  <input type="text" value={formData.sizes?.join(', ')} onChange={(e) => handleArrayChange(e, 'sizes')} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+               </div>
+               <div>
+                  <label className="block text-sm font-medium text-gray-700">Colors (comma separated)</label>
+                  <input type="text" value={formData.colors?.join(', ')} onChange={(e) => handleArrayChange(e, 'colors')} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+               </div>
+               <div>
+                  <label className="block text-sm font-medium text-gray-700">Tags (comma separated)</label>
+                  <input type="text" value={formData.tags?.join(', ')} onChange={(e) => handleArrayChange(e, 'tags')} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+               </div>
+             </div>
+
+             {/* SEO */}
+             <div>
+                <label className="block text-sm font-medium text-gray-700">SEO Title</label>
+                <input type="text" name="seoTitle" value={formData.seoTitle || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Slug</label>
+                <input type="text" name="slug" value={formData.slug || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
+             <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">SEO Description</label>
+                <textarea name="seoDescription" rows={2} value={formData.seoDescription || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-2 bg-white text-gray-900" />
+             </div>
           </div>
-       </div>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t">
+             <Button type="button" variant="outline" onClick={() => navigate('/admin/products')}>Cancel</Button>
+             <Button type="submit" variant="primary" isLoading={loading}>Save Product</Button>
+          </div>
+       </form>
     </div>
   );
 };
