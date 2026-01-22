@@ -10,12 +10,15 @@ export const Blog: React.FC = () => {
       <h1 className="text-3xl font-bold font-serif mb-8 text-center">Journal</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {blogPosts.map(post => (
-          <div key={post.id} className="bg-white rounded-lg shadow overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300">
+          <div
+            key={post.id}
+            className="bg-white rounded-lg shadow overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300"
+          >
             <Link to={`/blog/${post.slug}`} className="block relative overflow-hidden group">
-              <img 
-                src={post.thumbnail} 
-                alt={post.title} 
-                className="h-48 w-full object-cover transform group-hover:scale-105 transition-transform duration-300" 
+              <img
+                src={post.thumbnail}
+                alt={post.title}
+                className="h-48 w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
               />
             </Link>
             <div className="p-6 flex-1 flex flex-col">
@@ -27,11 +30,9 @@ export const Blog: React.FC = () => {
                   {post.title}
                 </h3>
               </Link>
-              <p className="text-gray-600 flex-1 mb-4">
-                {post.summary}
-              </p>
-              <Link 
-                to={`/blog/${post.slug}`} 
+              <p className="text-gray-600 flex-1 mb-4">{post.summary}</p>
+              <Link
+                to={`/blog/${post.slug}`}
                 className="text-brand-dark font-medium hover:text-brand-green hover:underline self-start inline-flex items-center gap-1"
               >
                 Read more <span>&rarr;</span>

@@ -1,5 +1,8 @@
-/* Tailwind directives removed for CDN usage */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Custom Animations */
 .animate-fade-in {
   animation: fadeIn 0.5s ease-in-out;
 }
@@ -7,4 +10,18 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ensure the root layout fills the screen */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Base Styles - To be processed by build step */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans;
+  }
 }
