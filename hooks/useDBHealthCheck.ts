@@ -19,7 +19,7 @@ export const useDBHealthCheck = () => {
     try {
       // Attempt to select specific critical columns (limit 1 to be fast)
       const { error } = await supabase
-        .from(table)
+        .from(table as any)
         .select(columns.join(','))
         .limit(1);
 

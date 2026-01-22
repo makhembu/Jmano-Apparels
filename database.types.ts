@@ -818,6 +818,16 @@ export type Database = {
         Args: { row_id: string; quantity: number }
         Returns: void
       }
+      create_order_secure: {
+        Args: {
+          p_user_id: string
+          p_items: Json
+          p_shipping_address: Json
+          p_discount_code?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
