@@ -696,7 +696,7 @@ export type Database = {
           slug?: string | null
           stock_quantity?: number | null
           tags?: string[] | null
-          title?: string
+          title: string
           total_sales?: number | null
           weight?: number | null
         }
@@ -823,8 +823,8 @@ export type Database = {
           p_user_id: string
           p_items: Json
           p_shipping_address: Json
-          p_discount_code?: string | null
-          p_notes?: string | null
+          p_discount_code: string | null
+          p_notes: string | null
         }
         Returns: Json
       }

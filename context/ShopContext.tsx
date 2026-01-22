@@ -35,48 +35,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshData = useCallback(async () => {
     try {
       setLoading(true);
-      // Use allSettled to allow partial data loading if one service fails
-      const results = await Promise.allSettled([
+      const [fetchedSettings, fetchedCats, fetchedProds, fetchedPosts] = await Promise.all([
         api.getAppSettings(),
         api.getCategories(),
         api.getProducts(),
         api.getBlogPosts()
       ]);
 
-      // 0: Settings
-      if (results[0].status === 'fulfilled' && results[0].value) {
-        setSettings(results[0].value);
-      } else {
-        console.error("Failed to load settings", results[0].status === 'rejected' ? results[0].reason : null);
-      }
-
-      // 1: Categories
-      if (results[1].status === 'fulfilled' && results[1].value) {
-        setCategories(results[1].value);
-      }
-
-      // 2: Products
-      if (results[2].status === 'fulfilled' && results[2].value) {
-        setProducts(results[2].value);
-      }
-
-      // 3: Blog Posts
-      if (results[3].status === 'fulfilled' && results[3].value) {
-        setBlogPosts(results[3].value);
-      }
-
-      // Check if critical data failed
-      if (results[0].status === 'rejected' || results[2].status === 'rejected') {
-        showToast("Some content failed to load. Please refresh.", 'error');
-      }
+      if (fetchedSettings) setSettings(fetchedSettings);
+      if (fetchedCats) setCategories(fetchedCats);
+      if (fetchedProds) setProducts(fetchedProds);
+      if (fetchedPosts) setBlogPosts(fetchedPosts);
 
     } catch (error) {
-      console.error("Critical Data fetch error:", error);
-      showToast("Critical connection issue.", 'error');
+      console.error("Data fetch error:", error);
+      showToast("Connection issue. Some content may be missing.", 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     refreshData();

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { useShop } from '../context/ShopContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -118,144 +117,127 @@ export const ProductDetails: React.FC = () => {
   };
 
   return (
-    <>
-      <Helmet>
-        <title>{product.seoTitle || product.title} | Jambo Apparels</title>
-        <meta name="description" content={product.seoDescription || product.description} />
-      </Helmet>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-          <div className="w-full aspect-w-1 aspect-h-1 rounded-lg overflow-hidden border border-gray-100 shadow-sm relative">
-            <img src={product.image} alt={product.title} className="w-full h-full object-center object-cover" />
-            <button onClick={handleWishlist} className="absolute top-4 right-4 bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-transform hover:scale-110">
-               {isWishlisted ? <span className="text-red-500">♥</span> : '♡'}
-            </button>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
+        <div className="w-full aspect-w-1 aspect-h-1 rounded-lg overflow-hidden border border-gray-100 shadow-sm relative">
+          <img src={product.image} alt={product.title} className="w-full h-full object-center object-cover" />
+          <button onClick={handleWishlist} className="absolute top-4 right-4 bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-transform hover:scale-110">
+             {isWishlisted ? <span className="text-red-500">♥</span> : '♡'}
+          </button>
+        </div>
+
+        <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
+          <h1 className="text-3xl font-extrabold text-gray-900 font-serif">{product.title}</h1>
+          <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium mt-3 ${category?.bgColorClass || 'bg-gray-100'} text-white`}>
+             {category?.label || product.categoryKey}
+          </span>
+          <p className="mt-4 text-3xl text-brand-green font-bold">£{product.price.toFixed(2)}</p>
+          <p className="mt-6 text-base text-gray-700">{product.description}</p>
+
+          <div className="mt-4">
+             {isOutOfStock ? (
+                <span className="text-red-600 font-bold">Out of Stock</span>
+             ) : (
+                <span className={`${lowStock ? 'text-orange-600 font-medium' : 'text-green-600'}`}>
+                   {lowStock ? `Only ${stock} left in stock` : 'In Stock'}
+                </span>
+             )}
           </div>
 
-          <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
-            <h1 className="text-3xl font-extrabold text-gray-900 font-serif">{product.title}</h1>
-            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium mt-3 ${category?.bgColorClass || 'bg-gray-100'} text-white`}>
-               {category?.label || product.categoryKey}
-            </span>
-            <div className="mt-4 flex items-baseline gap-3">
-              {product.salePrice ? (
-                 <>
-                   <p className="text-3xl text-red-600 font-bold">£{product.salePrice.toFixed(2)}</p>
-                   <p className="text-xl text-gray-400 line-through">£{product.price.toFixed(2)}</p>
-                 </>
-              ) : (
-                 <p className="text-3xl text-brand-green font-bold">£{product.price.toFixed(2)}</p>
-              )}
-            </div>
-            
-            <p className="mt-6 text-base text-gray-700">{product.description}</p>
-
-            <div className="mt-4">
-               {isOutOfStock ? (
-                  <span className="text-red-600 font-bold">Out of Stock</span>
-               ) : (
-                  <span className={`${lowStock ? 'text-orange-600 font-medium' : 'text-green-600'}`}>
-                     {lowStock ? `Only ${stock} left in stock` : 'In Stock'}
-                  </span>
-               )}
-            </div>
-
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-sm font-medium text-gray-900">Color</h2>
-                <div className="flex flex-wrap gap-3 mt-2">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`border rounded-md py-2 px-4 text-sm font-medium transition-colors ${selectedColor === color ? 'bg-brand-dark text-white ring-2 ring-offset-2 ring-brand-green' : 'bg-white hover:bg-gray-50 text-gray-900'}`}
-                    >
-                      {color}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
+          {/* Color Selection */}
+          {product.colors && product.colors.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-sm font-medium text-gray-900">Size</h2>
-              <div className="grid grid-cols-4 gap-4 mt-2">
-                {product.sizes.map((size) => (
+              <h2 className="text-sm font-medium text-gray-900">Color</h2>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {product.colors.map((color) => (
                   <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`border rounded-md py-3 text-sm font-medium uppercase transition-colors ${selectedSize === size ? 'bg-brand-dark text-white' : 'bg-white hover:bg-gray-50'}`}
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`border rounded-md py-2 px-4 text-sm font-medium transition-colors ${selectedColor === color ? 'bg-brand-dark text-white ring-2 ring-offset-2 ring-brand-green' : 'bg-white hover:bg-gray-50 text-gray-900'}`}
                   >
-                    {size}
+                    {color}
                   </button>
                 ))}
               </div>
             </div>
+          )}
 
-            <div className="mt-8 flex gap-4">
-               <input 
-                 type="number" 
-                 min="1" 
-                 max={stock} 
-                 value={quantity} 
-                 onChange={(e) => setQuantity(Math.min(stock, Math.max(1, +e.target.value)))} 
-                 disabled={isOutOfStock}
-                 className="w-24 border rounded-md p-2 text-center bg-white text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" 
-               />
-               <Button 
-                 onClick={handleAddToCart} 
-                 isLoading={isAdding} 
-                 fullWidth 
-                 disabled={isOutOfStock}
-                 variant={isOutOfStock ? 'outline' : 'primary'}
-               >
-                 {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-               </Button>
+          <div className="mt-8">
+            <h2 className="text-sm font-medium text-gray-900">Size</h2>
+            <div className="grid grid-cols-4 gap-4 mt-2">
+              {product.sizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`border rounded-md py-3 text-sm font-medium uppercase transition-colors ${selectedSize === size ? 'bg-brand-dark text-white' : 'bg-white hover:bg-gray-50'}`}
+                >
+                  {size}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Reviews Section */}
-        <div className="mt-16 border-t pt-10">
-           <h2 className="text-2xl font-bold font-serif mb-6">Customer Reviews ({reviews.length})</h2>
-           
-           {user && (
-              <form onSubmit={submitReview} className="bg-gray-50 p-6 rounded-lg mb-8">
-                 <h3 className="text-lg font-medium mb-4">Write a Review</h3>
-                 <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Rating</label>
-                    <select value={rating} onChange={e => setRating(+e.target.value)} className="border rounded p-2 bg-white text-gray-900">
-                       <option value="5">5 - Excellent</option>
-                       <option value="4">4 - Good</option>
-                       <option value="3">3 - Average</option>
-                       <option value="2">2 - Poor</option>
-                       <option value="1">1 - Terrible</option>
-                    </select>
-                 </div>
-                 <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Comment</label>
-                    <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} className="w-full border rounded p-2 bg-white text-gray-900" required />
-                 </div>
-                 <Button type="submit">Submit Review</Button>
-              </form>
-           )}
-
-           <div className="space-y-6">
-              {reviews.length === 0 ? <p className="text-gray-500">No reviews yet.</p> : reviews.map(r => (
-                 <div key={r.id} className="border-b pb-6">
-                    <div className="flex items-center mb-2">
-                       <div className="flex text-yellow-400">{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</div>
-                       <span className="ml-2 font-bold text-gray-900">{r.title}</span>
-                    </div>
-                    <p className="text-gray-600">{r.comment}</p>
-                    <p className="text-sm text-gray-400 mt-2">{new Date(r.createdAt).toLocaleDateString()} {r.verifiedPurchase && '• Verified Purchase'}</p>
-                 </div>
-              ))}
-           </div>
+          <div className="mt-8 flex gap-4">
+             <input 
+               type="number" 
+               min="1" 
+               max={stock} 
+               value={quantity} 
+               onChange={(e) => setQuantity(Math.min(stock, Math.max(1, +e.target.value)))} 
+               disabled={isOutOfStock}
+               className="w-24 border rounded-md p-2 text-center bg-white text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" 
+             />
+             <Button 
+               onClick={handleAddToCart} 
+               isLoading={isAdding} 
+               fullWidth 
+               disabled={isOutOfStock}
+               variant={isOutOfStock ? 'outline' : 'primary'}
+             >
+               {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+             </Button>
+          </div>
         </div>
       </div>
-    </>
+
+      {/* Reviews Section */}
+      <div className="mt-16 border-t pt-10">
+         <h2 className="text-2xl font-bold font-serif mb-6">Customer Reviews ({reviews.length})</h2>
+         
+         {user && (
+            <form onSubmit={submitReview} className="bg-gray-50 p-6 rounded-lg mb-8">
+               <h3 className="text-lg font-medium mb-4">Write a Review</h3>
+               <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Rating</label>
+                  <select value={rating} onChange={e => setRating(+e.target.value)} className="border rounded p-2 bg-white text-gray-900">
+                     <option value="5">5 - Excellent</option>
+                     <option value="4">4 - Good</option>
+                     <option value="3">3 - Average</option>
+                     <option value="2">2 - Poor</option>
+                     <option value="1">1 - Terrible</option>
+                  </select>
+               </div>
+               <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Comment</label>
+                  <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} className="w-full border rounded p-2 bg-white text-gray-900" required />
+               </div>
+               <Button type="submit">Submit Review</Button>
+            </form>
+         )}
+
+         <div className="space-y-6">
+            {reviews.length === 0 ? <p className="text-gray-500">No reviews yet.</p> : reviews.map(r => (
+               <div key={r.id} className="border-b pb-6">
+                  <div className="flex items-center mb-2">
+                     <div className="flex text-yellow-400">{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</div>
+                     <span className="ml-2 font-bold text-gray-900">{r.title}</span>
+                  </div>
+                  <p className="text-gray-600">{r.comment}</p>
+                  <p className="text-sm text-gray-400 mt-2">{new Date(r.createdAt).toLocaleDateString()} {r.verifiedPurchase && '• Verified Purchase'}</p>
+               </div>
+            ))}
+         </div>
+      </div>
+    </div>
   );
 };

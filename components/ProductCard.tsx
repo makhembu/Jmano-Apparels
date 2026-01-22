@@ -13,23 +13,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img
           src={product.image}
           alt={product.title}
-          loading="lazy"
-          className="w-full h-64 object-cover object-center group-hover:opacity-90 transition-opacity"
+          className="w-full h-64 object-cover object-center group-hover:opacity-90"
         />
       </div>
       <div className="p-4">
         <h3 className="mt-1 text-lg font-medium text-gray-900 truncate">{product.title}</h3>
         <p className="mt-1 text-sm text-gray-500">{product.categoryKey}</p>
-        <div className="flex items-center gap-2 mt-2">
-           {product.salePrice ? (
-              <>
-                 <span className="text-lg font-bold text-red-600">£{product.salePrice.toFixed(2)}</span>
-                 <span className="text-sm text-gray-400 line-through">£{product.price.toFixed(2)}</span>
-              </>
-           ) : (
-              <p className="text-lg font-bold text-brand-green">£{product.price.toFixed(2)}</p>
-           )}
-        </div>
+        <p className="mt-2 text-lg font-bold text-brand-green">£{product.price.toFixed(2)}</p>
       </div>
     </Link>
   );

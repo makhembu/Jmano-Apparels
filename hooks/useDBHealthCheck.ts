@@ -18,6 +18,7 @@ export const useDBHealthCheck = () => {
   const verifyTable = async (table: string, columns: string[]): Promise<CheckResult> => {
     try {
       // Attempt to select specific critical columns (limit 1 to be fast)
+      // Cast table to any because TS can't verify dynamic string against strict table names
       const { error } = await supabase
         .from(table as any)
         .select(columns.join(','))
