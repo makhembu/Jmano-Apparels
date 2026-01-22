@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./index.html",
     "./**/*.{js,ts,jsx,tsx}",
@@ -25,9 +25,5 @@ module.exports = {
       }
     }
   },
-  plugins: [
-    require('@tailwindcss/aspect-ratio'),
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
-  ],
+  plugins: [],
 }
