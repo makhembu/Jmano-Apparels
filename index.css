@@ -1,6 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green: #2E7D32;
+  --color-brand-light: #E8F5E9;
+  --color-brand-dark: #1B5E20;
+  --color-brand-hope: #F1C40F;
+  --color-brand-testament: #B96AD9;
+  --color-brand-triumph: rgb(241, 196, 15);
+  --color-brand-humility: #2DC26B;
+  --color-brand-patience: #E03E2D;
+  --color-brand-sainty: #E03E2D;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Merriweather", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
 
 /* Custom Animations */
 .animate-fade-in {
@@ -19,7 +32,7 @@
   flex-direction: column;
 }
 
-/* Custom Base Styles - To be processed by build step */
+/* Custom Base Styles */
 @layer base {
   body {
     @apply bg-slate-50 text-slate-800 font-sans;
