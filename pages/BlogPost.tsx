@@ -161,7 +161,7 @@ export const BlogPost: React.FC = () => {
         </div>
       </div>
 
-      {/* Featured Image - Constraints and Stylized */}
+      {/* Featured Image */}
       {post.featuredImage && (
         <div className="max-w-6xl mx-auto px-4 -mt-10 md:-mt-16 mb-16 md:mb-24">
           <div className="w-full aspect-[16/9] md:aspect-[21/9] rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white ring-1 ring-slate-100">
@@ -171,13 +171,13 @@ export const BlogPost: React.FC = () => {
       )}
 
       {/* Content Body */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
         <div className="max-w-3xl mx-auto">
           <article className="prose prose-lg md:prose-xl max-w-none text-slate-700 font-light leading-[1.8] prose-headings:font-serif prose-headings:text-brand-dark prose-headings:font-bold prose-headings:tracking-tight prose-a:text-brand-green prose-a:font-bold prose-img:rounded-3xl prose-blockquote:border-brand-green prose-blockquote:bg-slate-50 prose-blockquote:p-8 prose-blockquote:rounded-3xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-xl prose-blockquote:text-slate-800">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
           </article>
 
-          {/* Social Share & Navigation Section */}
+          {/* Social Share Section */}
           <div className="mt-20 pt-10 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-8">
             <div className="flex flex-col items-center sm:items-start gap-4">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Share the Testimony</span>
@@ -198,74 +198,75 @@ export const BlogPost: React.FC = () => {
             </div>
             
             <Link to="/blog" className="text-brand-green font-bold text-sm uppercase tracking-widest border-b-2 border-brand-green/10 hover:border-brand-green transition-all pb-1">
-              Back to All Stories
+              Back to Journal
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Up Next & Recommended Context - Editorial Gray Block */}
-      <div className="bg-slate-50 py-24 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-            
-            {/* Left: Up Next Card */}
-            <div className="lg:col-span-4 flex flex-col">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-8">Continuing the Journey</h3>
-              {nextPost ? (
-                <Link 
-                  to={`/blog/${nextPost.slug}`} 
-                  className="group block flex-1 bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-white hover:border-brand-green/20 transition-all transform hover:-translate-y-2"
-                >
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1">
-                       <p className="text-xs font-bold text-brand-green uppercase tracking-widest mb-4">Up Next</p>
-                       <h4 className="text-2xl md:text-3xl font-serif font-bold text-brand-dark group-hover:text-brand-green transition-colors leading-tight mb-4">
-                         {nextPost.title}
-                       </h4>
-                       <p className="text-slate-400 text-sm font-light line-clamp-3 leading-relaxed mb-8">
-                         {nextPost.summary}
-                       </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-brand-green font-black text-[10px] uppercase tracking-[0.2em] group-hover:gap-5 transition-all">
-                       Read Next Story 
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                    </div>
-                  </div>
-                </Link>
-              ) : (
-                <div className="bg-white p-8 rounded-[2.5rem] text-center flex flex-col items-center justify-center border border-dashed border-slate-200 opacity-60 h-full">
-                  <p className="text-slate-400 italic">No more entries currently threaded.</p>
+      {/* Up Next Bridge - Relocated above recommended products */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        {nextPost ? (
+          <div className="space-y-10">
+             <div className="text-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Continuing the Journey</span>
+             </div>
+             
+             <Link 
+               to={`/blog/${nextPost.slug}`} 
+               className="group block relative bg-white p-10 md:p-16 rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 hover:border-brand-green/30 transition-all transform hover:-translate-y-2 overflow-hidden"
+             >
+                {/* Background Decoration */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-light/50 rounded-full -mr-10 -mt-10 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                   {nextPost.thumbnail && (
+                     <div className="w-full md:w-48 aspect-square rounded-2xl overflow-hidden shadow-lg border-2 border-white flex-shrink-0">
+                        <img src={nextPost.thumbnail} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                     </div>
+                   )}
+                   
+                   <div className="flex-1 text-center md:text-left">
+                      <p className="text-xs font-black text-brand-green uppercase tracking-widest mb-4">Up Next</p>
+                      <h4 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark group-hover:text-brand-green transition-colors leading-tight mb-6">
+                        {nextPost.title}
+                      </h4>
+                      <p className="text-slate-500 text-sm md:text-base font-light line-clamp-2 leading-relaxed mb-8">
+                        {nextPost.summary}
+                      </p>
+                      <div className="inline-flex items-center gap-3 text-brand-green font-black text-xs uppercase tracking-[0.2em] group-hover:gap-6 transition-all duration-300">
+                         Read Next Story 
+                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                      </div>
+                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Right: Shop the Story */}
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Shop the Story</h3>
-                <Link to="/shop" className="text-[10px] font-black text-brand-green uppercase tracking-widest hover:underline underline-offset-4">Explore Store</Link>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {recommendedProducts.slice(0, 2).map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
+             </Link>
           </div>
+        ) : (
+          <div className="text-center py-10 opacity-30">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">End of Journal</span>
+          </div>
+        )}
+      </div>
+
+      {/* Recommended Context - Shop the Story (Now at the bottom) */}
+      <div className="bg-slate-50 py-20 md:py-32 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+              <div>
+                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Shop the Story</h3>
+                 <h2 className="text-3xl md:text-5xl font-serif font-bold text-brand-dark">Complete the Look</h2>
+              </div>
+              <Link to="/shop" className="text-[10px] font-black text-brand-green uppercase tracking-widest hover:underline underline-offset-8 transition-all">Explore Entire Store &rarr;</Link>
+           </div>
+           
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {recommendedProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+           </div>
         </div>
       </div>
-      
-      {/* Secondary Recommended Section */}
-      {recommendedProducts.length > 2 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 opacity-90 grayscale-[30%] hover:grayscale-0 transition-all">
-             {recommendedProducts.slice(2, 4).map(product => (
-               <ProductCard key={product.id} product={product} />
-             ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
