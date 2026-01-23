@@ -91,9 +91,9 @@ export const Shop: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        {/* Modern Controls Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+        {/* Modern Controls Bar - Restructured for Mobile */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-5 h-11 border rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${showFilters ? 'bg-brand-dark text-white border-brand-dark shadow-lg shadow-brand-dark/20' : 'bg-white text-slate-700 border-slate-200 hover:border-brand-green'}`}
@@ -103,13 +103,25 @@ export const Shop: React.FC = () => {
               </svg>
               <span>{showFilters ? 'Hide Filters' : 'Filters'}</span>
             </button>
-            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest ml-2">
+            
+            {/* Found count: hidden on mobile */}
+            <div className="hidden sm:block text-[10px] text-slate-400 font-black uppercase tracking-widest ml-2">
                Found {filteredProducts.length} <span className="hidden xs:inline">Pieces</span>
+            </div>
+
+            {/* Mobile Sort: only visible on mobile, positioned next to filters */}
+            <div className="sm:hidden flex-1 flex justify-end">
+              <select value={sort} onChange={e => setSort(e.target.value)} className="bg-slate-100 border-none rounded-2xl h-11 px-4 text-[10px] font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer max-w-[120px]">
+                <option value="newest">Latest</option>
+                <option value="low-high">£ Low-High</option>
+                <option value="high-low">£ High-Low</option>
+              </select>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Search bar takes full row on mobile due to flex-col on parent */}
+            <div className="relative w-full sm:w-64">
               <input 
                 type="text" 
                 value={searchTerm} 
@@ -121,7 +133,9 @@ export const Shop: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <select value={sort} onChange={e => setSort(e.target.value)} className="bg-slate-100 border-none rounded-2xl h-11 px-4 text-xs font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer">
+            
+            {/* Desktop Sort: only visible on desktop (sm:block) */}
+            <select value={sort} onChange={e => setSort(e.target.value)} className="hidden sm:block bg-slate-100 border-none rounded-2xl h-11 px-4 text-xs font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer">
               <option value="newest">Latest</option>
               <option value="low-high">£ Low-High</option>
               <option value="high-low">£ High-Low</option>
