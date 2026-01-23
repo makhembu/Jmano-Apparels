@@ -68,8 +68,8 @@ export const About: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20 space-y-12 md:space-y-24 pb-24">
         
-        {/* Founder Section - Premium Card */}
-        <section className="bg-white rounded-[3rem] shadow-2xl shadow-brand-dark/10 border border-slate-100 overflow-hidden">
+        {/* Founder Section - Reduced roundedness to 2xl */}
+        <section className="bg-white rounded-2xl shadow-2xl shadow-brand-dark/10 border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-5 relative group">
               <img 
@@ -98,7 +98,7 @@ export const About: React.FC = () => {
                 {settings.founderBio || `Linah Makembu is the Founding Director of Jambo Apparels...`}
               </div>
 
-              <div className="bg-brand-hope/10 border-l-4 border-brand-hope p-8 rounded-r-3xl rounded-bl-3xl">
+              <div className="bg-brand-hope/10 border-l-4 border-brand-hope p-8 rounded-r-2xl rounded-bl-2xl">
                 <blockquote className="text-brand-dark font-serif text-xl md:text-2xl italic leading-relaxed relative">
                   <span className="absolute -left-4 -top-4 text-brand-hope/30 text-7xl leading-none font-serif">“</span>
                   {settings.founderQuote || "Guided by honesty, excellence, and boldness..."}
@@ -108,9 +108,9 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Mission & Vision - High Impact Colors */}
+        {/* Mission & Vision - Reduced roundedness to 2xl */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          <div className="group relative bg-brand-dark p-10 md:p-16 rounded-[3rem] text-white shadow-2xl shadow-brand-dark/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
+          <div className="group relative bg-brand-dark p-10 md:p-16 rounded-2xl text-white shadow-2xl shadow-brand-dark/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
             <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             </div>
@@ -120,7 +120,7 @@ export const About: React.FC = () => {
             </p>
           </div>
 
-          <div className="group relative bg-brand-testament p-10 md:p-16 rounded-[3rem] text-white shadow-2xl shadow-brand-testament/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
+          <div className="group relative bg-brand-testament p-10 md:p-16 rounded-2xl text-white shadow-2xl shadow-brand-testament/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
             <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
             </div>
@@ -131,7 +131,7 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Core Values Section - Vibrant Card Grid */}
+        {/* Core Values Section - Reduced roundedness to 2xl/xl */}
         <section className="py-12">
           <div className="text-center max-w-2xl mx-auto mb-16">
              <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block">The Foundation</span>
@@ -141,9 +141,9 @@ export const About: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
              {/* Honesty Card */}
-             <div className="bg-white p-1 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
-                <div className="bg-brand-humility p-10 rounded-[2.2rem] text-center h-full flex flex-col items-center">
-                    <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
+             <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
+                <div className="bg-brand-humility p-10 rounded-xl text-center h-full flex flex-col items-center">
+                    <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
                        <span className="text-4xl font-serif font-black text-white">H</span>
                     </div>
                     <h3 className="font-black text-sm uppercase tracking-widest text-white mb-4">Honesty</h3>
@@ -154,9 +154,9 @@ export const About: React.FC = () => {
              </div>
 
              {/* Excellence Card */}
-             <div className="bg-white p-1 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
-                <div className="bg-brand-hope p-10 rounded-[2.2rem] text-center h-full flex flex-col items-center">
-                    <div className="w-20 h-20 bg-white/30 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
+             <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
+                <div className="bg-brand-hope p-10 rounded-xl text-center h-full flex flex-col items-center">
+                    <div className="w-20 h-20 bg-white/30 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
                        <span className="text-4xl font-serif font-black text-brand-dark">E</span>
                     </div>
                     <h3 className="font-black text-sm uppercase tracking-widest text-brand-dark mb-4">Excellence</h3>
@@ -167,9 +167,9 @@ export const About: React.FC = () => {
              </div>
 
              {/* Boldness Card */}
-             <div className="bg-white p-1 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
-                <div className="bg-brand-patience p-10 rounded-[2.2rem] text-center h-full flex flex-col items-center">
-                    <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
+             <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
+                <div className="bg-brand-patience p-10 rounded-xl text-center h-full flex flex-col items-center">
+                    <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
                        <span className="text-4xl font-serif font-black text-white">B</span>
                     </div>
                     <h3 className="font-black text-sm uppercase tracking-widest text-white mb-4">Boldness</h3>
@@ -181,8 +181,8 @@ export const About: React.FC = () => {
           </div>
         </section>
         
-        {/* Contact Form - Refined & Brand Integrated */}
-        <section className="bg-brand-dark rounded-[3.5rem] overflow-hidden shadow-2xl relative">
+        {/* Contact Form - Reduced roundedness to 2xl */}
+        <section className="bg-brand-dark rounded-2xl overflow-hidden shadow-2xl relative">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -193,13 +193,13 @@ export const About: React.FC = () => {
                </p>
                <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+                     <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
                         <svg className="w-6 h-6 text-brand-hope" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                      </div>
                      <span className="font-medium text-brand-light">{settings.contactEmail || 'hello@jamboapparels.com'}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+                     <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
                         <svg className="w-6 h-6 text-brand-hope" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                      </div>
                      <span className="font-medium text-brand-light">London, United Kingdom</span>
@@ -207,7 +207,7 @@ export const About: React.FC = () => {
                </div>
             </div>
 
-            <div className="bg-white p-8 md:p-16 lg:m-10 lg:rounded-[2.5rem] shadow-inner">
+            <div className="bg-white p-8 md:p-16 lg:m-10 lg:rounded-2xl shadow-inner">
                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                      <div className="space-y-2">
@@ -215,7 +215,7 @@ export const About: React.FC = () => {
                         <input 
                            type="text" placeholder="Simon Peter" required 
                            value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                           className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
+                           className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
                         />
                      </div>
                      <div className="space-y-2">
@@ -223,7 +223,7 @@ export const About: React.FC = () => {
                         <input 
                            type="email" placeholder="peter@apostle.com" required 
                            value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                           className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
+                           className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
                         />
                      </div>
                   </div>
@@ -232,7 +232,7 @@ export const About: React.FC = () => {
                      <input 
                         type="text" placeholder="How can we help?" 
                         value={form.subject} onChange={e => setForm({...form, subject: e.target.value})}
-                        className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
+                        className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
                      />
                   </div>
                   <div className="space-y-2">
@@ -240,11 +240,11 @@ export const About: React.FC = () => {
                      <textarea 
                         placeholder="Your testimony or inquiry..." rows={5} required
                         value={form.message} onChange={e => setForm({...form, message: e.target.value})}
-                        className="w-full border border-slate-200 bg-slate-50 rounded-3xl p-5 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
+                        className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-5 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/10 focus:border-brand-green outline-none transition-all"
                      />
                   </div>
                   <div className="pt-4">
-                     <Button type="submit" fullWidth isLoading={sending} className="h-16 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.01] active:scale-95 transition-all">
+                     <Button type="submit" fullWidth isLoading={sending} className="h-16 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.01] active:scale-95 transition-all">
                         Send Message
                      </Button>
                   </div>
