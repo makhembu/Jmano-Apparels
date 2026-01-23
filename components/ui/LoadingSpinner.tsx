@@ -9,7 +9,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ className = "", 
   const spinner = (
     <div className={`flex flex-col items-center justify-center space-y-4 ${className}`}>
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div>
-      <p className="text-brand-dark font-medium text-sm animate-pulse">Loading Jambo Apparels...</p>
+      <p className="text-brand-dark font-medium text-sm animate-pulse">Divinely Threading Your Experience...</p>
     </div>
   );
 

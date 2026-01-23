@@ -10,7 +10,7 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <LoadingSpinner />
-        <p className="mt-4 text-gray-500">Verifying System Integrity...</p>
+        <p className="mt-4 text-gray-500">Ensuring a Firm Foundation...</p>
       </div>
     );
   }
