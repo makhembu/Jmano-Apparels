@@ -32,6 +32,16 @@ export const api = {
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
+  adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
+    // For simplicity in the prototype, we loop updates, but in production, 
+    // a single .in() query is used.
+    const promises = ids.map(id => productService.update(id, updates));
+    return Promise.all(promises);
+  },
+  adminBulkDeleteProducts: async (ids: string[]) => {
+    const { error } = await supabase.from('products').delete().in('id', ids);
+    if (error) throw error;
+  },
 
   // CATEGORIES (PRODUCTS)
   getCategories: () => categoryService.getAll(),
@@ -74,7 +84,6 @@ export const api = {
   
   // PUBLIC SECURITY
   requestPasswordReset: async (email: string) => {
-    // Redirects to the root, the AuthEventHandler will catch the recovery event
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
     });
