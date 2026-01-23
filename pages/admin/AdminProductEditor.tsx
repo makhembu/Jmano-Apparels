@@ -9,7 +9,6 @@ import { ProductPreview } from '../../components/admin/products/ProductPreview';
 
 const emptyProduct: Partial<Product> = {
   title: '', price: 0, salePrice: undefined, isOnSale: false, categoryKey: '',
-  // FIX: The 'Product' type has an 'images' array. Initialize as an empty array.
   images: [], description: '', sizes: ['S', 'M', 'L'], colors: [], tags: [],
   isFeatured: false, isPublished: true, sku: '', slug: '', stockQuantity: 0, lowStockThreshold: 5, weight: 0
 };
@@ -46,7 +45,6 @@ export const AdminProductEditor: React.FC = () => {
     } else if (type === 'number') {
        setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : parseFloat(value) }));
     } else {
-        // FIX: Add special handling for the image URL input which should update the `images` array.
         if (name === 'image') {
             setFormData(prev => ({ ...prev, images: [value] }));
         } else {
@@ -62,24 +60,17 @@ export const AdminProductEditor: React.FC = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
     const file = e.target.files[0];
-    
-    // 5MB Limit for standard uploads
     if (file.size > 5 * 1024 * 1024) {
       showToast('File is too large (max 5MB)', 'error');
       return;
     }
-    
     setUploading(true);
     try {
       const publicUrl = await api.uploadImage(file);
-      // FIX: The 'Product' type requires an 'images' array. Set the uploaded URL as the first item.
       setFormData(prev => ({ ...prev, images: [publicUrl] }));
       showToast('Image uploaded successfully', 'success');
     } catch (error: any) {
-      console.error(error);
-      // The error message from StorageService will guide the user on bucket setup
       showToast(error.message || 'Failed to upload image', 'error');
     } finally {
       setUploading(false);
@@ -88,21 +79,20 @@ export const AdminProductEditor: React.FC = () => {
 
   const handleQuickAddCategory = async () => {
     if (!newCategoryLabel.trim()) return;
-    
     const key = newCategoryLabel.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    
     if (key.length < 2) {
         showToast('Invalid category name', 'error');
         return;
     }
-
     setCreatingCategory(true);
     try {
         await api.createCategory({
             key,
             label: newCategoryLabel,
             color: '#2E7D32', 
-            bgColorClass: 'bg-brand-green'
+            bgColorClass: 'bg-brand-green',
+            seoTitle: `${newCategoryLabel} | Jambo Apparels`,
+            seoDescription: `Explore our collection of ${newCategoryLabel}.`
         });
         await refreshData();
         setFormData(prev => ({ ...prev, categoryKey: key }));
@@ -118,13 +108,10 @@ export const AdminProductEditor: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // FIX: Validate the 'images' array instead of the non-existent 'image' property.
     if (!formData.title || !formData.categoryKey || !formData.images || formData.images.length === 0) {
       showToast('Please fill in required fields (Title, Category, Image)', 'error');
       return;
     }
-
     setLoading(true);
     try {
       if (id) {
@@ -144,27 +131,44 @@ export const AdminProductEditor: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
-       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-         <div>
-            <h1 className="text-3xl font-bold font-serif text-slate-900">{id ? 'Edit Product' : 'New Collection Piece'}</h1>
-            <p className="text-slate-500 text-sm mt-1">Ethically threading scriptures for the modern believer.</p>
-         </div>
-         <div className="flex gap-3">
-             <Button variant="outline" onClick={() => navigate('/admin/products')}>Discard</Button>
-             <Button onClick={handleSubmit} isLoading={loading} className="shadow-lg shadow-brand-green/20">
-               {id ? 'Update Product' : 'Publish Product'}
-             </Button>
-         </div>
-       </div>
+    <div className="animate-fade-in relative">
+      {/* Sticky Header Section */}
+      <div className="sticky top-[-1rem] md:top-[-2rem] z-30 bg-gray-100/95 backdrop-blur-md border-b border-slate-200 -mx-4 md:-mx-8 px-4 md:px-8 py-6 mb-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold font-serif text-slate-900">
+              {id ? 'Edit Product' : 'New Collection Piece'}
+            </h1>
+            <p className="text-slate-500 text-xs md:text-sm mt-1">
+              Ethically threading scriptures for the modern believer.
+            </p>
+          </div>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              className="flex-1 sm:flex-none h-11 bg-white hover:bg-slate-50 border-slate-200"
+              onClick={() => navigate('/admin/products')}
+            >
+              Discard
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              isLoading={loading} 
+              className="flex-1 sm:flex-none h-11 shadow-lg shadow-brand-green/20 px-8"
+            >
+              {id ? 'Update Product' : 'Publish Product'}
+            </Button>
+          </div>
+        </div>
+      </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Left Column: Form */}
           <div className="lg:col-span-2 space-y-8">
              <form id="product-form" onSubmit={handleSubmit} className="space-y-8">
-                
                 {/* Basic Info */}
-                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-8 border border-slate-200">
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Essential Details</h2>
                     <div className="grid grid-cols-1 gap-6">
                         <div>
@@ -227,7 +231,7 @@ export const AdminProductEditor: React.FC = () => {
                 </div>
 
                 {/* Media */}
-                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-8 border border-slate-200">
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Product Visuals</h2>
                     <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Display Image URL*</label>
@@ -241,7 +245,7 @@ export const AdminProductEditor: React.FC = () => {
                                   disabled={uploading} 
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                 />
-                                <Button type="button" variant="outline" isLoading={uploading} className="h-full px-8 whitespace-nowrap">
+                                <Button type="button" variant="outline" isLoading={uploading} className="h-full px-8 whitespace-nowrap bg-white border-2">
                                   {uploading ? 'Processing...' : 'Upload Asset'}
                                 </Button>
                             </div>
@@ -251,7 +255,7 @@ export const AdminProductEditor: React.FC = () => {
                 </div>
 
                 {/* Inventory & Variants */}
-                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-8 border border-slate-200">
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Inventory & Variants</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
@@ -289,7 +293,7 @@ export const AdminProductEditor: React.FC = () => {
                 </div>
 
                 {/* Visibility */}
-                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-8 border border-slate-200">
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Store Placement</h2>
                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <label className="flex items-center gap-3 cursor-pointer group">
@@ -308,7 +312,7 @@ export const AdminProductEditor: React.FC = () => {
                 </div>
 
                 {/* SEO */}
-                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-8 border border-slate-200">
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Digital Presence (SEO)</h2>
                     <div className="space-y-6">
                         <div>
@@ -325,13 +329,12 @@ export const AdminProductEditor: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
              </form>
           </div>
 
           {/* Right Column: Preview */}
           <div className="lg:col-span-1">
-             <div className="sticky top-24 space-y-8">
+             <div className="lg:sticky lg:top-[160px] space-y-8">
                 <ProductPreview product={formData} categories={categories} />
                 
                 {id && (
@@ -359,6 +362,7 @@ export const AdminProductEditor: React.FC = () => {
              </div>
           </div>
        </div>
+      </div>
     </div>
   );
 };
