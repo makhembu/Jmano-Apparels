@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 
@@ -14,6 +14,7 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -30,6 +31,11 @@ export const Login: React.FC = () => {
     
     try {
       if (isSignUp) {
+        if (!agreedToTerms) {
+          setErrorMsg("You must agree to the terms and privacy policy to sign up.");
+          setLoading(false);
+          return;
+        }
         await signUp(email, password, name);
         // If signup is successful, the AuthContext should handle the profile sync and state change
       } else {
@@ -113,6 +119,34 @@ export const Login: React.FC = () => {
               />
             </div>
           </div>
+          
+          {isSignUp && (
+            <div className="flex items-start animate-fade-in">
+              <div className="flex items-center h-5">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="h-4 w-4 text-brand-green border-slate-300 rounded focus:ring-brand-green"
+                />
+              </div>
+              <div className="ml-3 text-xs">
+                <label htmlFor="terms" className="text-slate-500">
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-green hover:underline">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-green hover:underline">
+                    Privacy Policy
+                  </Link>
+                  .
+                </label>
+              </div>
+            </div>
+          )}
 
           <div className="pt-2">
             <Button

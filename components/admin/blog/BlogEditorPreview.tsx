@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { BlogPost, BlogCategory } from '../../../types';
+import DOMPurify from 'dompurify';
 
 interface BlogEditorPreviewProps {
   formData: Partial<BlogPost>;
@@ -8,6 +8,9 @@ interface BlogEditorPreviewProps {
 }
 
 export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, categories }) => {
+  // Sanitize the HTML content to prevent XSS attacks
+  const cleanContent = DOMPurify.sanitize(formData.content || '<p>Start writing to see content here...</p>');
+
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden min-h-screen">
       <div className="border-b p-4 flex justify-between items-center bg-gray-50">
@@ -44,7 +47,7 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
          </div>
 
          <article className="prose prose-lg max-w-none text-gray-700 font-light leading-relaxed prose-headings:font-serif prose-headings:text-brand-dark prose-a:text-brand-green">
-            <div dangerouslySetInnerHTML={{ __html: formData.content || '<p>Start writing to see content here...</p>' }} />
+            <div dangerouslySetInnerHTML={{ __html: cleanContent }} />
          </article>
       </div>
     </div>

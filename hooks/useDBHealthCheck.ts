@@ -38,7 +38,7 @@ export const useDBHealthCheck = () => {
     setError(null);
     setResults([]);
 
-    const TABLE_TIMEOUT = 5000; // 5 seconds per table
+    const TABLE_TIMEOUT = 10000; // 10 seconds per table
 
     try {
         console.log('[HealthCheck] Starting database integrity checks...');

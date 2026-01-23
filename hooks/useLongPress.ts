@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+// FIX: Import the 'React' namespace to resolve type errors for React.MouseEvent and React.TouchEvent.
+import React, { useCallback, useRef } from 'react';
 
 /**
  * A custom hook for detecting long-press gestures.
