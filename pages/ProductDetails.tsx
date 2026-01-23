@@ -144,9 +144,9 @@ export const ProductDetails: React.FC = () => {
         <BackButton />
       </div>
 
-      <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 items-start">
-        {/* Left Column: Image Gallery - Now Sticky to reduce dead space */}
-        <div className="lg:col-span-7 lg:sticky lg:top-28">
+      <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
+        {/* Left Column: Image Gallery - Set to col-span-6 (50%) */}
+        <div className="lg:col-span-6 lg:sticky lg:top-28">
           <ProductImageGallery 
             product={product}
             isWishlisted={isWishlisted}
@@ -155,9 +155,9 @@ export const ProductDetails: React.FC = () => {
           />
         </div>
         
-        {/* Right Column: Information and Purchase */}
-        <div className="lg:col-span-5 mt-12 lg:mt-0">
-          <div className="bg-white lg:p-8 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
+        {/* Right Column: Information and Purchase - Set to col-span-6 (50%) */}
+        <div className="lg:col-span-6 mt-12 lg:mt-0">
+          <div className="bg-white lg:p-10 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
             <ProductInfo product={product} category={category} />
             <ProductPurchaseForm 
               product={product} 
