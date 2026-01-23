@@ -139,45 +139,53 @@ export const ProductDetails: React.FC = () => {
         show={showStickyBar && !isExpanded} 
         onAddToCart={() => handleAddToCart(false)}
       />
-      <BackButton className="mb-6" />
+      
+      <div className="mb-8">
+        <BackButton />
+      </div>
 
-      <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 items-start">
-        <ProductImageGallery 
-          product={product}
-          isWishlisted={isWishlisted}
-          onWishlistToggle={handleWishlistToggle}
-          // FIX: The 'onImageExpand' prop expects a function with no arguments. Call 'handleImageExpand' with index 0.
-          onImageExpand={() => handleImageExpand(0)}
-        />
-        
-        <div className="mt-10 lg:mt-0">
-          <ProductInfo product={product} category={category} />
-          <ProductPurchaseForm 
-            product={product} 
-            buySectionRef={buySectionRef}
-            optionsRef={optionsRef}
-            selectedSize={selectedSize}
-            setSelectedSize={setSelectedSize}
-            selectedColor={selectedColor}
-            setSelectedColor={setSelectedColor}
-            quantity={quantity}
-            setQuantity={setQuantity}
-            handleAddToCart={handleAddToCart}
-            isAdding={isAdding}
-            isOrderingNow={isOrderingNow}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 items-start">
+        {/* Left Column: Image Gallery - Now Sticky to reduce dead space */}
+        <div className="lg:col-span-7 lg:sticky lg:top-28">
+          <ProductImageGallery 
+            product={product}
+            isWishlisted={isWishlisted}
+            onWishlistToggle={handleWishlistToggle}
+            onImageExpand={handleImageExpand}
           />
-          <ProductDetailsSection />
+        </div>
+        
+        {/* Right Column: Information and Purchase */}
+        <div className="lg:col-span-5 mt-12 lg:mt-0">
+          <div className="bg-white lg:p-8 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
+            <ProductInfo product={product} category={category} />
+            <ProductPurchaseForm 
+              product={product} 
+              buySectionRef={buySectionRef}
+              optionsRef={optionsRef}
+              selectedSize={selectedSize}
+              setSelectedSize={setSelectedSize}
+              selectedColor={selectedColor}
+              setSelectedColor={setSelectedColor}
+              quantity={quantity}
+              setQuantity={setQuantity}
+              handleAddToCart={handleAddToCart}
+              isAdding={isAdding}
+              isOrderingNow={isOrderingNow}
+            />
+            <ProductDetailsSection />
+          </div>
         </div>
       </div>
 
+      {/* Footer Content */}
       <ProductShare product={product} />
       <SimilarProducts similarProducts={similarProducts} />
       <ProductReviews productId={product.id} user={user} reviewsRef={reviewsRef} />
 
       {isExpanded && (
-        // FIX: The `ImageExpandModal` component was updated to accept `images`, `startIndex`, and `productTitle` to fix prop mismatches.
         <ImageExpandModal 
-          images={product.images} 
+          images={product.images || []} 
           startIndex={expandedImageIndex} 
           productTitle={product.title} 
           onClose={() => setIsExpanded(false)} 
