@@ -22,7 +22,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img
           src={primaryImage}
           alt={product.title}
-          className="w-full h-64 object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-64 sm:h-72 md:h-64 object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
         {/* Category Color Tag on Image */}
         {category && (
@@ -33,29 +33,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         )}
       </div>
       <div className="p-5">
-        <div className="flex justify-between items-start mb-1">
+        <div className="flex justify-between items-start mb-2 gap-2">
            <p 
-             className="text-[10px] font-bold uppercase tracking-widest truncate"
+             className="text-[10px] font-bold uppercase tracking-widest"
              style={{ color: accentColor }}
            >
              {category?.label || product.categoryKey}
            </p>
            {product.stockQuantity !== undefined && product.stockQuantity <= 5 && product.stockQuantity > 0 && (
-             <span className="text-[9px] text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded">Low Stock</span>
+             <span className="flex-shrink-0 text-[9px] text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded">Low Stock</span>
            )}
         </div>
-        <h3 className="text-lg font-serif font-bold text-gray-900 truncate leading-tight group-hover:text-gray-700 transition-colors">
+        <h3 className="text-lg font-serif font-bold text-gray-900 leading-tight group-hover:text-brand-green transition-colors">
           {product.title}
         </h3>
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between">
            <p 
-             className="text-lg font-bold"
+             className="text-xl font-bold"
              style={{ color: accentColor }}
            >
              £{product.price.toFixed(2)}
            </p>
            {product.isOnSale && (
-             <span className="text-xs text-gray-400 line-through">
+             <span className="text-sm text-gray-400 line-through">
                 £{product.salePrice?.toFixed(2)}
              </span>
            )}
