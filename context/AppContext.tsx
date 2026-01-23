@@ -20,6 +20,8 @@ interface AppContextType {
   
   cart: CartItem[];
   cartCount: number;
+  // FIX: Add 'cartTotal' to the type, as it's provided by the context but was missing from the interface.
+  cartTotal: number;
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
   removeFromCart: (productId: string, size: string, color?: string) => void;
   clearCart: () => void;
