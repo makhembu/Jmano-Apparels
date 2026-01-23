@@ -26,13 +26,13 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl || '', 
+  supabaseUrl || '',
   supabaseKey || '',
   {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
-    }
+      detectSessionInUrl: true,
+    },
   }
 );
