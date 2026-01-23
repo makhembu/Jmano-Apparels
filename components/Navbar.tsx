@@ -34,14 +34,20 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* --- DESKTOP NAVBAR --- */}
-      <div className="hidden md:block">
-        <DesktopNavbar />
-      </div>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-100">
+        {/* --- DESKTOP NAVBAR --- */}
+        <div className="hidden md:block">
+          <DesktopNavbar />
+        </div>
 
-      {/* --- MOBILE NAVIGATION --- */}
+        {/* --- MOBILE TOP NAV --- */}
+        <div className="md:hidden">
+          <MobileTopNav onSearchClick={() => setIsSearchOpen(true)} />
+        </div>
+      </header>
+
+      {/* --- MOBILE BOTTOM NAV (Separate for fixed positioning) --- */}
       <div className="md:hidden">
-        <MobileTopNav onSearchClick={() => setIsSearchOpen(true)} />
         <MobileBottomNav 
           onMenuClick={() => setIsMenuOpen(true)}
           onCartLongPress={() => setIsCartPreviewOpen(true)}

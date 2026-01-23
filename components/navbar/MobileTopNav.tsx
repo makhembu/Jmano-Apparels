@@ -7,7 +7,7 @@ interface MobileTopNavProps {
 
 export const MobileTopNav: React.FC<MobileTopNavProps> = ({ onSearchClick }) => {
   return (
-    <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-40 h-16 flex items-center px-4 justify-between border-b border-slate-100">
+    <nav className="h-16 flex items-center px-4 justify-between">
       <Link to="/" className="flex-shrink-0">
         <img 
           src="https://i.imgur.com/pkaScEv.png" 
