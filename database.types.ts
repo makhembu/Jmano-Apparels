@@ -501,6 +501,7 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           products: Json
+          shipping_address: Json | null
           refunded_at: string | null
           shipped_at: string | null
           shipping_cost: number | null
@@ -524,6 +525,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           products: Json
+          shipping_address?: Json | null
           refunded_at?: string | null
           shipped_at?: string | null
           shipping_cost?: number | null
@@ -547,6 +549,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           products?: Json
+          shipping_address?: Json | null
           refunded_at?: string | null
           shipped_at?: string | null
           shipping_cost?: number | null

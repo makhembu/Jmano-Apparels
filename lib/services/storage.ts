@@ -2,30 +2,77 @@ import { supabase } from '../supabaseClient';
 import { log } from '../logger';
 
 export class StorageService {
-  async uploadImage(file: File, bucket: string = 'product-images'): Promise<string> {
-    log('UPLOAD', bucket, file.name);
+  /**
+   * Uploads an image to Supabase storage with fallback logic for bucket names.
+   * Standard practice is to use a bucket named 'images'.
+   */
+  async uploadImage(file: File): Promise<string> {
+    const primaryBucket = 'images';
+    const fallbackBucket = 'product-images';
     
-    // Create a unique file name
+    log('UPLOAD_ATTEMPT', primaryBucket, file.name);
+    
+    // Create a unique file name to avoid collisions and CDN caching issues
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = fileName;
 
-    // Upload the file
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    try {
+      // Attempt upload to primary bucket
+      const { data, error: uploadError } = await supabase.storage
+        .from(primaryBucket)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-    if (uploadError) {
-       console.error('Storage Upload Error:', uploadError);
-       // Handle bucket not found error or RLS error
-       throw new Error(`Upload failed: ${uploadError.message}`);
+      if (uploadError) {
+        // If primary bucket fails because it doesn't exist, try fallback
+        if (uploadError.message.includes('not found') || (uploadError as any).status === 404) {
+          log('UPLOAD_FALLBACK', fallbackBucket, 'Primary bucket not found');
+          
+          const { data: fallbackData, error: fallbackError } = await supabase.storage
+            .from(fallbackBucket)
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (fallbackError) {
+            this.handleStorageError(fallbackError, [primaryBucket, fallbackBucket]);
+          }
+          
+          const { data: urlData } = supabase.storage.from(fallbackBucket).getPublicUrl(filePath);
+          return urlData.publicUrl;
+        }
+
+        this.handleStorageError(uploadError, [primaryBucket]);
+      }
+
+      // Get public URL for successful primary upload
+      const { data: urlData } = supabase.storage.from(primaryBucket).getPublicUrl(filePath);
+      return urlData.publicUrl;
+    } catch (err: any) {
+      console.error('Storage Service Exception:', err);
+      throw new Error(err.message || 'An unexpected error occurred during upload.');
+    }
+  }
+
+  private handleStorageError(error: any, attemptedBuckets: string[]) {
+    console.error('Supabase Storage Error:', error);
+    
+    if (error.message?.includes('not found') || error.status === 404) {
+      throw new Error(
+        `Storage Bucket Not Found. Please go to your Supabase Dashboard > Storage and create a PUBLIC bucket named "${attemptedBuckets[0]}". Ensure you also add an RLS policy to allow "INSERT" and "SELECT" for anonymous or authenticated users.`
+      );
+    }
+    
+    if (error.message?.includes('row-level security') || error.status === 403) {
+      throw new Error(
+        `Permission Denied (RLS). Your bucket exists, but you need to add a Storage Policy in Supabase to allow uploads. Go to Storage > Policies and create a 'New Policy' for the "${attemptedBuckets[0]}" bucket.`
+      );
     }
 
-    // Get public URL
-    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    return data.publicUrl;
+    throw new Error(`Upload failed: ${error.message}`);
   }
 }

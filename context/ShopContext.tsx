@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Product, Category, BlogPost, AppSettings } from '../types';
+import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 
@@ -7,6 +7,7 @@ interface ShopContextType {
   products: Product[];
   categories: Category[];
   blogPosts: BlogPost[];
+  latestReviews: ProductReview[];
   settings: AppSettings;
   loading: boolean;
   refreshData: () => Promise<void>;
@@ -30,22 +31,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [latestReviews, setLatestReviews] = useState<ProductReview[]>([]);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
   const refreshData = useCallback(async () => {
     try {
       setLoading(true);
-      const [fetchedSettings, fetchedCats, fetchedProds, fetchedPosts] = await Promise.all([
+      const [fetchedSettings, fetchedCats, fetchedProds, fetchedPosts, fetchedReviews] = await Promise.all([
         api.getAppSettings(),
         api.getCategories(),
         api.getProducts(),
-        api.getBlogPosts()
+        api.getBlogPosts(),
+        api.getRecentReviews(6) // Fetch latest 6 reviews for home
       ]);
 
       if (fetchedSettings) setSettings(fetchedSettings);
       if (fetchedCats) setCategories(fetchedCats);
       if (fetchedProds) setProducts(fetchedProds);
       if (fetchedPosts) setBlogPosts(fetchedPosts);
+      if (fetchedReviews) setLatestReviews(fetchedReviews);
 
     } catch (error) {
       console.error("Data fetch error:", error);
@@ -71,7 +75,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <ShopContext.Provider value={{ products, categories, blogPosts, settings, loading, refreshData, updateSettings }}>
+    <ShopContext.Provider value={{ products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings }}>
       {children}
     </ShopContext.Provider>
   );

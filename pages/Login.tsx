@@ -7,7 +7,10 @@ export const Login: React.FC = () => {
   const { login, signUp, user } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Default to false (Sign In)
   const [isSignUp, setIsSignUp] = useState(false);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -24,101 +27,99 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
+    
     try {
       if (isSignUp) {
         await signUp(email, password, name);
-        alert("Account created! Please check your email for verification link (if enabled) or sign in.");
-        setIsSignUp(false);
+        // If signup is successful, the AuthContext should handle the profile sync and state change
       } else {
         await login(email, password);
-        // Explicitly navigate after successful login to ensure state is handled
-        // Note: The auth state change might trigger the top-level redirect before this line runs, 
-        // which is handled by the <Navigate> check above, but this provides a fallback.
+        // Note: successful login triggers redirection via the user effect or manual navigate
         navigate(from, { replace: true });
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred");
+      console.error("Form submission error:", err);
+      // Detailed error messages already handled by Toasts in AuthContext, 
+      // but we show them here for form-specific focus
+      setErrorMsg(err.message || "Authentication failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-light py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border-t-4 border-brand-green animate-fade-in">
-        <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 font-serif">
-            {isSignUp ? 'Join the Family' : 'Welcome Back'}
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-10 bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 animate-fade-in">
+        <div className="text-center">
+          <img src="https://i.imgur.com/pkaScEv.png" className="h-10 mx-auto mb-8" alt="Jambo" />
+          <h2 className="text-4xl font-serif font-black text-slate-900 tracking-tight">
+            {isSignUp ? 'Sign Up' : 'Sign In'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {isSignUp ? 'Create an account to track your orders.' : 'Sign in to access your dashboard.'}
+          <p className="mt-3 text-sm text-slate-400 font-medium tracking-wide">
+            {isSignUp ? 'Create an account to continue' : 'Enter your details to access your account'}
           </p>
           {location.state?.from && (
-             <p className="mt-2 text-center text-xs text-brand-green bg-green-50 p-1 rounded">
-                Please sign in to continue to {location.state.from.replace('/', '')}.
-             </p>
+             <div className="mt-4 inline-block px-4 py-1.5 bg-brand-light/50 rounded-full border border-brand-green/10">
+                <p className="text-[10px] font-black text-brand-green uppercase tracking-widest">
+                   Sign in to continue to Checkout
+                </p>
+             </div>
           )}
         </div>
         
         {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm text-center">
+          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl text-xs font-bold text-center animate-shake">
             {errorMsg}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             {isSignUp && (
-              <div>
-                <label htmlFor="name" className="sr-only">Full Name</label>
+              <div className="animate-fade-in">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                 <input
-                  id="name"
-                  name="name"
                   type="text"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-brand-green focus:border-brand-green focus:z-10 sm:text-sm bg-white"
-                  placeholder="Full Name"
+                  className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
+                  placeholder="e.g. Simon Peter"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
             )}
             <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
               <input
-                id="email-address"
-                name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 ${!isSignUp ? 'rounded-t-md' : ''} focus:outline-none focus:ring-brand-green focus:border-brand-green focus:z-10 sm:text-sm bg-white`}
-                placeholder="Email address"
+                className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">Password</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
               <input
-                id="password"
-                name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-brand-green focus:border-brand-green focus:z-10 sm:text-sm bg-white"
-                placeholder="Password"
+                className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
 
-          <div>
+          <div className="pt-2">
             <Button
               type="submit"
               isLoading={loading}
               fullWidth
-              variant="primary"
+              className="h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.02] active:scale-95 transition-all"
             >
               {isSignUp ? 'Sign Up' : 'Sign In'}
             </Button>
@@ -128,9 +129,9 @@ export const Login: React.FC = () => {
         <div className="text-center">
           <button 
             onClick={() => { setIsSignUp(!isSignUp); setErrorMsg(''); }}
-            className="text-sm text-brand-green hover:text-brand-dark font-medium focus:outline-none underline"
+            className="text-[10px] font-black text-slate-400 hover:text-brand-green uppercase tracking-[0.2em] transition-colors"
           >
-            {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>
         </div>
       </div>

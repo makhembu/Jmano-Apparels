@@ -40,13 +40,13 @@ export const AdminOrders: React.FC = () => {
             {orders.map(order => (
               <tr key={order.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-brand-dark">
-                  <Link to={`/admin/orders/${order.id}`}>{order.orderNumber || order.id.slice(0, 8)}</Link>
+                  <Link to={`/admin/orders/${order.id}`}>{order.orderNumber || order.id?.slice(0, 8)}</Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(order.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {order.userId.slice(0, 8)}...
+                  {order.userId?.slice(0, 8) || 'Unknown'}...
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -57,7 +57,7 @@ export const AdminOrders: React.FC = () => {
                    </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  £{order.total.toFixed(2)}
+                  £{(order.total || 0).toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link to={`/admin/orders/${order.id}`} className="text-brand-green hover:text-brand-dark">View</Link>

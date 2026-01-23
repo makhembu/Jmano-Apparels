@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { User, Product, DbProduct } from '../../types';
+import { User, Product, DbProduct, UserAddress } from '../../types';
 
 export class UserService {
   async getAll(): Promise<User[]> {
@@ -39,6 +39,73 @@ export class UserService {
   async deleteUser(userId: string): Promise<void> {
     log('DELETE', 'users', userId);
     const { error } = await supabase.from('users').delete().eq('id', userId);
+    if (error) throw error;
+  }
+
+  // --- ADDRESS MANAGEMENT ---
+
+  async getUserAddresses(userId: string): Promise<UserAddress[]> {
+    log('SELECT', 'user_addresses', userId);
+    const { data, error } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return (data || []).map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      label: row.label,
+      address1: row.address1,
+      address2: row.address2 || undefined,
+      city: row.city,
+      postcode: row.postcode,
+      country: row.country,
+      phone: row.phone || undefined,
+      isDefault: row.is_default || false
+    }));
+  }
+
+  async saveUserAddress(userId: string, address: Partial<UserAddress>): Promise<UserAddress> {
+    log('UPSERT', 'user_addresses', address);
+    const payload = {
+      user_id: userId,
+      label: address.label || 'Home',
+      address1: address.address1,
+      address2: address.address2,
+      city: address.city,
+      postcode: address.postcode,
+      country: address.country || 'United Kingdom',
+      phone: address.phone,
+      is_default: address.isDefault ?? false
+    };
+
+    const { data, error } = await supabase
+      .from('user_addresses')
+      .upsert(payload)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      id: data.id,
+      userId: data.user_id,
+      label: data.label,
+      address1: data.address1,
+      address2: data.address2 || undefined,
+      city: data.city,
+      postcode: data.postcode,
+      country: data.country,
+      phone: data.phone || undefined,
+      isDefault: data.is_default
+    };
+  }
+
+  async deleteUserAddress(id: string): Promise<void> {
+    log('DELETE', 'user_addresses', id);
+    const { error } = await supabase.from('user_addresses').delete().eq('id', id);
     if (error) throw error;
   }
 }

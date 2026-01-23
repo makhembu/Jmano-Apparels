@@ -25,7 +25,7 @@ export const AdminDashboard: React.FC = () => {
   // Revenue: Sum of all orders that are not cancelled or refunded
   const revenue = orders
     .filter(o => !['Cancelled', 'Refunded'].includes(o.status))
-    .reduce((acc, curr) => acc + curr.total, 0);
+    .reduce((acc, curr) => acc + (curr.total || 0), 0);
 
   // Order Stats
   const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Processing');
@@ -128,7 +128,7 @@ export const AdminDashboard: React.FC = () => {
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link to={`/admin/orders/${order.id}`} className="text-brand-dark hover:text-brand-green">
-                          #{order.orderNumber || order.id.slice(0, 8)}
+                          #{order.orderNumber || order.id?.slice(0, 8)}
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -145,7 +145,7 @@ export const AdminDashboard: React.FC = () => {
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        £{order.total.toFixed(2)}
+                        £{(order.total || 0).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -172,7 +172,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                        <p className="text-sm font-bold text-gray-900">{product.totalSales || 0} Sold</p>
-                       <p className="text-xs text-brand-green">£{(product.price * (product.totalSales || 0)).toFixed(0)} Est. Rev</p>
+                       <p className="text-xs text-brand-green">£{((product.price || 0) * (product.totalSales || 0)).toFixed(0)} Est. Rev</p>
                     </div>
                  </li>
                ))}

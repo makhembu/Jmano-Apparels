@@ -5,6 +5,8 @@ import { User, Product, ShippingAddress } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/ShopContext';
 
 interface OrderItemDraft {
   productId: string;
@@ -13,11 +15,16 @@ interface OrderItemDraft {
   size: string;
   selectedColor: string;
   quantity: number;
+  // Added image property to draft
+  image: string;
 }
 
 export const AdminOrderNew: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { refreshOrders } = useApp();
+  const { refreshData } = useShop();
+  
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -79,13 +86,15 @@ export const AdminOrderNew: React.FC = () => {
     if (!selectedProduct) return;
     if (!selectedSize) { showToast('Select a size', 'error'); return; }
     
+    // Updated: included product image in draft item
     setItems(prev => [...prev, {
       productId: selectedProduct.id,
       title: selectedProduct.title,
       price: selectedProduct.price,
       size: selectedSize,
       selectedColor: selectedColor,
-      quantity
+      quantity,
+      image: selectedProduct.image
     }]);
     
     // Reset selection
@@ -114,6 +123,11 @@ export const AdminOrderNew: React.FC = () => {
         shippingAddress: shippingAddress,
         notes: notes
       });
+      
+      // SYNC: Force global states to update
+      await refreshOrders();
+      await refreshData();
+      
       showToast('Order created successfully', 'success');
       navigate('/admin/orders');
     } catch (e: any) {

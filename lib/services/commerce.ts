@@ -29,11 +29,15 @@ export class OrderService {
     log('RPC', 'create_order_secure', order);
     
     // Map products to ensure correct field names for the RPC
+    // We now include title, price, and image to ensure the itemized receipt works correctly
     const itemsPayload = (order.products || []).map((item: any) => ({
         product_id: item.productId,
         quantity: item.quantity,
         size: item.size,
-        selected_color: item.selectedColor
+        selected_color: item.selectedColor,
+        title: item.title,
+        price: item.price,
+        image: item.image
     }));
 
     const { data, error } = await supabase.rpc('create_order_secure', {

@@ -38,7 +38,9 @@ export const Mappers = {
     key: c.key,
     label: c.label,
     color: c.color,
-    bgColorClass: c.bg_class
+    bgColorClass: c.bg_class,
+    seoTitle: (c as any).seo_title || undefined,
+    seoDescription: (c as any).seo_description || undefined
   }),
 
   toBlogCategory: (c: DbBlogCategory): BlogCategory => ({
@@ -55,6 +57,14 @@ export const Mappers = {
     mission: s.mission || '',
     vision: s.vision || '',
     coreValues: s.core_values || '',
+    seoTitle: (s as any).seo_title || undefined,
+    seoDescription: (s as any).seo_description || undefined,
+    shopSeoTitle: (s as any).shop_seo_title || undefined,
+    shopSeoDescription: (s as any).shop_seo_description || undefined,
+    blogSeoTitle: (s as any).blog_seo_title || undefined,
+    blogSeoDescription: (s as any).blog_seo_description || undefined,
+    aboutSeoTitle: (s as any).about_seo_title || undefined,
+    aboutSeoDescription: (s as any).about_seo_description || undefined,
     contactEmail: s.contact_email || undefined,
     contactPhone: s.contact_phone || undefined,
     contactAddress: s.contact_address || undefined,
@@ -103,13 +113,31 @@ export const Mappers = {
     let shippingAddress: ShippingAddress | undefined = undefined;
 
     if (Array.isArray(rawData)) {
-      products = rawData as OrderItem[];
+      // Intelligently map keys in case they are snake_case in JSON
+      products = rawData.map((item: any) => ({
+         productId: item.productId || item.product_id || '',
+         quantity: item.quantity || 1,
+         size: item.size || 'N/A',
+         title: item.title || 'Product Piece',
+         price: item.price || 0,
+         selectedColor: item.selectedColor || item.selected_color,
+         image: item.image || ''
+      }));
     } else if (rawData && typeof rawData === 'object') {
-      products = (rawData.items || []) as OrderItem[];
+      const items = rawData.items || [];
+      products = items.map((item: any) => ({
+         productId: item.productId || item.product_id || '',
+         quantity: item.quantity || 1,
+         size: item.size || 'N/A',
+         title: item.title || 'Product Piece',
+         price: item.price || 0,
+         selectedColor: item.selectedColor || item.selected_color,
+         image: item.image || ''
+      }));
       shippingAddress = rawData.shippingAddress as ShippingAddress;
     }
 
-    // Fallback if not found in JSON, though type def says it's in json usually
+    // Fallback for standalone shipping_address column (if exists in o)
     if (!shippingAddress && (o as any).shipping_address) {
        shippingAddress = (o as any).shipping_address;
     }

@@ -101,6 +101,19 @@ export class ReviewService {
     return ((data || []) as any[]).map(Mappers.toProductReview);
   }
 
+  async getRecent(limit: number = 5): Promise<ProductReview[]> {
+    log('SELECT', 'product_reviews', `LIMIT ${limit}`);
+    const { data, error } = await supabase
+      .from('product_reviews')
+      .select('*')
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+      
+    if (error) throw error;
+    return ((data || []) as any[]).map(Mappers.toProductReview);
+  }
+
   async add(review: Partial<ProductReview>): Promise<void> {
     log('INSERT', 'product_reviews', review);
     const { error } = await supabase.from('product_reviews').insert({

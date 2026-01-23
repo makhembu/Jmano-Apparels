@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { BlogPost, BlogCategory } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+// Added missing Button import
+import { Button } from '../../components/ui/Button';
 import { BlogEditorForm } from '../../components/admin/blog/BlogEditorForm';
 import { BlogEditorSidebar } from '../../components/admin/blog/BlogEditorSidebar';
 import { BlogEditorPreview } from '../../components/admin/blog/BlogEditorPreview';
@@ -18,7 +19,7 @@ export const AdminBlogEditor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingField, setUploadingField] = useState<'featuredImage' | 'thumbnail' | null>(null);
 
   const [formData, setFormData] = useState<Partial<BlogPost>>({
     title: '',
@@ -91,15 +92,21 @@ export const AdminBlogEditor: React.FC = () => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     
-    setUploading(true);
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File too large (max 5MB)', 'error');
+      return;
+    }
+
+    setUploadingField(field);
     try {
       const publicUrl = await api.uploadImage(file);
       setFormData(prev => ({ ...prev, [field]: publicUrl }));
-      showToast('Image uploaded successfully', 'success');
+      showToast(`${field === 'featuredImage' ? 'Featured' : 'Thumbnail'} image ready`, 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to upload', 'error');
+      // Descriptive error message from StorageService will guide the user
+      showToast(error.message || 'Failed to upload image', 'error');
     } finally {
-      setUploading(false);
+      setUploadingField(null);
     }
   };
 
@@ -123,40 +130,48 @@ export const AdminBlogEditor: React.FC = () => {
       } else {
         await api.adminCreateBlogPost(payload);
       }
-      showToast('Post saved successfully', 'success');
+      showToast('Journal entry saved', 'success');
       navigate('/admin/blog');
-    } catch (error) {
-      showToast('Error saving post', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Error saving post', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
-      <div className="flex justify-between items-center mb-6">
-         <h1 className="text-2xl font-bold font-serif">{id ? 'Edit Post' : 'New Post'}</h1>
-         <div className="flex gap-2">
+    <div className="max-w-6xl mx-auto pb-20 animate-fade-in">
+      <div className="flex justify-between items-center mb-10">
+         <div>
+            <h1 className="text-3xl font-bold font-serif text-slate-900">{id ? 'Refine Testimony' : 'New Journal Entry'}</h1>
+            <p className="text-slate-500 text-sm mt-1">Threading stories of faith into the digital sphere.</p>
+         </div>
+         <div className="flex gap-3">
             <button 
               type="button" 
               onClick={() => setActiveTab('write')} 
-              className={`px-4 py-2 rounded text-sm font-medium ${activeTab === 'write' ? 'bg-brand-green text-white' : 'bg-white text-gray-700 border'}`}
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'write' ? 'bg-white text-brand-green shadow-md ring-1 ring-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
             >
-              Write
+              Compose
             </button>
             <button 
               type="button" 
               onClick={() => setActiveTab('preview')} 
-              className={`px-4 py-2 rounded text-sm font-medium ${activeTab === 'preview' ? 'bg-brand-green text-white' : 'bg-white text-gray-700 border'}`}
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'preview' ? 'bg-white text-brand-green shadow-md ring-1 ring-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
             >
               Preview
             </button>
+            <div className="w-px h-10 bg-slate-200 mx-2 hidden sm:block"></div>
+            {/* Button usage fixed by import above */}
+            <Button type="submit" form="blog-form" isLoading={loading} className="px-8 shadow-lg shadow-brand-green/20">
+               {id ? 'Update' : 'Publish'}
+            </Button>
          </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="blog-form" onSubmit={handleSubmit} className="space-y-6">
         <div className={activeTab === 'write' ? 'block' : 'hidden'}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <BlogEditorForm 
                 formData={formData} 
                 onChange={handleChange} 
@@ -170,7 +185,7 @@ export const AdminBlogEditor: React.FC = () => {
                 onImageClear={handleImageClear}
                 onQuickCategoryAdd={loadCategories}
                 loading={loading}
-                uploading={uploading}
+                uploading={uploadingField !== null}
                 id={id}
             />
           </div>

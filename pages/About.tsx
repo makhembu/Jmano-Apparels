@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { api } from '../lib/db';
@@ -9,6 +9,21 @@ export const About: React.FC = () => {
   const { showToast } = useToast();
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', subject: '', message: '' });
   const [sending, setSending] = useState(false);
+
+  // Dynamic SEO
+  useEffect(() => {
+    if (settings) {
+      const title = settings.aboutSeoTitle || `Our Mission & Vision | Jambo Apparels`;
+      const desc = settings.aboutSeoDescription || settings.vision || '';
+      
+      document.title = title;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) metaDescription.setAttribute('content', desc);
+      
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', title);
+    }
+  }, [settings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

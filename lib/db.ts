@@ -1,4 +1,4 @@
-import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode } from '../types';
+import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress } from '../types';
 import { ProductService, CategoryService, ReviewService } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { BlogService, SettingsService, SupportService } from './services/content';
@@ -64,9 +64,15 @@ export const api = {
   updateUserProfile: (id: string, u: { name: string, email: string, role?: string }) => userService.updateProfile(id, u),
   createUserProfile: (u: Partial<User>) => userService.createProfile(u),
   adminDeleteUser: (id: string) => userService.deleteUser(id),
+  
+  // ADDRESSES
+  getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
+  saveUserAddress: (userId: string, a: Partial<UserAddress>) => userService.saveUserAddress(userId, a),
+  deleteUserAddress: (id: string) => userService.deleteUserAddress(id),
 
   // REVIEWS
   getProductReviews: (id: string) => reviewService.getByProduct(id),
+  getRecentReviews: (limit?: number) => reviewService.getRecent(limit),
   addProductReview: (r: Partial<ProductReview>) => reviewService.add(r),
 
   // WISHLIST

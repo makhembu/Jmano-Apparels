@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from 'react';
-import { User, Product, CartItem, Order, BlogPost, AppSettings, Category, ShippingAddress } from '../types';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { User, Product, CartItem, Order, BlogPost, AppSettings, Category, ShippingAddress, ProductReview } from '../types';
 import { useAuth } from './AuthContext';
 import { useCart } from './CartContext';
 import { useShop } from './ShopContext';
@@ -16,6 +16,7 @@ interface AppContextType {
   products: Product[];
   categories: Category[];
   blogPosts: BlogPost[];
+  latestReviews: ProductReview[];
   
   cart: CartItem[];
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
@@ -27,6 +28,7 @@ interface AppContextType {
   
   orders: Order[];
   placeOrder: (shippingAddress: ShippingAddress) => Promise<void>;
+  refreshOrders: () => Promise<void>;
   
   loading: boolean;
 }
@@ -39,20 +41,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const shop = useShop();
   const cart = useCart();
   const { showToast } = useToast();
-  const [orders, setOrders] = React.useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  const refreshOrders = useCallback(async () => {
+    if (auth.user) {
+        try {
+          if (auth.user.role === 'admin') {
+              const data = await api.getAllOrders();
+              setOrders(data);
+          } else {
+              const data = await api.getOrders(auth.user.id);
+              setOrders(data);
+          }
+        } catch (e) {
+          console.error("Failed to refresh orders", e);
+        }
+    } else {
+        setOrders([]);
+    }
+  }, [auth.user]);
 
   // Order logic (kept here for now or moved to a useOrder hook later)
-  React.useEffect(() => {
-      if (auth.user) {
-          if (auth.user.role === 'admin') {
-              api.getAllOrders().then(setOrders).catch(console.error);
-          } else {
-              api.getOrders(auth.user.id).then(setOrders).catch(console.error);
-          }
-      } else {
-          setOrders([]);
-      }
-  }, [auth.user]);
+  useEffect(() => {
+      refreshOrders();
+  }, [refreshOrders]);
 
   const placeOrder = async (shippingAddress: ShippingAddress) => {
       if (!auth.user) throw new Error("Must be logged in");
@@ -62,7 +74,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quantity: c.quantity,
         size: c.selectedSize,
         title: c.title,
-        price: c.price
+        price: c.price,
+        image: c.image
       }));
 
       await api.createOrder({
@@ -73,9 +86,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       
       cart.clearCart();
-      // Refresh orders
-      const newOrders = await api.getOrders(auth.user.id);
-      setOrders(newOrders);
+      await refreshOrders();
+      await shop.refreshData(); // Update product stock/sales
   };
 
   const loading = auth.loading || shop.loading;
@@ -87,6 +99,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...cart,
       orders,
       placeOrder,
+      refreshOrders,
       loading
     }}>
       {children}

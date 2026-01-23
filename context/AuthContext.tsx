@@ -20,58 +20,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (sessionUser: any) => {
+  const syncUser = async (sessionUser: any) => {
+    if (!sessionUser) return;
+    
     try {
-      let profile = await api.getUserProfile(sessionUser.id);
-      if (!profile) {
-        // Create profile if missing
-        const name = sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'User';
-        profile = await api.createUserProfile({
-            id: sessionUser.id,
-            email: sessionUser.email!,
-            name: name,
-            role: 'user'
-        });
-        showToast(`Welcome, ${profile.name}!`, 'success');
+      // 1. Attempt to fetch profile
+      // We wrap the API call to check if it's a real 'null' (missing) or an error
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', sessionUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Profile Fetch Error:", error);
+        // If there's a DB error (like recursion), don't try to create a profile
+        if (error.code === '42P17') {
+           showToast("System sync error. Please run the SQL fix in seed_auth_fix.sql", 'error');
+        }
+        return;
       }
-      setUser(profile);
-    } catch (error) {
-      console.error("Profile sync failed", error);
-      // Fallback if DB fetch fails but session exists
-      // We don't want to log them out, but user data might be incomplete
+
+      let profile = data;
+      
+      // 2. Only if profile is strictly null (not found), do we create one
+      if (!profile) {
+          console.log("No profile record found, creating one for authenticated user...");
+          const name = sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'Ambassador';
+          try {
+            profile = await api.createUserProfile({
+                id: sessionUser.id,
+                email: sessionUser.email!,
+                name: name,
+                role: 'user'
+            });
+          } catch (createError: any) {
+            // Handle race condition: profile created between check and insert
+            if (createError.code === '23505') { 
+               const retry = await api.getUserProfile(sessionUser.id);
+               profile = retry;
+            } else {
+               throw createError;
+            }
+          }
+      }
+      
+      if (profile) {
+        setUser(profile);
+      }
+    } catch (error: any) {
+      console.error("User sync critical failure:", error);
     }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    // Initial check
-    const checkSession = async () => {
+    const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
-          await fetchProfile(session.user);
+          await syncUser(session.user);
         }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
+      } catch (e) {
+        console.error("Auth init failed", e);
       } finally {
         if (mounted) setLoading(false);
       }
     };
-    
-    checkSession();
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          await fetchProfile(session.user);
-        }
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        await syncUser(session.user);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
-      
       setLoading(false);
     });
 
@@ -82,11 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      showToast(error.message, 'error');
+      showToast(error.message === "Invalid login credentials" ? "Incorrect email or password." : error.message, 'error');
       throw error;
     }
+    // Sync happens via onAuthStateChange
   };
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -108,7 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
-      if(user) await fetchProfile({ id: user.id, email: user.email });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) await syncUser(session.user);
   };
 
   return (

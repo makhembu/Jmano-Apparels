@@ -10,11 +10,26 @@ export interface User {
   createdAt?: string; // Mapped from created_at
 }
 
+export interface UserAddress {
+  id: string;
+  userId: string;
+  label: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  postcode: string;
+  country: string;
+  phone?: string;
+  isDefault: boolean;
+}
+
 export interface Category {
   key: string;
   label: string;
   color: string;
   bgColorClass: string; // Mapped from bg_class
+  seoTitle?: string; // Mapped from seo_title
+  seoDescription?: string; // Mapped from seo_description
 }
 
 export interface BlogCategory {
@@ -113,6 +128,8 @@ export interface OrderItem {
   title: string;
   price: number;
   selectedColor?: string;
+  // Added image property to store product image snapshot in orders
+  image?: string;
 }
 
 export interface Order {
@@ -166,6 +183,16 @@ export interface AppSettings {
   mission: string;
   vision: string;
   coreValues: string; // Mapped from core_values
+  
+  // SEO (Global & Page Specific)
+  seoTitle?: string; // Mapped from seo_title
+  seoDescription?: string; // Mapped from seo_description
+  shopSeoTitle?: string; // Mapped from shop_seo_title
+  shopSeoDescription?: string; // Mapped from shop_seo_description
+  blogSeoTitle?: string; // Mapped from blog_seo_title
+  blogSeoDescription?: string; // Mapped from blog_seo_description
+  aboutSeoTitle?: string; // Mapped from about_seo_title
+  aboutSeoDescription?: string; // Mapped from about_seo_description
   
   // Contact & Business
   contactEmail?: string; // Mapped from contact_email
