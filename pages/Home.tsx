@@ -8,27 +8,23 @@ export const Home: React.FC = () => {
   const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);
 
-  // Dynamic SEO Update - Purely Professional
+  // Dynamic SEO Update
   useEffect(() => {
     if (settings) {
-      // Priority: 1. seoTitle, 2. slogan, 3. Default Brand Name
       const brandName = "Jambo Apparels";
       document.title = settings.seoTitle || (settings.slogan ? `${brandName} | ${settings.slogan}` : brandName);
       
-      // Meta Description Update
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
         metaDescription.setAttribute('content', settings.seoDescription || settings.mission || '');
       }
 
-      // Open Graph Updates for social sharing
       const ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.setAttribute('content', document.title);
 
       const ogDesc = document.querySelector('meta[property="og:description"]');
       if (ogDesc) ogDesc.setAttribute('content', settings.seoDescription || settings.secondarySlogan || '');
       
-      // Update og:image to a consistent, high-quality brand image from settings
       const ogImage = document.querySelector('meta[property="og:image"]');
       if (ogImage && settings.heroBannerImage) {
         ogImage.setAttribute('content', settings.heroBannerImage);
@@ -36,13 +32,11 @@ export const Home: React.FC = () => {
     }
   }, [settings]);
 
-  // Get the 3 latest published blog posts
   const latestBlogs = [...blogPosts]
     .filter(post => post.status === 'published')
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
 
-  // Filter categories based on settings, or show all if none are featured
   const displayCategories = settings.featuredCategories && settings.featuredCategories.length > 0 
     ? categories.filter(c => settings.featuredCategories!.includes(c.key))
     : categories;
@@ -51,41 +45,42 @@ export const Home: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      {/* Hero Section */}
-      <div className="relative bg-brand-dark overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative z-10 pb-8 bg-brand-dark sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-            <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
-              <div className="sm:text-center lg:text-left">
-                <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl font-serif">
-                  <span className="block xl:inline">Wear your scriptures</span>{' '}
-                  <span className="block text-brand-hope xl:inline">in Humility and Boldness</span>
+      {/* Hero Section - Redesigned for Mobile Match */}
+      <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="relative z-10 bg-brand-dark lg:max-w-2xl lg:w-full pb-12 lg:pb-28 xl:pb-32">
+            <main className="pt-10 lg:pt-28 mx-auto max-w-7xl px-6 sm:px-8 lg:px-8">
+              <div className="text-left lg:text-left">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-serif font-bold text-white leading-tight">
+                  <span className="block">Wear your scriptures</span>
+                  <span className="block text-brand-hope">in Humility and</span>
+                  <span className="block text-brand-hope">Boldness</span>
                 </h1>
-                <p className="mt-3 text-base text-brand-light sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-90">
                   {settings.mission}
                 </p>
-                <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:justify-center lg:justify-start">
-                  <div className="rounded-md shadow">
-                    <Link to="/shop" className="w-full flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-brand-dark bg-brand-hope hover:bg-yellow-400 md:py-4 md:text-lg md:px-10 transition">
-                      Shop Now
-                    </Link>
-                  </div>
-                  <div>
-                    <Link to="/about" className="w-full flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-800 hover:bg-green-700 md:py-4 md:text-lg md:px-10 transition">
-                      Our Mission
-                    </Link>
-                  </div>
+                <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                  <Link to="/shop" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-lg text-brand-dark bg-brand-hope hover:bg-yellow-400 transition-all shadow-xl shadow-brand-hope/10 active:scale-95">
+                    Shop Now
+                  </Link>
+                  <Link to="/about" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-lg text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                    Our Mission
+                  </Link>
                 </div>
               </div>
             </main>
           </div>
         </div>
-        <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 bg-gray-200">
+        
+        {/* Responsive Image Positioning */}
+        <div className="relative h-64 sm:h-72 md:h-96 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 lg:h-full bg-slate-900">
            <img 
-             className="h-64 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full" 
+             className="h-full w-full object-cover object-center lg:h-full lg:w-full opacity-90 lg:opacity-100" 
              src={settings.heroBannerImage || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop"} 
              alt="Jambo Apparels Faith Based Clothing" 
            />
+           {/* Mobile Bottom Vignette */}
+           <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/20 to-transparent lg:hidden"></div>
         </div>
       </div>
 
@@ -118,9 +113,6 @@ export const Home: React.FC = () => {
                      {cat.label}
                   </Link>
                ))}
-               {displayCategories.length === 0 && (
-                 <p className="text-gray-500">No categories highlighted.</p>
-               )}
             </div>
          </div>
       </div>
