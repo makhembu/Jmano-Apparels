@@ -184,6 +184,12 @@ export interface AppSettings {
   vision: string;
   coreValues: string; // Mapped from core_values
   
+  // Founder Profile
+  founderName?: string; // Mapped from founder_name
+  founderBio?: string; // Mapped from founder_bio
+  founderImage?: string; // Mapped from founder_image
+  founderQuote?: string; // Mapped from founder_quote
+
   // SEO (Global & Page Specific)
   seoTitle?: string; // Mapped from seo_title
   seoDescription?: string; // Mapped from seo_description
@@ -222,6 +228,20 @@ export interface AppSettings {
   maintenanceMessage?: string; // Mapped from maintenance_message
   featuredCategories?: string[]; // Mapped from featured_categories
   smtpSettings?: Record<string, any>; // Mapped from smtp_settings
+
+  // Email Notifications
+  enableEmailNotifications?: boolean;
+  enableEmailWelcome?: boolean;
+  enableEmailNewOrder?: boolean;
+  enableEmailOrderShipped?: boolean;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+  description?: string;
 }
 
 export interface NewsletterSubscriber {
@@ -250,6 +270,7 @@ export type DbProduct = Tables<'products'>;
 export type DbCategory = Tables<'categories'>;
 export type DbBlogCategory = Tables<'blog_categories'>;
 export type DbAppSettings = Tables<'app_settings'>;
+export type DbEmailTemplate = Tables<'email_templates'>;
 export type DbBlogPost = Tables<'blog_posts'>;
 export type DbOrder = Tables<'orders'>;
 export type DbProductReview = Tables<'product_reviews'>;

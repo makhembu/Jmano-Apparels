@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
@@ -9,12 +8,17 @@ import { SocialSection } from '../../components/admin/settings/SocialSection';
 import { SystemSection } from '../../components/admin/settings/SystemSection';
 import { PolicySection } from '../../components/admin/settings/PolicySection';
 import { useToast } from '../../context/ToastContext';
+import { NotificationSection } from '../../components/admin/settings/NotificationSection';
+import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemplatesSection';
+
+type SettingsTab = 'brand' | 'emails' | 'contact' | 'content' | 'system';
 
 export const AdminAppSettings: React.FC = () => {
   const { settings, updateSettings } = useApp();
   const { showToast } = useToast();
   const [formData, setFormData] = useState(settings);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('brand');
 
   useEffect(() => {
     setFormData(settings);
@@ -43,31 +47,92 @@ export const AdminAppSettings: React.FC = () => {
     }
   };
 
+  const TabButton = ({ id, label }: { id: SettingsTab; label: string }) => (
+    <button
+      type="button"
+      onClick={() => setActiveTab(id)}
+      className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+        activeTab === id 
+          ? 'border-brand-green text-brand-green' 
+          : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-200'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="max-w-4xl pb-20">
+    <div className="max-w-6xl pb-20 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-         <h1 className="text-2xl font-bold text-brand-dark">App Configuration</h1>
-         <Button type="submit" form="app-settings-form" isLoading={saving} variant="primary">Save Changes</Button>
+         <h1 className="text-2xl font-bold font-serif text-brand-dark">App Configuration</h1>
+         <Button type="submit" form="app-settings-form" isLoading={saving} variant="primary">Save Configuration</Button>
+      </div>
+      
+      {/* Tabs Header */}
+      <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
+        <TabButton id="brand" label="Brand & SEO" />
+        <TabButton id="emails" label="Notifications" />
+        <TabButton id="contact" label="Contact & Social" />
+        <TabButton id="content" label="Content & Legal" />
+        <TabButton id="system" label="System" />
       </div>
       
       <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
-        <IdentitySection settings={formData} onChange={handleChange} />
-        <BlogCategoriesSection />
-        <ContactSection 
-          settings={formData} 
-          onChange={handleChange} 
-          onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} 
-        />
-        <SocialSection 
-          settings={formData} 
-          onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} 
-        />
-        <SystemSection 
-          settings={formData} 
-          onChange={handleChange} 
-          onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} 
-        />
-        <PolicySection settings={formData} onChange={handleChange} />
+        
+        {/* TAB: Brand & SEO */}
+        {activeTab === 'brand' && (
+          <div className="animate-fade-in">
+            <IdentitySection settings={formData} onChange={handleChange} />
+          </div>
+        )}
+        
+        {/* TAB: Notifications */}
+        {activeTab === 'emails' && (
+          <div className="space-y-8 animate-fade-in">
+             <NotificationSection settings={formData} onChange={handleChange} />
+             <div className="border-t border-gray-100 pt-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 px-1">Message Templates</h3>
+                <EmailTemplatesSection />
+             </div>
+          </div>
+        )}
+
+        {/* TAB: Contact & Social */}
+        {activeTab === 'contact' && (
+          <div className="space-y-6 animate-fade-in">
+            <ContactSection 
+              settings={formData} 
+              onChange={handleChange} 
+              onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} 
+            />
+            <SocialSection 
+              settings={formData} 
+              onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} 
+            />
+          </div>
+        )}
+
+        {/* TAB: Content & Legal */}
+        {activeTab === 'content' && (
+          <div className="space-y-8 animate-fade-in">
+            <BlogCategoriesSection />
+            <div className="border-t border-gray-100 pt-8">
+               <PolicySection settings={formData} onChange={handleChange} />
+            </div>
+          </div>
+        )}
+
+        {/* TAB: System */}
+        {activeTab === 'system' && (
+          <div className="animate-fade-in">
+            <SystemSection 
+              settings={formData} 
+              onChange={handleChange} 
+              onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} 
+            />
+          </div>
+        )}
+
       </form>
     </div>
   );

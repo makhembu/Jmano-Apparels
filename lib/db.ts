@@ -1,9 +1,11 @@
-import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress } from '../types';
+
+import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress, EmailTemplate } from '../types';
 import { ProductService, CategoryService, ReviewService } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
+import { supabase } from './supabaseClient';
 
 // --- INSTANTIATE SERVICES ---
 
@@ -39,6 +41,10 @@ export const api = {
   // APP SETTINGS
   getAppSettings: () => settingsService.get(),
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
+  
+  // EMAIL TEMPLATES
+  getEmailTemplates: () => settingsService.getEmailTemplates(),
+  updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
 
   // BLOG
   getBlogPosts: () => blogService.getAllPosts(),
@@ -65,6 +71,31 @@ export const api = {
   updateUserProfile: (id: string, u: { name: string, email: string, role?: string }) => userService.updateProfile(id, u),
   createUserProfile: (u: Partial<User>) => userService.createProfile(u),
   adminDeleteUser: (id: string) => userService.deleteUser(id),
+  
+  // PUBLIC SECURITY
+  requestPasswordReset: async (email: string) => {
+    // Redirects to the root, the AuthEventHandler will catch the recovery event
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) throw error;
+  },
+  updateUserPassword: async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  },
+
+  // ADMIN SECURITY
+  adminSendPasswordReset: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/#/dashboard?reset=true',
+    });
+    if (error) throw error;
+  },
+  adminSendMagicLink: async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) throw error;
+  },
   
   // ADDRESSES
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),

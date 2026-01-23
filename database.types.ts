@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -48,7 +49,15 @@ export type Database = {
           contact_phone: string | null
           core_values: string | null
           currency: string | null
+          enable_email_new_order: boolean | null
+          enable_email_notifications: boolean | null
+          enable_email_order_shipped: boolean | null
+          enable_email_welcome: boolean | null
           featured_categories: Json | null
+          founder_name: string | null
+          founder_bio: string | null
+          founder_image: string | null
+          founder_quote: string | null
           free_shipping_threshold: number | null
           hero_banner_image: string | null
           hero_banner_text: string | null
@@ -77,7 +86,15 @@ export type Database = {
           contact_phone?: string | null
           core_values?: string | null
           currency?: string | null
+          enable_email_new_order?: boolean | null
+          enable_email_notifications?: boolean | null
+          enable_email_order_shipped?: boolean | null
+          enable_email_welcome?: boolean | null
           featured_categories?: Json | null
+          founder_name?: string | null
+          founder_bio?: string | null
+          founder_image?: string | null
+          founder_quote?: string | null
           free_shipping_threshold?: number | null
           hero_banner_image?: string | null
           hero_banner_text?: string | null
@@ -106,7 +123,15 @@ export type Database = {
           contact_phone?: string | null
           core_values?: string | null
           currency?: string | null
+          enable_email_new_order?: boolean | null
+          enable_email_notifications?: boolean | null
+          enable_email_order_shipped?: boolean | null
+          enable_email_welcome?: boolean | null
           featured_categories?: Json | null
+          founder_name?: string | null
+          founder_bio?: string | null
+          founder_image?: string | null
+          founder_quote?: string | null
           free_shipping_threshold?: number | null
           hero_banner_image?: string | null
           hero_banner_text?: string | null
@@ -457,6 +482,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -501,9 +553,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           products: Json
-          shipping_address: Json | null
           refunded_at: string | null
           shipped_at: string | null
+          shipping_address: Json | null
           shipping_cost: number | null
           status: string | null
           subtotal: number | null
@@ -525,9 +577,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           products: Json
-          shipping_address?: Json | null
           refunded_at?: string | null
           shipped_at?: string | null
+          shipping_address?: Json | null
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
@@ -549,9 +601,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           products?: Json
-          shipping_address?: Json | null
           refunded_at?: string | null
           shipped_at?: string | null
+          shipping_address?: Json | null
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
@@ -632,7 +684,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
-          image: string | null
+          images: string[] | null
           is_featured: boolean | null
           is_on_sale: boolean | null
           is_published: boolean | null
@@ -658,7 +710,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          image?: string | null
+          images?: string[] | null
           is_featured?: boolean | null
           is_on_sale?: boolean | null
           is_published?: boolean | null
@@ -684,7 +736,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          image?: string | null
+          images?: string[] | null
           is_featured?: boolean | null
           is_on_sale?: boolean | null
           is_published?: boolean | null
@@ -811,23 +863,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_order_number: { Args: never; Returns: string }
-      is_admin: { Args: never; Returns: boolean }
-      validate_discount_code: {
-        Args: { code_input: string; order_total: number }
-        Returns: Json
-      }
-      decrement_stock: {
-        Args: { row_id: string; quantity: number }
-        Returns: void
+      check_is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
       }
       create_order_secure: {
         Args: {
           p_user_id: string
           p_items: Json
           p_shipping_address: Json
-          p_discount_code: string | null
-          p_notes: string | null
+          p_discount_code?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
+      decrement_stock: {
+        Args: {
+          row_id: string
+          quantity: number
+        }
+        Returns: undefined
+      }
+      generate_order_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      handle_default_address: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      validate_discount_code: {
+        Args: {
+          code_input: string
+          order_total: number
         }
         Returns: Json
       }

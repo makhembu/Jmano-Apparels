@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -107,7 +108,14 @@ export const Login: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                {!isSignUp && (
+                  <Link to="/forgot-password" className="text-xs font-bold text-brand-green hover:underline">
+                    Forgot Password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 autoComplete="current-password"
@@ -129,7 +137,7 @@ export const Login: React.FC = () => {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="h-4 w-4 text-brand-green border-slate-300 rounded focus:ring-brand-green"
+                  className="h-4 w-4 rounded border-gray-300 accent-brand-green focus:ring-brand-green"
                 />
               </div>
               <div className="ml-3 text-xs">

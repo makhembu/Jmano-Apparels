@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
@@ -41,7 +41,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      let profile = data;
+      // FIX: Manually map the raw DB user to the application's User type
+      // to resolve type mismatches with `role` and `createdAt`.
+      let profile: User | null = data ? {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role as UserRole,
+        createdAt: data.created_at || undefined,
+      } : null;
       
       // 2. Only if profile is strictly null (not found), do we create one
       if (!profile) {

@@ -1,21 +1,30 @@
+
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/db';
-import { User, UserRole } from '../../types';
+import { User, UserRole, Order, UserAddress } from '../../types';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
+import { Link } from 'react-router-dom';
 
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'admin' | 'user'>('all');
   const { showToast } = useToast();
 
   // Modal States
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeUser, setActiveUser] = useState<User | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   
+  // Detail Data
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
+  const [detailTab, setDetailTab] = useState<'profile' | 'orders' | 'addresses' | 'security'>('profile');
+  const [detailLoading, setDetailLoading] = useState(false);
+
   // Form States
   const [form, setForm] = useState({ name: '', email: '', role: 'user' as UserRole });
   const [isSaving, setIsSaving] = useState(false);
@@ -31,21 +40,41 @@ export const AdminUsers: React.FC = () => {
       setUsers(data);
     } catch (e) {
       console.error(e);
-      showToast('Failed to load ambassadors registry', 'error');
+      showToast('Failed to load users', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenAdd = () => {
-    setForm({ name: '', email: '', role: 'user' });
-    setIsAddModalOpen(true);
+  const handleOpenAdd = (role: UserRole) => {
+    setForm({ name: '', email: '', role: role });
+    setModalMode('add');
+    setSelectedUser(null);
+    setDetailTab('profile');
+    setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (user: User) => {
-    setActiveUser(user);
+  const handleOpenEdit = async (user: User) => {
+    setSelectedUser(user);
     setForm({ name: user.name, email: user.email, role: user.role });
-    setIsEditModalOpen(true);
+    setModalMode('edit');
+    setDetailTab('profile');
+    setIsModalOpen(true);
+    
+    // Fetch detailed data
+    setDetailLoading(true);
+    try {
+        const [orders, addresses] = await Promise.all([
+            api.getOrders(user.id),
+            api.getUserAddresses(user.id)
+        ]);
+        setUserOrders(orders);
+        setUserAddresses(addresses);
+    } catch (e) {
+        console.error("Failed to fetch user details");
+    } finally {
+        setDetailLoading(false);
+    }
   };
 
   const validateForm = () => {
@@ -67,16 +96,17 @@ export const AdminUsers: React.FC = () => {
 
     setIsSaving(true);
     try {
-      if (isEditModalOpen && activeUser) {
-        await api.updateUserProfile(activeUser.id, form);
-        showToast('Ambassador profile updated', 'success');
+      if (modalMode === 'edit' && selectedUser) {
+        await api.updateUserProfile(selectedUser.id, form);
+        showToast('User profile updated', 'success');
+        // Update local state immediately
+        setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, ...form } : u));
       } else {
-        await api.createUserProfile(form);
-        showToast('New Ambassador successfully added to registry', 'success');
+        const newUser = await api.createUserProfile(form);
+        showToast('New user added successfully', 'success');
+        setUsers(prev => [newUser, ...prev]);
       }
-      setIsAddModalOpen(false);
-      setIsEditModalOpen(false);
-      fetchUsers();
+      setIsModalOpen(false);
     } catch (e: any) {
       showToast(e.message || 'Failed to save changes', 'error');
     } finally {
@@ -84,208 +114,337 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("This will permanently revoke this Ambassador's access. Proceed?")) return;
+  const handleDelete = async () => {
+    if (!selectedUser) return;
+    if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     try {
-      await api.adminDeleteUser(id);
-      showToast('Ambassador removed from registry', 'success');
-      setUsers(prev => prev.filter(u => u.id !== id));
+      await api.adminDeleteUser(selectedUser.id);
+      showToast('User deleted', 'success');
+      setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+      setIsModalOpen(false);
     } catch (e) {
       showToast('Failed to delete user', 'error');
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handlePasswordReset = async () => {
+      if(!selectedUser) return;
+      if(!window.confirm(`Send password reset email to ${selectedUser.email}?`)) return;
+      try {
+          await api.adminSendPasswordReset(selectedUser.email);
+          showToast('Password reset email sent', 'success');
+      } catch(e) {
+          showToast('Failed to send reset email', 'error');
+      }
+  };
+
+  const handleMagicLink = async () => {
+      if(!selectedUser) return;
+      if(!window.confirm(`Send magic login link to ${selectedUser.email}?`)) return;
+      try {
+          await api.adminSendMagicLink(selectedUser.email);
+          showToast('Magic link sent to user', 'success');
+      } catch(e) {
+          showToast('Failed to send magic link', 'error');
+      }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === 'all' || u.role === activeTab;
+    return matchesSearch && matchesTab;
+  });
+
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const customerCount = users.filter(u => u.role === 'user').length;
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="animate-fade-in max-w-6xl mx-auto">
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+    <div className="animate-fade-in pb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <p className="text-[10px] font-black text-brand-green uppercase tracking-[0.4em] mb-2">Ambassador Registry</p>
-          <h1 className="text-4xl font-serif font-bold text-slate-900">User Management</h1>
-          <p className="text-sm text-slate-500 mt-1">Oversee {users.length} registered customers and administrators.</p>
+            <h1 className="text-2xl font-bold font-serif text-gray-900">User Management</h1>
+            <p className="text-sm text-gray-500">Manage customers, admins, and permissions.</p>
         </div>
-        <Button 
-          onClick={handleOpenAdd} 
-          className="rounded-2xl px-8 py-4 font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-green/20 hover:scale-105 active:scale-95 transition-all"
-        >
-          + Add Ambassador
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => handleOpenAdd('user')} variant="outline" className="bg-white hover:bg-gray-50">
+            + Add Customer
+          </Button>
+          <Button onClick={() => handleOpenAdd('admin')} variant="primary" className="shadow-lg shadow-brand-green/20">
+            + Add Admin
+          </Button>
+        </div>
       </div>
 
-      {/* Search & Stats Bar */}
-      <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 mb-8 flex flex-col sm:flex-row items-center gap-4">
-         <div className="relative flex-1 w-full">
+      {/* Toolbar & Tabs */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+         {/* Filter Tabs */}
+         <div className="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto">
+            <button 
+                onClick={() => setActiveTab('all')} 
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all uppercase tracking-wider ${activeTab === 'all' ? 'bg-white shadow text-brand-dark' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                All
+            </button>
+            <button 
+                onClick={() => setActiveTab('admin')} 
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all uppercase tracking-wider ${activeTab === 'admin' ? 'bg-white shadow text-brand-dark' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                Admins <span className="ml-1 bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[9px]">{adminCount}</span>
+            </button>
+            <button 
+                onClick={() => setActiveTab('user')} 
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all uppercase tracking-wider ${activeTab === 'user' ? 'bg-white shadow text-brand-dark' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                Customers <span className="ml-1 bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[9px]">{customerCount}</span>
+            </button>
+         </div>
+
+         {/* Search Input */}
+         <div className="relative w-full md:w-72">
             <input 
               type="text" 
               placeholder="Search by name or email..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 h-12 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-green/10 outline-none transition-all text-sm font-medium"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green text-sm bg-white"
             />
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
          </div>
-         <div className="flex items-center gap-4 px-2">
-            <div className="text-center">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Admins</p>
-               <p className="text-lg font-bold text-slate-900">{users.filter(u => u.role === 'admin').length}</p>
-            </div>
-            <div className="w-px h-8 bg-slate-100"></div>
-            <div className="text-center">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Standard</p>
-               <p className="text-lg font-bold text-slate-900">{users.filter(u => u.role === 'user').length}</p>
-            </div>
-         </div>
       </div>
 
-      {/* Table Registry */}
-      <div className="bg-white shadow-2xl shadow-slate-200/50 rounded-[2rem] border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-50">
-            <thead className="bg-slate-50/50">
-              <tr>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Customer Info</th>
-                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Access Tier</th>
-                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Registry Date</th>
-                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Management</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 bg-white">
-              {filteredUsers.length > 0 ? filteredUsers.map(user => (
-                <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
-                  <td className="px-8 py-5 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-12 w-12 rounded-2xl bg-brand-light flex items-center justify-center text-brand-dark font-black text-base border-2 border-white shadow-sm ring-1 ring-slate-100">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="ml-4 overflow-hidden">
-                        <div className="text-sm font-bold text-slate-900 truncate max-w-[200px]">{user.name}</div>
-                        <div className="text-[11px] text-slate-400 font-medium">{user.email}</div>
-                      </div>
+      {/* Table */}
+      <div className="bg-white shadow-sm overflow-hidden rounded-xl border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">User Identity</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Access Role</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Joined</th>
+              <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-widest">Details</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredUsers.length > 0 ? filteredUsers.map(user => (
+              <tr key={user.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => handleOpenEdit(user)}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 bg-brand-light text-brand-dark rounded-full flex items-center justify-center font-bold border border-brand-green/20">
+                      {user.name.charAt(0).toUpperCase()}
                     </div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${
-                      user.role === 'admin' 
-                        ? 'bg-purple-50 text-purple-600 border-purple-100' 
-                        : 'bg-slate-50 text-slate-500 border-slate-100'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-xs text-slate-400 font-bold uppercase tracking-tighter">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                  </td>
-                  <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                        <button 
-                          onClick={() => handleOpenEdit(user)} 
-                          className="bg-brand-light text-brand-green p-2 rounded-xl hover:bg-brand-green hover:text-white transition-all shadow-sm"
-                          title="Edit Profile"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(user.id)} 
-                          className="bg-red-50 text-red-500 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
-                          title="Revoke Access"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                     </div>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                   <td colSpan={4} className="py-20 text-center">
-                      <p className="text-slate-400 font-serif italic text-lg">No matching ambassadors found.</p>
-                      <button onClick={() => setSearchTerm('')} className="text-brand-green text-xs font-black uppercase mt-2 hover:underline">Clear Search</button>
-                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-bold text-gray-900">{user.name}</div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 inline-flex text-[10px] font-black uppercase tracking-wider rounded-md ${
+                    user.role === 'admin' 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); handleOpenEdit(user); }}
+                     className="text-brand-green hover:text-brand-dark font-bold hover:underline"
+                   >
+                     View & Edit
+                   </button>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                 <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500 bg-gray-50">
+                    No users found matching your filters.
+                 </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* ADD / EDIT MODAL */}
-      {(isAddModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-           <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden relative border border-slate-100">
-              <button 
-                onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
-                className="absolute top-6 right-6 text-slate-300 hover:text-slate-900 transition-colors p-2"
-              >
-                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      {/* User Details & Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
 
-              <div className="p-10">
-                <div className="text-center mb-10">
-                  <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2">
-                    {isEditModalOpen ? 'Edit Profile' : 'Add Ambassador'}
-                  </h2>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Registry ID: {isEditModalOpen ? activeUser?.id.slice(0, 8) : 'NEW_ENTRY'}</p>
-                </div>
-                
-                <form onSubmit={handleSave} className="space-y-6">
-                  <div>
-                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Full Identity</label>
-                     <input 
-                       type="text" required value={form.name} 
-                       onChange={e => setForm({...form, name: e.target.value})}
-                       className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
-                       placeholder="e.g. Simon Peter"
-                     />
-                  </div>
-                  <div>
-                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Digital Mail (Email)</label>
-                     <input 
-                       type="email" required value={form.email} 
-                       onChange={e => setForm({...form, email: e.target.value})}
-                       className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
-                       placeholder="ambassador@jambo.com"
-                     />
-                  </div>
-                  <div>
-                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Governance Role</label>
-                     <select 
-                       value={form.role}
-                       onChange={e => setForm({...form, role: e.target.value as UserRole})}
-                       className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-black text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all appearance-none cursor-pointer"
-                     >
-                        <option value="user">Standard Ambassador (Customer)</option>
-                        <option value="admin">High Guardian (Admin)</option>
-                     </select>
-                  </div>
-                  
-                  <div className="pt-6 flex flex-col gap-3">
-                     <Button 
-                        type="submit" 
-                        isLoading={isSaving} 
-                        fullWidth 
-                        className="rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-green/20"
-                     >
-                        {isEditModalOpen ? 'Save Changes' : 'Create Profile'}
-                     </Button>
-                     <button 
-                        type="button" 
-                        onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }} 
-                        className="w-full h-12 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
-                     >
-                        Discard Entry
-                     </button>
-                  </div>
-                </form>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+              
+              {/* Modal Header */}
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-bold text-gray-900 font-serif">
+                  {modalMode === 'add' ? 'Create New User' : selectedUser?.name}
+                </h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 border border-gray-200 shadow-sm">
+                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
               </div>
-           </div>
+
+              {/* Modal Tabs (Only for Edit Mode) */}
+              {modalMode === 'edit' && (
+                  <div className="bg-white border-b border-gray-200 px-6 flex gap-6 overflow-x-auto no-scrollbar">
+                      {['profile', 'orders', 'addresses', 'security'].map(tab => (
+                          <button
+                            key={tab}
+                            onClick={() => setDetailTab(tab as any)}
+                            className={`py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${detailTab === tab ? 'border-brand-green text-brand-green' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                          >
+                              {tab}
+                          </button>
+                      ))}
+                  </div>
+              )}
+              
+              <div className="bg-white px-6 py-6">
+                
+                {/* PROFILE TAB (Also used for ADD mode) */}
+                {(modalMode === 'add' || detailTab === 'profile') && (
+                    <form onSubmit={handleSave} className="space-y-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Full Name</label>
+                                <input 
+                                    type="text" required value={form.name} 
+                                    onChange={e => setForm({...form, name: e.target.value})}
+                                    className="w-full border border-gray-300 bg-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none"
+                                    placeholder="e.g. John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Email Address</label>
+                                <input 
+                                    type="email" required value={form.email} 
+                                    onChange={e => setForm({...form, email: e.target.value})}
+                                    className="w-full border border-gray-300 bg-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">System Role</label>
+                            <select 
+                                value={form.role}
+                                onChange={e => setForm({...form, role: e.target.value as UserRole})}
+                                className="w-full border border-gray-300 bg-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none"
+                            >
+                                <option value="user">User (Customer)</option>
+                                <option value="admin">Admin (Full Access)</option>
+                            </select>
+                            <p className="text-xs text-gray-400 mt-1">Admins have full access to the dashboard and settings.</p>
+                        </div>
+
+                        <div className="pt-4 flex gap-3">
+                            <Button type="submit" isLoading={isSaving} fullWidth className="shadow-lg shadow-brand-green/10">
+                                {modalMode === 'edit' ? 'Save Changes' : 'Create Account'}
+                            </Button>
+                            {modalMode === 'edit' && (
+                                <button type="button" onClick={handleDelete} className="text-red-600 hover:text-red-800 text-sm font-bold px-4">
+                                    Delete User
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                )}
+
+                {/* ORDERS TAB */}
+                {modalMode === 'edit' && detailTab === 'orders' && (
+                    <div className="space-y-4">
+                        {detailLoading ? <LoadingSpinner /> : userOrders.length === 0 ? (
+                            <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">No orders found for this user.</div>
+                        ) : (
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {userOrders.map(order => (
+                                    <div key={order.id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div>
+                                            <Link to={`/admin/orders/${order.id}`} className="font-bold text-brand-dark hover:underline">#{order.orderNumber}</Link>
+                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold">£{order.total.toFixed(2)}</p>
+                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                                                order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                            }`}>{order.status}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ADDRESSES TAB */}
+                {modalMode === 'edit' && detailTab === 'addresses' && (
+                    <div className="space-y-4">
+                        {detailLoading ? <LoadingSpinner /> : userAddresses.length === 0 ? (
+                            <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">No saved addresses.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {userAddresses.map(addr => (
+                                    <div key={addr.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                        <div className="flex justify-between mb-2">
+                                            <span className="font-bold text-xs uppercase">{addr.label}</span>
+                                            {addr.isDefault && <span className="text-[9px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-bold">DEFAULT</span>}
+                                        </div>
+                                        <p className="text-sm text-gray-700">{addr.address1}</p>
+                                        <p className="text-sm text-gray-700">{addr.city}, {addr.postcode}</p>
+                                        <p className="text-xs text-gray-500 mt-1">{addr.country}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* SECURITY TAB */}
+                {modalMode === 'edit' && detailTab === 'security' && (
+                    <div className="space-y-6">
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                            <h4 className="font-bold text-yellow-800 text-sm mb-2">Authentication Management</h4>
+                            <p className="text-xs text-yellow-700 mb-4">
+                                You can help the user recover their account by sending a reset email or a magic login link. 
+                                For security reasons, you cannot directly set their password to a specific value without an admin API key environment.
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={handlePasswordReset} className="w-full sm:w-auto bg-white border border-yellow-200 text-yellow-800 px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-100 transition-colors text-left flex items-center justify-between group">
+                                    <span>Send Password Reset Email</span>
+                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                                </button>
+                                <button onClick={handleMagicLink} className="w-full sm:w-auto bg-white border border-yellow-200 text-yellow-800 px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-100 transition-colors text-left flex items-center justify-between group">
+                                    <span>Send Magic Login Link</span>
+                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Manual Password Override</label>
+                            <div className="flex gap-2">
+                                <input type="password" disabled placeholder="Direct edit unavailable (Use Reset Email)" className="flex-1 bg-gray-100 border border-gray-200 rounded-lg p-3 text-sm text-gray-400 cursor-not-allowed" />
+                                <Button disabled variant="secondary" className="opacity-50 cursor-not-allowed">Update</Button>
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-1">To ensure security compliance, please use the reset email flow.</p>
+                        </div>
+                    </div>
+                )}
+
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

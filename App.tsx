@@ -1,5 +1,6 @@
-import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { ShopProvider } from './context/ShopContext';
@@ -15,6 +16,8 @@ import { About } from './pages/About';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { UpdatePassword } from './pages/UpdatePassword';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminAppSettings } from './pages/admin/AdminAppSettings';
@@ -33,6 +36,27 @@ import { Terms, Privacy, Cookies, Returns } from './pages/Legal';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
 import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
+import { supabase } from './lib/supabaseClient';
+
+// Component to handle global auth events like Password Recovery redirection
+const AuthEventHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Redirect to the verifier/update password page when recovery link is clicked
+        navigate('/update-password');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  return null;
+};
 
 const App: React.FC = () => {
   return (
@@ -44,6 +68,7 @@ const App: React.FC = () => {
             <AppProvider>
               <Router>
                 <ScrollToTop />
+                <AuthEventHandler />
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Layout><Home /></Layout>} />
@@ -54,7 +79,11 @@ const App: React.FC = () => {
                   <Route path="/about" element={<Layout><About /></Layout>} />
                   <Route path="/blog" element={<Layout><Blog /></Layout>} />
                   <Route path="/blog/:slug" element={<Layout><BlogPost /></Layout>} />
+                  
+                  {/* Auth Routes */}
                   <Route path="/login" element={<Layout><Login /></Layout>} />
+                  <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+                  <Route path="/update-password" element={<Layout><UpdatePassword /></Layout>} />
                   
                   {/* Legal Routes */}
                   <Route path="/terms" element={<Layout><Terms /></Layout>} />

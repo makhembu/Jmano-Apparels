@@ -3,7 +3,7 @@ import {
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
   DbBlogPost, DbOrder, ProductReview, DiscountCode, ShippingZone, CartItem,
   BlogCategory, DbBlogCategory, NewsletterSubscriber, ContactSubmission,
-  DbNewsletterSubscriber, DbContactSubmission
+  DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, EmailTemplate
 } from '../types';
 
 export const Mappers = {
@@ -57,6 +57,10 @@ export const Mappers = {
     mission: s.mission || '',
     vision: s.vision || '',
     coreValues: s.core_values || '',
+    founderName: s.founder_name || undefined,
+    founderBio: s.founder_bio || undefined,
+    founderImage: s.founder_image || undefined,
+    founderQuote: s.founder_quote || undefined,
     seoTitle: (s as any).seo_title || undefined,
     seoDescription: (s as any).seo_description || undefined,
     shopSeoTitle: (s as any).shop_seo_title || undefined,
@@ -85,7 +89,19 @@ export const Mappers = {
     maintenanceMode: s.maintenance_mode || false,
     maintenanceMessage: s.maintenance_message || undefined,
     featuredCategories: (s.featured_categories as string[]) || undefined,
-    smtpSettings: (s.smtp_settings as Record<string, any>) || undefined
+    smtpSettings: (s.smtp_settings as Record<string, any>) || undefined,
+    enableEmailNotifications: s.enable_email_notifications ?? false,
+    enableEmailWelcome: s.enable_email_welcome ?? false,
+    enableEmailNewOrder: s.enable_email_new_order ?? false,
+    enableEmailOrderShipped: s.enable_email_order_shipped ?? false
+  }),
+
+  toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
+    id: t.id,
+    name: t.name,
+    subject: t.subject,
+    bodyHtml: t.body_html,
+    description: t.description || undefined
   }),
 
   toBlogPost: (b: DbBlogPost): BlogPost => ({

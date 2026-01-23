@@ -58,24 +58,23 @@ export const About: React.FC = () => {
           <section className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
             <div className="md:col-span-1">
               <img 
-                src="https://i.imgur.com/EuNbPGG.png" 
-                alt="Linah Makembu, Founder of Jambo Apparels" 
+                src={settings.founderImage || "https://i.imgur.com/EuNbPGG.png"} 
+                alt={`${settings.founderName || 'Founder'} of Jambo Apparels`} 
                 className="rounded-2xl shadow-lg w-full h-auto object-cover aspect-[4/5]"
               />
             </div>
             <div className="md:col-span-2">
               <h2 className="text-3xl font-serif font-bold text-brand-dark mb-2">A Word from Our Founder</h2>
-              <h3 className="text-2xl font-semibold text-brand-hope mb-6">Linah Makembu</h3>
-              <div className="space-y-4 text-gray-600 font-light leading-relaxed">
+              <h3 className="text-2xl font-semibold text-brand-hope mb-6">{settings.founderName || "Linah Makembu"}</h3>
+              <div className="space-y-4 text-gray-600 font-light leading-relaxed whitespace-pre-wrap">
                 <p>
-                  Linah Makembu is the Founding Director of Jambo Apparels, a faith-driven apparel brand created to glorify God through creativity, service, and purpose. Her journey began in 2019 through grassroots service in a local church, where she developed a heart for ministry, humility, and bold obedience. These values remain at the core of Jambo Apparels today.
+                  {settings.founderBio || `Linah Makembu is the Founding Director of Jambo Apparels, a faith-driven apparel brand created to glorify God through creativity, service, and purpose. Her journey began in 2019 through grassroots service in a local church, where she developed a heart for ministry, humility, and bold obedience. These values remain at the core of Jambo Apparels today.
+
+With a strong passion for advocacy and community, Linah envisions Jambo Apparels as more than clothing. It is a platform for spreading the gospel to the ends of the earth, using uniquely threaded wear to communicate truth, faith, and identity in Christ.`}
                 </p>
-                <blockquote className="border-l-4 border-brand-green pl-6 py-2 text-gray-800 font-medium italic">
-                  "Guided by honesty, excellence, and boldness, I lead Jambo Apparels with a commitment to honouring God in the work entrusted to us."
+                <blockquote className="border-l-4 border-brand-green pl-6 py-2 text-gray-800 font-medium italic mt-6">
+                  "{settings.founderQuote || "Guided by honesty, excellence, and boldness, I lead Jambo Apparels with a commitment to honouring God in the work entrusted to us."}"
                 </blockquote>
-                <p>
-                  With a strong passion for advocacy and community, Linah envisions Jambo Apparels as more than clothing. It is a platform for spreading the gospel to the ends of the earth, using uniquely threaded wear to communicate truth, faith, and identity in Christ.
-                </p>
               </div>
             </div>
           </section>

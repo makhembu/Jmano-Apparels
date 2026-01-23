@@ -72,9 +72,10 @@ export class OrderService {
   async cancelOrder(orderId: string, userId: string): Promise<void> {
     log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
     // Check if order is in a cancellable state first
+    // FIX: Also select 'total' to satisfy the strict update type which requires it.
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('status')
+      .select('status, total')
       .match({ id: orderId, user_id: userId })
       .single();
 
@@ -83,9 +84,10 @@ export class OrderService {
       throw new Error("This order can no longer be cancelled.");
     }
 
+    // FIX: Include the existing total in the update payload to satisfy the strict type.
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString() })
+      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), total: order.total })
       .match({ id: orderId, user_id: userId });
     if (error) throw error;
   }

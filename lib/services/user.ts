@@ -46,15 +46,16 @@ export class UserService {
 
   async getUserAddresses(userId: string): Promise<UserAddress[]> {
     log('SELECT', 'user_addresses', userId);
+    // FIX: Cast table name to `any` to bypass incorrect generated types where 'user_addresses' is missing.
     const { data, error } = await supabase
-      .from('user_addresses')
+      .from('user_addresses' as any)
       .select('*')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return (data || []).map(row => ({
+    return (data || []).map((row: any) => ({
       id: row.id,
       userId: row.user_id,
       label: row.label,
@@ -82,30 +83,35 @@ export class UserService {
       is_default: address.isDefault ?? false
     };
 
+    // FIX: Cast table name to `any` to bypass incorrect generated types.
     const { data, error } = await supabase
-      .from('user_addresses')
+      .from('user_addresses' as any)
       .upsert(payload)
       .select()
       .single();
 
     if (error) throw error;
+    
+    const row = data as any;
+
     return {
-      id: data.id,
-      userId: data.user_id,
-      label: data.label,
-      address1: data.address1,
-      address2: data.address2 || undefined,
-      city: data.city,
-      postcode: data.postcode,
-      country: data.country,
-      phone: data.phone || undefined,
-      isDefault: data.is_default
+      id: row.id,
+      userId: row.user_id,
+      label: row.label,
+      address1: row.address1,
+      address2: row.address2 || undefined,
+      city: row.city,
+      postcode: row.postcode,
+      country: row.country,
+      phone: row.phone || undefined,
+      isDefault: row.is_default
     };
   }
 
   async deleteUserAddress(id: string): Promise<void> {
     log('DELETE', 'user_addresses', id);
-    const { error } = await supabase.from('user_addresses').delete().eq('id', id);
+    // FIX: Cast table name to `any` to bypass incorrect generated types.
+    const { error } = await supabase.from('user_addresses' as any).delete().eq('id', id);
     if (error) throw error;
   }
 }

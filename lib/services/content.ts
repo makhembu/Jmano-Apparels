@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission } from '../../types';
+import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, EmailTemplate, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate } from '../../types';
 
 export class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
@@ -103,6 +103,10 @@ export class SettingsService {
       mission: settings.mission,
       vision: settings.vision,
       core_values: settings.coreValues,
+      founder_name: settings.founderName,
+      founder_bio: settings.founderBio,
+      founder_image: settings.founderImage,
+      founder_quote: settings.founderQuote,
       contact_email: settings.contactEmail,
       contact_phone: settings.contactPhone,
       contact_address: settings.contactAddress,
@@ -121,9 +125,30 @@ export class SettingsService {
       tax_rate: settings.taxRate,
       free_shipping_threshold: settings.freeShippingThreshold,
       featured_categories: settings.featuredCategories,
-      smtp_settings: settings.smtpSettings
+      smtp_settings: settings.smtpSettings,
+      enable_email_notifications: settings.enableEmailNotifications,
+      enable_email_welcome: settings.enableEmailWelcome,
+      enable_email_new_order: settings.enableEmailNewOrder,
+      enable_email_order_shipped: settings.enableEmailOrderShipped
     };
     const { error } = await supabase.from('app_settings').update(dbSettings).eq('id', id);
+    if (error) throw error;
+  }
+
+  async getEmailTemplates(): Promise<EmailTemplate[]> {
+    log('SELECT', 'email_templates');
+    const { data, error } = await supabase.from('email_templates').select('*').order('name');
+    if (error) throw error;
+    return ((data || []) as DbEmailTemplate[]).map(Mappers.toEmailTemplate);
+  }
+
+  async updateEmailTemplate(id: string, template: Partial<EmailTemplate>): Promise<void> {
+    log('UPDATE', 'email_templates', id);
+    const payload: any = {};
+    if (template.subject) payload.subject = template.subject;
+    if (template.bodyHtml) payload.body_html = template.bodyHtml;
+    
+    const { error } = await supabase.from('email_templates').update(payload).eq('id', id);
     if (error) throw error;
   }
 }
