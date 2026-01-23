@@ -134,7 +134,7 @@ export const Checkout: React.FC = () => {
          title: c.title, 
          price: c.price, 
          selectedColor: c.selectedColor,
-         image: c.image
+         image: c.images[0]
        }));
        
        await api.createOrder({
@@ -297,7 +297,7 @@ export const Checkout: React.FC = () => {
                 {cart.map(item => (
                   <li key={`${item.id}-${item.selectedSize}`} className="py-4 flex gap-4">
                     <div className="h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-50">
-                       <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                       <img src={item.images[0]} alt={item.title} className="h-full w-full object-cover" />
                     </div>
                     <div className="flex-grow flex flex-col justify-center">
                       <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
@@ -351,14 +351,14 @@ export const Checkout: React.FC = () => {
                     value={discountCode} onChange={e => setDiscountCode(e.target.value.toUpperCase())} 
                     className="flex-grow border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/20" 
                   />
-                  <Button onClick={applyDiscount} variant="outline" className="px-6 rounded-xl">Apply</Button>
+                  <Button onClick={applyDiscount} variant="outline" className="px-6">Apply</Button>
                </div>
 
                <Button 
                 fullWidth 
                 onClick={handleOrder} 
                 isLoading={isProcessing}
-                className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-xl"
+                className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-2xl"
                >
                  Confirm Order
                </Button>

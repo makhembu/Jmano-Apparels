@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { User, Product, CartItem, Order, BlogPost, AppSettings, Category, ShippingAddress, ProductReview } from '../types';
 import { useAuth } from './AuthContext';
 import { useCart } from './CartContext';
@@ -19,6 +19,7 @@ interface AppContextType {
   latestReviews: ProductReview[];
   
   cart: CartItem[];
+  cartCount: number;
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
   removeFromCart: (productId: string, size: string, color?: string) => void;
   clearCart: () => void;
@@ -43,16 +44,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
 
+  // This is the manual refresh function passed to consumers.
   const refreshOrders = useCallback(async () => {
     if (auth.user) {
         try {
-          if (auth.user.role === 'admin') {
-              const data = await api.getAllOrders();
-              setOrders(data);
-          } else {
-              const data = await api.getOrders(auth.user.id);
-              setOrders(data);
-          }
+          const data = auth.user.role === 'admin'
+              ? await api.getAllOrders()
+              : await api.getOrders(auth.user.id);
+          setOrders(data);
         } catch (e) {
           console.error("Failed to refresh orders", e);
         }
@@ -61,12 +60,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [auth.user]);
 
-  // Order logic (kept here for now or moved to a useOrder hook later)
+  // This useEffect handles the AUTOMATIC fetching of orders when the user logs in or out.
+  // It contains the fetching logic directly and depends only on `auth.user`.
+  // This breaks the render loop caused by the previous implementation.
   useEffect(() => {
-      refreshOrders();
-  }, [refreshOrders]);
+    const fetchUserOrders = async () => {
+        if (auth.user) {
+            try {
+                const data = (auth.user.role === 'admin')
+                    ? await api.getAllOrders()
+                    : await api.getOrders(auth.user.id);
+                setOrders(data);
+            } catch (e) {
+                console.error("Failed to automatically fetch orders", e);
+            }
+        } else {
+            setOrders([]);
+        }
+    };
+    fetchUserOrders();
+  }, [auth.user]);
 
-  const placeOrder = async (shippingAddress: ShippingAddress) => {
+  const placeOrder = useCallback(async (shippingAddress: ShippingAddress) => {
       if (!auth.user) throw new Error("Must be logged in");
       
       const orderItems = cart.cart.map(c => ({
@@ -75,7 +90,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         size: c.selectedSize,
         title: c.title,
         price: c.price,
-        image: c.image
+        // FIX: The 'CartItem' type has an 'images' array. Use the first image for the order item snapshot.
+        image: c.images[0]
       }));
 
       await api.createOrder({
@@ -86,22 +102,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       
       cart.clearCart();
-      await refreshOrders();
+      await refreshOrders(); // Manual refresh after placing order
       await shop.refreshData(); // Update product stock/sales
-  };
+  }, [auth.user, cart, shop, refreshOrders]);
 
   const loading = auth.loading || shop.loading;
 
+  const value = useMemo(() => ({
+    ...auth,
+    ...shop,
+    ...cart,
+    orders,
+    placeOrder,
+    refreshOrders,
+    loading
+  }), [auth, shop, cart, orders, placeOrder, refreshOrders, loading]);
+
   return (
-    <AppContext.Provider value={{
-      ...auth,
-      ...shop,
-      ...cart,
-      orders,
-      placeOrder,
-      refreshOrders,
-      loading
-    }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

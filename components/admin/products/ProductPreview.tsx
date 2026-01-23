@@ -11,6 +11,7 @@ export const ProductPreview: React.FC<ProductPreviewProps> = ({ product, categor
   const stock = product.stockQuantity || 0;
   const isOutOfStock = stock <= 0;
   const lowStock = stock > 0 && stock <= (product.lowStockThreshold || 5);
+  const primaryImage = product.images?.[0];
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-fade-in">
@@ -21,8 +22,8 @@ export const ProductPreview: React.FC<ProductPreviewProps> = ({ product, categor
       
       {/* Image Area */}
       <div className="aspect-w-1 aspect-h-1 w-full bg-gray-100 relative">
-        {product.image ? (
-          <img src={product.image} alt={product.title} className="w-full h-64 object-cover object-center" />
+        {primaryImage ? (
+          <img src={primaryImage} alt={product.title} className="w-full h-64 object-cover object-center" />
         ) : (
           <div className="flex items-center justify-center h-64 text-gray-300 bg-gray-50">
             <div className="text-center">

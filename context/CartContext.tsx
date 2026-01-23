@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CartItem, Product } from '../types';
 import { useToast } from './ToastContext';
 import { useAuth } from './AuthContext';
@@ -10,6 +10,7 @@ interface CartContextType {
   removeFromCart: (productId: string, size: string, color?: string) => void;
   clearCart: () => void;
   cartTotal: number;
+  cartCount: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -92,7 +93,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cart, isLoaded]); // Removed 'user' from dependencies to prevent race condition
 
-  const addToCart = (product: Product, size: string, quantity: number, color?: string) => {
+  const addToCart = useCallback((product: Product, size: string, quantity: number, color?: string) => {
     // Validate stock
     if (product.stockQuantity !== undefined && product.stockQuantity < quantity) {
         showToast(`Only ${product.stockQuantity} items left in stock.`, 'error');
@@ -125,30 +126,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Add new item
       return [...prev, { ...product, quantity, selectedSize: size, selectedColor: color }];
     });
-  };
+  }, [showToast]);
 
-  const removeFromCart = (productId: string, size: string, color?: string) => {
+  const removeFromCart = useCallback((productId: string, size: string, color?: string) => {
     setCart(prev => prev.filter(item => 
       !(item.id === productId && 
         item.selectedSize === size && 
         (item.selectedColor === color || (!item.selectedColor && !color)))
     ));
     showToast('Item removed', 'info');
-  };
+  }, [showToast]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
     localStorage.removeItem('dt_cart');
     const currentUser = userRef.current;
     if (currentUser) {
       api.syncCart(currentUser.id, []).catch(console.error);
     }
-  };
+  }, []);
 
   const cartTotal = cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  const value = useMemo(() => ({ cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount }), [cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount]);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

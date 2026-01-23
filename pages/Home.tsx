@@ -27,6 +27,12 @@ export const Home: React.FC = () => {
 
       const ogDesc = document.querySelector('meta[property="og:description"]');
       if (ogDesc) ogDesc.setAttribute('content', settings.seoDescription || settings.secondarySlogan || '');
+      
+      // Update og:image to a consistent, high-quality brand image from settings
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage && settings.heroBannerImage) {
+        ogImage.setAttribute('content', settings.heroBannerImage);
+      }
     }
   }, [settings]);
 
@@ -213,7 +219,7 @@ export const Home: React.FC = () => {
                        
                        {product && (
                          <Link to={`/product/${product.id}`} className="group flex items-center gap-2 max-w-[120px]">
-                            <img src={product.image} alt="" className="w-10 h-10 rounded-full object-cover border border-white shadow-sm transition-transform group-hover:scale-110" />
+                            <img src={product.images[0]} alt="" className="w-10 h-10 rounded-full object-cover border border-white shadow-sm transition-transform group-hover:scale-110" />
                             <span className="text-[10px] font-bold text-brand-green hover:underline truncate uppercase tracking-tighter">View {product.title.split(' ')[0]}</span>
                          </Link>
                        )}

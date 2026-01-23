@@ -67,7 +67,7 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Company</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/about" className="hover:text-brand-hope">Our Mission</Link></li>
+              <li><Link to="/about" className="hover:text-brand-hope">About Us</Link></li>
               <li><Link to="/blog" className="hover:text-brand-hope">Journal</Link></li>
               <li><Link to="/terms" className="hover:text-brand-hope">Terms & Conditions</Link></li>
               <li><Link to="/privacy" className="hover:text-brand-hope">Privacy Policy</Link></li>

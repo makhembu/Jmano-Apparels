@@ -49,14 +49,14 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-10 bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 animate-fade-in">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
         <div className="text-center">
           <img src="https://i.imgur.com/pkaScEv.png" className="h-10 mx-auto mb-8" alt="Jambo" />
-          <h2 className="text-4xl font-serif font-black text-slate-900 tracking-tight">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+          <h2 className="text-4xl font-serif font-bold text-slate-900">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h2>
-          <p className="mt-3 text-sm text-slate-400 font-medium tracking-wide">
-            {isSignUp ? 'Create an account to continue' : 'Enter your details to access your account'}
+          <p className="mt-3 text-sm text-slate-500">
+            {isSignUp ? 'Join our community to start your journey.' : 'Sign in to access your dashboard and orders.'}
           </p>
           {location.state?.from && (
              <div className="mt-4 inline-block px-4 py-1.5 bg-brand-light/50 rounded-full border border-brand-green/10">
@@ -68,7 +68,7 @@ export const Login: React.FC = () => {
         </div>
         
         {errorMsg && (
-          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl text-xs font-bold text-center animate-shake">
+          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-xs font-bold text-center animate-shake">
             {errorMsg}
           </div>
         )}
@@ -77,36 +77,36 @@ export const Login: React.FC = () => {
           <div className="space-y-4">
             {isSignUp && (
               <div className="animate-fade-in">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
                 <input
                   type="text"
                   required
-                  className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
-                  placeholder="e.g. Simon Peter"
+                  className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+                  placeholder="Simon Peter"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
             )}
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
               <input
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
+                className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
               <input
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full border border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-brand-green/5 outline-none transition-all"
+                className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -119,9 +119,9 @@ export const Login: React.FC = () => {
               type="submit"
               isLoading={loading}
               fullWidth
-              className="h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.02] active:scale-95 transition-all"
+              className="h-14 rounded-2xl font-bold uppercase tracking-wider text-xs shadow-xl shadow-brand-green/20 hover:scale-[1.02] active:scale-95 transition-all"
             >
-              {isSignUp ? 'Sign Up' : 'Sign In'}
+              {isSignUp ? 'Create My Account' : 'Sign In'}
             </Button>
           </div>
         </form>
@@ -129,7 +129,7 @@ export const Login: React.FC = () => {
         <div className="text-center">
           <button 
             onClick={() => { setIsSignUp(!isSignUp); setErrorMsg(''); }}
-            className="text-[10px] font-black text-slate-400 hover:text-brand-green uppercase tracking-[0.2em] transition-colors"
+            className="text-sm font-medium text-slate-500 hover:text-brand-green transition-colors"
           >
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>

@@ -32,6 +32,7 @@ import { AdminContact } from './pages/admin/AdminContact';
 import { Terms, Privacy, Cookies, Returns } from './pages/Legal';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
+import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
 
 const App: React.FC = () => {
   return (
@@ -63,6 +64,7 @@ const App: React.FC = () => {
 
                   {/* User Routes */}
                   <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+                  <Route path="/order/:id" element={<Layout><UserOrderDetails /></Layout>} />
 
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminLayout />}>

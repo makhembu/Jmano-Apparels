@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/ShopContext';
 import { api } from '../../lib/db';
 import { User, Product } from '../../types';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { Button } from '../../components/ui/Button';
 
 export const AdminDashboard: React.FC = () => {
-  const { orders, products, blogPosts, loading: appLoading } = useApp();
+  const { orders, refreshOrders, loading: appLoading } = useApp();
+  const { products, blogPosts, refreshData, loading: shopLoading } = useShop();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     // Fetch users for the customer count
@@ -18,7 +22,22 @@ export const AdminDashboard: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (appLoading || loading) return <LoadingSpinner />;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshOrders(),
+        refreshData(),
+        api.getAllUsers().then(setUsers)
+      ]);
+    } catch (e) {
+      console.error("Refresh failed", e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  if (appLoading || shopLoading || loading) return <LoadingSpinner />;
 
   // --- Calculations ---
 
@@ -54,17 +73,20 @@ export const AdminDashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-8 pb-12">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+    <div className="space-y-8 pb-12 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold font-serif text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">Overview of your shop's performance</p>
         </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
-           <Link to="/admin/products/new" className="bg-brand-green text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-dark transition">
+        <div className="flex gap-2 flex-wrap">
+           <Button onClick={handleRefresh} isLoading={refreshing} variant="outline" className="text-xs">
+              Refresh Data
+           </Button>
+           <Link to="/admin/products/new" className="bg-brand-green text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-dark transition flex items-center">
              + Add Product
            </Link>
-           <Link to="/admin/blog/new" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-50 transition">
+           <Link to="/admin/blog/new" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-50 transition flex items-center">
              Write Post
            </Link>
         </div>
@@ -160,19 +182,20 @@ export const AdminDashboard: React.FC = () => {
              </div>
              <ul className="divide-y divide-gray-200">
                {topProducts.length === 0 ? (
-                 <li className="px-6 py-4 text-sm text-gray-500">No sales data yet.</li>
+                 <li className="px-6 py-4 text-sm text-gray-500 text-center">No sales data yet.</li>
                ) : topProducts.map(product => (
-                 <li key={product.id} className="px-6 py-4 flex items-center justify-between">
+                 <li key={product.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
                     <div className="flex items-center">
-                       <img src={product.image} alt="" className="h-10 w-10 rounded object-cover border border-gray-200" />
+                       {/* FIX: The 'Product' type has an 'images' array. Use the first image. */}
+                       <img src={product.images[0]} alt="" className="h-10 w-10 rounded object-cover border border-gray-200" />
                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">{product.title}</p>
+                          <Link to={`/admin/products/${product.id}`} className="text-sm font-medium text-gray-900 hover:text-brand-green truncate block max-w-[200px]">{product.title}</Link>
                           <p className="text-xs text-gray-500">Stock: {product.stockQuantity}</p>
                        </div>
                     </div>
                     <div className="text-right">
                        <p className="text-sm font-bold text-gray-900">{product.totalSales || 0} Sold</p>
-                       <p className="text-xs text-brand-green">£{((product.price || 0) * (product.totalSales || 0)).toFixed(0)} Est. Rev</p>
+                       <p className="text-xs text-brand-green">£{((product.price || 0) * (product.totalSales || 0)).toFixed(0)} Revenue</p>
                     </div>
                  </li>
                ))}

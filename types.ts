@@ -46,7 +46,7 @@ export interface Product {
   salePrice?: number | null; // Mapped from sale_price
   isOnSale?: boolean; // Mapped from is_on_sale
   categoryKey: string; // Mapped from category_key
-  image: string;
+  images: string[];
   description: string;
   sizes: string[];
   colors?: string[];

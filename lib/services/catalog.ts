@@ -15,7 +15,7 @@ export class ProductService {
     log('SELECT', 'products', id);
     const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
     if (error) return null;
-    return Mappers.toProduct(data as DbProduct);
+    return Mappers.toProduct(data as any);
   }
 
   async create(product: Partial<Product>): Promise<void> {
@@ -45,12 +45,13 @@ export class ProductService {
       sale_price: product.salePrice,
       is_on_sale: product.isOnSale,
       category_key: product.categoryKey,
-      image: product.image,
+      images: product.images,
       description: product.description,
       sizes: product.sizes,
       colors: product.colors,
       tags: product.tags,
       is_featured: product.isFeatured,
+      is_published: product.isPublished,
       sku: product.sku,
       slug: product.slug,
       stock_quantity: product.stockQuantity,

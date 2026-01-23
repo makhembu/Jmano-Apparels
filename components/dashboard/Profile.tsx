@@ -30,47 +30,50 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
   };
 
   return (
-    <div className="space-y-12 animate-fade-in">
+    <div className="space-y-10 animate-fade-in max-w-3xl">
       {/* Basic Info */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-          <h3 className="font-bold text-brand-dark">Account Identity</h3>
+      <section>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Personal Information</h3>
           {!isEditing && (
-            <button onClick={() => setIsEditing(true)} className="text-xs font-bold text-brand-green hover:underline uppercase">Edit Info</button>
+            <button onClick={() => setIsEditing(true)} className="text-xs font-bold text-brand-green hover:underline">Edit</button>
           )}
         </div>
-        <div className="p-8">
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
            {isEditing ? (
-             <form onSubmit={handleUpdate} className="space-y-6 max-w-md">
-                <div>
-                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Full Name</label>
-                   <input 
-                     type="text" required value={form.name} 
-                     onChange={e => setForm({...form, name: e.target.value})}
-                     className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-brand-green/20 outline-none"
-                   />
+             <form onSubmit={handleUpdate} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                     <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
+                     <input 
+                       type="text" required value={form.name} 
+                       onChange={e => setForm({...form, name: e.target.value})}
+                       className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-brand-green outline-none"
+                     />
+                  </div>
+                  <div>
+                     <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                     <input 
+                       type="email" disabled value={form.email}
+                       className="w-full border border-gray-200 bg-gray-50 rounded p-2 text-sm text-gray-500 cursor-not-allowed"
+                     />
+                  </div>
                 </div>
-                <div>
-                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Email Address (Read Only)</label>
-                   <input 
-                     type="email" disabled value={form.email}
-                     className="w-full border border-gray-100 bg-gray-50 rounded-xl p-3 text-gray-400 cursor-not-allowed"
-                   />
-                </div>
-                <div className="flex gap-3">
-                   <Button type="submit" isLoading={saving}>Save Changes</Button>
-                   <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <div className="flex gap-2 justify-end">
+                   <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="h-8 py-0">Cancel</Button>
+                   <Button type="submit" isLoading={saving} className="h-8 py-0">Save</Button>
                 </div>
              </form>
            ) : (
-             <div className="flex items-center gap-6">
-                <div className="h-20 w-20 rounded-full bg-brand-light flex items-center justify-center text-3xl font-bold text-brand-green border-2 border-white shadow-sm">
-                   {user.name.charAt(0).toUpperCase()}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                   <p className="text-xs text-gray-500 uppercase tracking-wide">Name</p>
+                   <p className="font-medium text-gray-900">{user.name}</p>
                 </div>
                 <div>
-                   <p className="text-2xl font-serif font-bold text-gray-900">{user.name}</p>
-                   <p className="text-gray-500 font-light">{user.email}</p>
-                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2 px-2 py-0.5 bg-gray-50 rounded w-fit">{user.role} Status</p>
+                   <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                   <p className="font-medium text-gray-900">{user.email}</p>
                 </div>
              </div>
            )}
@@ -78,17 +81,19 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
       </section>
 
       {/* Address Management */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <section>
         <AddressManager userId={user.id} />
       </section>
 
       {/* Account Security Callout */}
-      <div className="bg-slate-50 rounded-2xl p-6 border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center justify-between">
          <div>
-            <h4 className="font-bold text-gray-900">Security & Privacy</h4>
-            <p className="text-sm text-gray-500">Your personal data is threaded securely and never shared with 3rd parties.</p>
+            <h4 className="text-sm font-bold text-gray-900">Privacy & Data</h4>
+            <p className="text-xs text-gray-500">Your data is securely stored.</p>
          </div>
-         <Button variant="outline" className="whitespace-nowrap" onClick={() => window.open('mailto:privacy@jamboapparels.com')}>Contact Privacy Officer</Button>
+         <button className="text-xs text-gray-500 hover:text-gray-900 underline" onClick={() => window.open('mailto:privacy@jamboapparels.com')}>
+            Contact Privacy Team
+         </button>
       </div>
     </div>
   );

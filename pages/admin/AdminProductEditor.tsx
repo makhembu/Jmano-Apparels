@@ -9,7 +9,8 @@ import { ProductPreview } from '../../components/admin/products/ProductPreview';
 
 const emptyProduct: Partial<Product> = {
   title: '', price: 0, salePrice: undefined, isOnSale: false, categoryKey: '',
-  image: '', description: '', sizes: ['S', 'M', 'L'], colors: [], tags: [],
+  // FIX: The 'Product' type has an 'images' array. Initialize as an empty array.
+  images: [], description: '', sizes: ['S', 'M', 'L'], colors: [], tags: [],
   isFeatured: false, isPublished: true, sku: '', slug: '', stockQuantity: 0, lowStockThreshold: 5, weight: 0
 };
 
@@ -45,7 +46,12 @@ export const AdminProductEditor: React.FC = () => {
     } else if (type === 'number') {
        setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : parseFloat(value) }));
     } else {
-       setFormData(prev => ({ ...prev, [name]: value }));
+        // FIX: Add special handling for the image URL input which should update the `images` array.
+        if (name === 'image') {
+            setFormData(prev => ({ ...prev, images: [value] }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     }
   };
 
@@ -68,7 +74,8 @@ export const AdminProductEditor: React.FC = () => {
     setUploading(true);
     try {
       const publicUrl = await api.uploadImage(file);
-      setFormData(prev => ({ ...prev, image: publicUrl }));
+      // FIX: The 'Product' type requires an 'images' array. Set the uploaded URL as the first item.
+      setFormData(prev => ({ ...prev, images: [publicUrl] }));
       showToast('Image uploaded successfully', 'success');
     } catch (error: any) {
       console.error(error);
@@ -112,7 +119,8 @@ export const AdminProductEditor: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.categoryKey || !formData.image) {
+    // FIX: Validate the 'images' array instead of the non-existent 'image' property.
+    if (!formData.title || !formData.categoryKey || !formData.images || formData.images.length === 0) {
       showToast('Please fill in required fields (Title, Category, Image)', 'error');
       return;
     }
@@ -196,8 +204,8 @@ export const AdminProductEditor: React.FC = () => {
                                         placeholder="Category Label"
                                         className="flex-grow border border-slate-200 rounded-xl p-4 text-sm bg-brand-light/30 focus:ring-2 focus:ring-brand-green/10 outline-none"
                                     />
-                                    <Button type="button" onClick={handleQuickAddCategory} isLoading={creatingCategory} className="px-5 rounded-xl" variant="primary">Add</Button>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddingCategory(false)} className="px-5 rounded-xl">✕</Button>
+                                    <Button type="button" onClick={handleQuickAddCategory} isLoading={creatingCategory} className="px-5" variant="primary">Add</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddingCategory(false)} className="px-5">✕</Button>
                                 </div>
                             ) : (
                                 <select 
@@ -224,7 +232,7 @@ export const AdminProductEditor: React.FC = () => {
                     <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Display Image URL*</label>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <input type="text" name="image" value={formData.image} onChange={handleChange} required className="flex-grow border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" placeholder="https://images.unsplash.com/..." />
+                            <input type="text" name="image" value={formData.images?.[0] || ''} onChange={handleChange} required className="flex-grow border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" placeholder="https://images.unsplash.com/..." />
                             <div className="relative">
                                 <input 
                                   type="file" 
@@ -233,7 +241,7 @@ export const AdminProductEditor: React.FC = () => {
                                   disabled={uploading} 
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                 />
-                                <Button type="button" variant="outline" isLoading={uploading} className="h-full px-8 rounded-xl whitespace-nowrap">
+                                <Button type="button" variant="outline" isLoading={uploading} className="h-full px-8 whitespace-nowrap">
                                   {uploading ? 'Processing...' : 'Upload Asset'}
                                 </Button>
                             </div>

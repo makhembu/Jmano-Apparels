@@ -68,6 +68,27 @@ export class OrderService {
     const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
     if (error) throw error;
   }
+  
+  async cancelOrder(orderId: string, userId: string): Promise<void> {
+    log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
+    // Check if order is in a cancellable state first
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('status')
+      .match({ id: orderId, user_id: userId })
+      .single();
+
+    if (fetchError || !order) throw new Error("Order not found or permission denied.");
+    if (!['Pending', 'Processing'].includes(order.status)) {
+      throw new Error("This order can no longer be cancelled.");
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString() })
+      .match({ id: orderId, user_id: userId });
+    if (error) throw error;
+  }
 }
 
 export class CartService {

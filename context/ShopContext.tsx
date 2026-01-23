@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
@@ -57,13 +57,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  const updateSettings = async (newSettings: AppSettings) => {
+  const updateSettings = useCallback(async (newSettings: AppSettings) => {
     try {
         await api.updateAppSettings(settings.id, newSettings);
         setSettings(newSettings);
@@ -72,10 +72,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error(e);
         showToast('Failed to update settings', 'error');
     }
-  };
+  }, [settings.id, showToast]);
+
+  const value = useMemo(() => ({ products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings }), [products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings]);
 
   return (
-    <ShopContext.Provider value={{ products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings }}>
+    <ShopContext.Provider value={value}>
       {children}
     </ShopContext.Provider>
   );

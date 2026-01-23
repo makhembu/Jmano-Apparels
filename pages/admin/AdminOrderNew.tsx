@@ -94,7 +94,7 @@ export const AdminOrderNew: React.FC = () => {
       size: selectedSize,
       selectedColor: selectedColor,
       quantity,
-      image: selectedProduct.image
+      image: selectedProduct.images[0]
     }]);
     
     // Reset selection

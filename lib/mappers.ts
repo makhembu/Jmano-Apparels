@@ -7,14 +7,14 @@ import {
 } from '../types';
 
 export const Mappers = {
-  toProduct: (p: DbProduct): Product => ({
+  toProduct: (p: any): Product => ({
     id: p.id,
     title: p.title,
     price: p.price,
     salePrice: p.sale_price,
     isOnSale: p.is_on_sale || false,
     categoryKey: p.category_key || '',
-    image: p.image || '',
+    images: p.images || [],
     description: p.description || '',
     sizes: p.sizes || [],
     colors: p.colors || [],

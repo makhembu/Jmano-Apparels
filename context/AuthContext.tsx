@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { api } from '../lib/db';
@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const syncUser = async (sessionUser: any) => {
+  const syncUser = useCallback(async (sessionUser: any) => {
     if (!sessionUser) return;
     
     try {
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("User sync critical failure:", error);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     let mounted = true;
@@ -85,7 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {
         console.error("Auth init failed", e);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -94,30 +96,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
         await syncUser(session.user);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
-      setLoading(false);
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [syncUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       showToast(error.message === "Invalid login credentials" ? "Incorrect email or password." : error.message, 'error');
       throw error;
     }
     // Sync happens via onAuthStateChange
-  };
+  }, [showToast]);
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -127,21 +128,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast(error.message, 'error');
       throw error;
     }
-  };
+  }, [showToast]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) showToast("Error signing out", 'error');
     setUser(null);
-  };
+  }, [showToast]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) await syncUser(session.user);
-  };
+  }, [syncUser]);
+
+  const value = useMemo(() => ({ user, loading, login, signUp, logout, refreshProfile }), [user, loading, login, signUp, logout, refreshProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signUp, logout, refreshProfile }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

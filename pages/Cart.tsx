@@ -48,7 +48,7 @@ export const Cart: React.FC = () => {
           {cart.map((item) => (
             <li key={`${item.id}-${item.selectedSize}-${item.selectedColor || 'none'}`} className="px-4 py-4 sm:px-6 flex items-center animate-fade-in">
               <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center" />
+                <img src={item.images[0]} alt={item.title} className="h-full w-full object-cover object-center" />
               </div>
               <div className="ml-4 flex-1 flex flex-col sm:flex-row sm:justify-between">
                 <div>

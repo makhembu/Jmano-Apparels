@@ -57,6 +57,7 @@ export const api = {
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (o: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(o),
   adminUpdateOrder: (id: string, u: { status?: string; trackingNumber?: string; paymentStatus?: string }) => orderService.update(id, u),
+  cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
 
   // USERS
   getAllUsers: () => userService.getAll(),

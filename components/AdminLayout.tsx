@@ -35,7 +35,7 @@ export const AdminLayout: React.FC = () => {
   const NavItem = ({ to, label, icon: Icon }: { to: string, label: string, icon: any }) => {
     const isActive = location.pathname === to || (to !== '/admin' && location.pathname.startsWith(to));
     return (
-      <Link to={to} className={`flex items-center px-4 py-3 rounded transition-colors duration-200 ${isActive ? 'bg-green-800 text-white' : 'text-gray-300 hover:bg-green-800 hover:text-white'} ${isCollapsed ? 'justify-center' : ''}`} title={isCollapsed ? label : ''}>
+      <Link to={to} className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-green-800 text-white' : 'text-gray-300 hover:bg-green-800 hover:text-white'} ${isCollapsed ? 'justify-center' : ''}`} title={isCollapsed ? label : ''}>
         <Icon />
         {!isCollapsed && <span className="ml-3">{label}</span>}
       </Link>
@@ -61,7 +61,7 @@ export const AdminLayout: React.FC = () => {
           {!isCollapsed && <h2 className="text-xl font-bold font-serif truncate">Admin</h2>}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="p-1 rounded hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
+            className="p-1 rounded-lg hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
           >
             {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
           </button>

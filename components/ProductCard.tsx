@@ -7,11 +7,12 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const primaryImage = product.images?.[0] || 'https://via.placeholder.com/800x800.png?text=Image+Not+Found';
   return (
     <Link to={`/product/${product.id}`} className="group block bg-white border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200">
       <div className="aspect-w-1 aspect-h-1 w-full bg-gray-200 overflow-hidden xl:aspect-w-7 xl:aspect-h-8">
         <img
-          src={product.image}
+          src={primaryImage}
           alt={product.title}
           className="w-full h-64 object-cover object-center group-hover:opacity-90"
         />
