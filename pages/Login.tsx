@@ -55,14 +55,14 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
+      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
         <div className="text-center">
           <img 
             src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
-            className="h-20 mx-auto mb-8 object-contain" 
+            className="hidden sm:block h-16 sm:h-20 mx-auto mb-6 sm:mb-8 object-contain" 
             alt="Jambo" 
           />
-          <h2 className="text-4xl font-serif font-bold text-slate-900">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h2>
           <p className="mt-3 text-sm text-slate-500">
