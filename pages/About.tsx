@@ -68,8 +68,8 @@ export const About: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20 space-y-12 md:space-y-24 pb-24">
         
-        {/* Founder Section - Reduced roundedness to 2xl */}
-        <section className="bg-white rounded-2xl shadow-2xl shadow-brand-dark/10 border border-slate-100 overflow-hidden">
+        {/* Founder Section */}
+        <section className="bg-white rounded-2xl shadow-2xl shadow-brand-dark/5 border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-5 relative group">
               <img 
@@ -98,7 +98,7 @@ export const About: React.FC = () => {
                 {settings.founderBio || `Linah Makembu is the Founding Director of Jambo Apparels...`}
               </div>
 
-              <div className="bg-brand-hope/10 border-l-4 border-brand-hope p-8 rounded-r-2xl rounded-bl-2xl">
+              <div className="bg-brand-light/30 border-l-4 border-brand-hope p-8 rounded-r-2xl rounded-bl-2xl">
                 <blockquote className="text-brand-dark font-serif text-xl md:text-2xl italic leading-relaxed relative">
                   <span className="absolute -left-4 -top-4 text-brand-hope/30 text-7xl leading-none font-serif">“</span>
                   {settings.founderQuote || "Guided by honesty, excellence, and boldness..."}
@@ -108,7 +108,7 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Mission & Vision - Reduced roundedness to 2xl */}
+        {/* Mission & Vision */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           <div className="group relative bg-brand-dark p-10 md:p-16 rounded-2xl text-white shadow-2xl shadow-brand-dark/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
             <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -131,7 +131,7 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Core Values Section - Reduced roundedness to 2xl/xl */}
+        {/* Core Values Section */}
         <section className="py-12">
           <div className="text-center max-w-2xl mx-auto mb-16">
              <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block">The Foundation</span>
@@ -181,7 +181,7 @@ export const About: React.FC = () => {
           </div>
         </section>
         
-        {/* Contact Form - Reduced roundedness to 2xl */}
+        {/* Contact Form */}
         <section className="bg-brand-dark rounded-2xl overflow-hidden shadow-2xl relative">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
           
@@ -244,7 +244,7 @@ export const About: React.FC = () => {
                      />
                   </div>
                   <div className="pt-4">
-                     <Button type="submit" fullWidth isLoading={sending} className="h-16 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.01] active:scale-95 transition-all">
+                     <Button type="submit" fullWidth isLoading={sending} className="h-16 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-brand-green/20 hover:scale-[1.01] active:scale-95 transition-all">
                         Send Message
                      </Button>
                   </div>

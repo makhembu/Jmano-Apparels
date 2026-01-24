@@ -54,6 +54,7 @@ export const Mappers = {
     id: s.id,
     slogan: s.slogan || '',
     secondarySlogan: s.secondary_slogan || '',
+    logoImage: (s as any).logo_image || undefined,
     mission: s.mission || '',
     vision: s.vision || '',
     coreValues: s.core_values || '',

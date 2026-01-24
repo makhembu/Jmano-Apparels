@@ -1,18 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 
 interface MobileTopNavProps {
   onSearchClick: () => void;
 }
 
 export const MobileTopNav: React.FC<MobileTopNavProps> = ({ onSearchClick }) => {
+  const { settings } = useApp();
+  
   return (
-    <nav className="h-16 flex items-center px-4 justify-between">
+    <nav className="h-16 flex items-center px-4 justify-between bg-white/95 backdrop-blur-md">
       <Link to="/" className="flex-shrink-0">
         <img 
-          src="https://i.imgur.com/pkaScEv.png" 
+          src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
           alt="Jambo" 
-          className="h-8 w-auto" 
+          className="h-10 w-auto object-contain" 
         />
       </Link>
       <div className="flex items-center gap-2">

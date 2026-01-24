@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 
 export const Login: React.FC = () => {
-  const { login, signUp, user } = useApp();
+  const { login, signUp, user, settings } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -58,7 +57,11 @@ export const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
         <div className="text-center">
-          <img src="https://i.imgur.com/pkaScEv.png" className="h-10 mx-auto mb-8" alt="Jambo" />
+          <img 
+            src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
+            className="h-20 mx-auto mb-8 object-contain" 
+            alt="Jambo" 
+          />
           <h2 className="text-4xl font-serif font-bold text-slate-900">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h2>

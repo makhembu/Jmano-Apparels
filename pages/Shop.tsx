@@ -91,12 +91,12 @@ export const Shop: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        {/* Modern Controls Bar - Restructured for Mobile */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
+        {/* Modern Controls Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-5 h-11 border rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${showFilters ? 'bg-brand-dark text-white border-brand-dark shadow-lg shadow-brand-dark/20' : 'bg-white text-slate-700 border-slate-200 hover:border-brand-green'}`}
+              className={`flex items-center gap-2 px-5 h-11 border rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${showFilters ? 'bg-brand-green text-white border-brand-green shadow-lg shadow-brand-green/20' : 'bg-white text-slate-700 border-slate-200 hover:border-brand-green'}`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -104,12 +104,10 @@ export const Shop: React.FC = () => {
               <span>{showFilters ? 'Hide Filters' : 'Filters'}</span>
             </button>
             
-            {/* Found count: hidden on mobile */}
             <div className="hidden sm:block text-[10px] text-slate-400 font-black uppercase tracking-widest ml-2">
                Found {filteredProducts.length} <span className="hidden xs:inline">Pieces</span>
             </div>
 
-            {/* Mobile Sort: only visible on mobile, positioned next to filters */}
             <div className="sm:hidden flex-1 flex justify-end">
               <select value={sort} onChange={e => setSort(e.target.value)} className="bg-slate-100 border-none rounded-2xl h-11 px-4 text-[10px] font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer max-w-[120px]">
                 <option value="newest">Latest</option>
@@ -120,7 +118,6 @@ export const Shop: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            {/* Search bar takes full row on mobile due to flex-col on parent */}
             <div className="relative w-full sm:w-64">
               <input 
                 type="text" 
@@ -134,7 +131,6 @@ export const Shop: React.FC = () => {
               </svg>
             </div>
             
-            {/* Desktop Sort: only visible on desktop (sm:block) */}
             <select value={sort} onChange={e => setSort(e.target.value)} className="hidden sm:block bg-slate-100 border-none rounded-2xl h-11 px-4 text-xs font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer">
               <option value="newest">Latest</option>
               <option value="low-high">£ Low-High</option>
@@ -147,7 +143,7 @@ export const Shop: React.FC = () => {
           {/* Sidebar Filters */}
           <div className={`flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-full md:w-72 opacity-100 mb-8 md:mb-0' : 'w-full md:w-0 h-0 md:h-auto opacity-0'}`}>
             <aside className="w-full md:w-72">
-              <div className="md:sticky md:top-40 space-y-10 bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100">
+              <div className="md:sticky md:top-40 space-y-10 bg-white p-8 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
                 <div>
                   <button 
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
@@ -161,7 +157,7 @@ export const Shop: React.FC = () => {
                     <li>
                       <button 
                         onClick={() => handleCategoryChange('ALL')} 
-                        className={`w-full text-left px-5 py-3 rounded-2xl transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 ${activeCategory === 'ALL' ? 'bg-brand-dark text-white shadow-xl shadow-brand-dark/20' : 'text-slate-500 hover:bg-brand-light/50 hover:text-brand-dark'}`}
+                        className={`w-full text-left px-5 py-3 rounded-2xl transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 ${activeCategory === 'ALL' ? 'bg-brand-green text-white shadow-xl shadow-brand-green/20' : 'text-slate-500 hover:bg-brand-light/50 hover:text-brand-dark'}`}
                       >
                         All Pieces
                       </button>

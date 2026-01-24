@@ -100,6 +100,7 @@ export class SettingsService {
     const dbSettings: any = {
       slogan: settings.slogan,
       secondary_slogan: settings.secondarySlogan,
+      logo_image: settings.logoImage,
       mission: settings.mission,
       vision: settings.vision,
       core_values: settings.coreValues,

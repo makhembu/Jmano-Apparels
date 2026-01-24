@@ -9,7 +9,7 @@ interface MobileMenuOverlayProps {
 }
 
 export const MobileMenuOverlay: React.FC<MobileMenuOverlayProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useApp();
+  const { user, logout, settings } = useApp();
 
   if (!isOpen) return null;
 
@@ -17,7 +17,7 @@ export const MobileMenuOverlay: React.FC<MobileMenuOverlayProps> = ({ isOpen, on
     <div className="md:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="absolute right-0 top-0 bottom-0 w-4/5 max-w-xs bg-slate-50 shadow-2xl flex flex-col animate-slide-in" onClick={e => e.stopPropagation()}>
         <div className="p-6 flex justify-between items-center border-b border-slate-200">
-          <img src="https://i.imgur.com/pkaScEv.png" className="h-7" alt="Jambo" />
+          <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} className="h-10 w-auto object-contain" alt="Jambo" />
           <button onClick={onClose} className="text-slate-400 p-2 bg-slate-100 rounded-full">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>

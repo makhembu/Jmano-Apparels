@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useClickOutside, getVisibleProducts, searchProducts } from '../../lib/utils';
 
 export const DesktopNavbar: React.FC = () => {
-  const { user, cartCount, logout, products } = useApp();
+  const { user, cartCount, logout, products, settings } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -33,10 +33,14 @@ export const DesktopNavbar: React.FC = () => {
   return (
     <nav>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center">
-              <img src="https://i.imgur.com/pkaScEv.png" alt="Jambo Apparels" className="h-8 w-auto" />
+        <div className="flex justify-between h-20 items-center">
+          <div className="flex-shrink-0 flex items-center">
+            <Link to="/">
+              <img 
+                src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
+                alt="Jambo Apparels" 
+                className="h-10 w-auto object-contain" 
+              />
             </Link>
           </div>
           

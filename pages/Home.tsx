@@ -60,10 +60,10 @@ export const Home: React.FC = () => {
                   {settings.mission}
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                  <Link to="/shop" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-lg text-brand-dark bg-brand-hope hover:bg-yellow-400 transition-all shadow-xl shadow-brand-hope/10 active:scale-95">
+                  <Link to="/shop" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-xl text-brand-dark bg-brand-hope hover:bg-white hover:text-brand-green transition-all shadow-xl shadow-brand-hope/10 active:scale-95">
                     Shop Now
                   </Link>
-                  <Link to="/about" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-lg text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                  <Link to="/about" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-xl text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all active:scale-95">
                     Our Mission
                   </Link>
                 </div>
@@ -86,7 +86,7 @@ export const Home: React.FC = () => {
 
       {/* Featured Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8 font-serif border-b pb-4">Featured Collections</h2>
+        <h2 className="text-3xl font-bold text-brand-dark mb-8 font-serif border-b-2 border-brand-light pb-4">Featured Collections</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredProducts.length > 0 ? (
             featuredProducts.map(product => (
@@ -101,7 +101,7 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Categories Banner */}
-      <div className="bg-white py-16 border-t border-gray-100">
+      <div className="bg-white py-16 border-t border-brand-light">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
                <h2 className="text-3xl font-bold font-serif text-brand-dark mb-4">Shop by Category</h2>
@@ -109,7 +109,7 @@ export const Home: React.FC = () => {
             </div>
             <div className="flex flex-wrap justify-center gap-4">
                {displayCategories.map(cat => (
-                  <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-full shadow-sm hover:shadow-lg transition transform hover:-translate-y-1 text-base font-bold`}>
+                  <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-2xl shadow-sm hover:shadow-lg transition transform hover:-translate-y-1 text-base font-bold`}>
                      {cat.label}
                   </Link>
                ))}
@@ -119,14 +119,14 @@ export const Home: React.FC = () => {
 
       {/* Latest Blog Posts Section */}
       {latestBlogs.length > 0 && (
-        <div className="bg-gray-50 py-16 border-y border-gray-100">
+        <div className="bg-brand-light/30 py-16 border-y border-brand-light">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
                <div>
                   <h2 className="text-3xl font-serif font-bold text-brand-dark">Latest from our Journal</h2>
                   <p className="text-gray-500 mt-2">Stories of faith, style guides, and community testimonies.</p>
                </div>
-               <Link to="/blog" className="text-brand-green font-bold hover:text-brand-dark transition-colors border-b-2 border-brand-green">
+               <Link to="/blog" className="text-brand-green font-bold hover:text-brand-dark transition-colors border-b-2 border-brand-green pb-1">
                   View All Journal Entries &rarr;
                </Link>
             </div>
@@ -135,7 +135,7 @@ export const Home: React.FC = () => {
               {latestBlogs.map(post => (
                 <div 
                   key={post.id} 
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-md transition-all duration-300"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-brand-green/5 transition-all duration-300"
                 >
                   <Link to={`/blog/${post.slug}`} className="block relative aspect-[16/10] overflow-hidden">
                     <img 
@@ -186,12 +186,12 @@ export const Home: React.FC = () => {
               {latestReviews.map(review => {
                 const product = products.find(p => p.id === review.productId);
                 return (
-                  <div key={review.id} className="bg-gray-50 p-8 rounded-3xl relative border border-gray-100 hover:shadow-lg transition-all duration-300">
+                  <div key={review.id} className="bg-brand-light/10 p-8 rounded-2xl relative border border-brand-green/10 hover:shadow-lg hover:shadow-brand-green/5 transition-all duration-300">
                     <div className="absolute top-6 right-8 text-brand-green opacity-20">
                        <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017V14H15.017C13.3591 14 12.017 12.6579 12.017 11V7C12.017 5.34315 13.3591 4 15.017 4H19.017C20.6738 4 22.017 5.34215 22.017 7V11C22.017 12.6569 20.6738 14 19.017 14V16C19.017 18.2091 17.2261 20 15.017 20L14.017 20V21ZM2.017 21L2.017 18C2.017 16.8954 2.91243 16 4.017 16H7.017V14H3.017C1.35914 14 0.017 12.6579 0.017 11V7C0.017 5.34315 1.35914 4 3.017 4H7.017C8.67386 4 10.017 5.34215 10.017 7V11C10.017 12.6569 8.67386 14 7.017 14V16C7.017 18.2091 5.22614 20 3.017 20L2.017 20V21Z"/></svg>
                     </div>
                     
-                    <div className="flex text-yellow-500 mb-4">
+                    <div className="flex text-brand-hope mb-4">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <span key={i} className="text-lg">
                           {i < (review.rating || 5) ? '★' : '☆'}
@@ -203,10 +203,10 @@ export const Home: React.FC = () => {
                       "{review.comment}"
                     </p>
 
-                    <div className="mt-auto pt-6 border-t border-gray-200 flex items-center justify-between">
+                    <div className="mt-auto pt-6 border-t border-brand-green/5 flex items-center justify-between">
                        <div>
                           <p className="font-bold text-gray-900 text-sm">{review.title}</p>
-                          <p className="text-xs text-gray-400">Verified Believer</p>
+                          <p className="text-xs text-brand-green font-bold uppercase tracking-wide">Verified Believer</p>
                        </div>
                        
                        {product && (

@@ -13,7 +13,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
   const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'heroBannerImage' | 'founderImage') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'heroBannerImage' | 'founderImage' | 'logoImage') => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
@@ -48,6 +48,48 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
         <h3 className="text-lg font-medium border-b pb-2 text-brand-green">Identity & Branding</h3>
+        
+        {/* LOGO SECTION */}
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+           <label className="block text-sm font-bold text-slate-800 mb-2">App Logo</label>
+           <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {/* Expanded container for wide logos */}
+              <div className="flex-shrink-0 min-w-[120px] max-w-[200px] h-20 bg-white rounded-lg border border-slate-200 flex items-center justify-center p-2 overflow-hidden">
+                 {settings.logoImage ? (
+                    <img src={settings.logoImage} alt="App Logo" className="h-full w-full object-contain" />
+                 ) : (
+                    <span className="text-xs text-slate-300">No Logo</span>
+                 )}
+              </div>
+              <div className="flex-1 w-full">
+                 <input 
+                   type="text" 
+                   name="logoImage" 
+                   value={settings.logoImage || ''} 
+                   onChange={onChange} 
+                   placeholder="https://..."
+                   className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 text-sm focus:ring-brand-green" 
+                 />
+              </div>
+              <div className="relative">
+                 <input 
+                   type="file" 
+                   accept="image/*" 
+                   onChange={(e) => handleImageUpload(e, 'logoImage')} 
+                   disabled={uploading}
+                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                 />
+                 <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-10 text-xs">
+                   Upload
+                 </Button>
+              </div>
+           </div>
+           <p className="text-[10px] text-slate-400 mt-2 italic">
+              <strong>Recommendation:</strong> Use a transparent PNG or SVG. 
+              Ideal height: <strong>150px</strong> (e.g. 600x150px) for best resolution on Retina screens.
+           </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Primary Slogan</label>
@@ -241,7 +283,11 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                 <div className="bg-white p-4 rounded-xl border border-gray-200 font-sans shadow-sm">
                     <div className="flex items-center gap-3 text-sm text-[#202124] mb-1">
                         <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center p-1 border border-gray-200">
-                            <img src="https://i.imgur.com/pkaScEv.png" alt="" className="w-full h-full object-contain opacity-80" />
+                            {settings.logoImage ? (
+                                <img src={settings.logoImage} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                                <img src="https://i.imgur.com/pkaScEv.png" alt="" className="w-full h-full object-contain opacity-80" />
+                            )}
                         </div>
                         <div className="flex flex-col justify-center">
                             <span className="text-xs font-bold text-[#202124] leading-tight">Jambo Apparels</span>

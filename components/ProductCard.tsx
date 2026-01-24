@@ -17,7 +17,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const primaryImage = product.images?.[0] || 'https://via.placeholder.com/800x800.png?text=Image+Not+Found';
   
   return (
-    <Link to={`/product/${product.id}`} className="group block bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+    <Link to={`/product/${product.id}`} className="group block bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-brand-green/10 transition-all duration-300 transform hover:-translate-y-1">
       <div className="aspect-w-1 aspect-h-1 w-full bg-gray-100 overflow-hidden relative">
         <img
           src={primaryImage}

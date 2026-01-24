@@ -180,6 +180,7 @@ export interface AppSettings {
   id: number;
   slogan: string;
   secondarySlogan: string; // Mapped from secondary_slogan
+  logoImage?: string; // Mapped from logo_image
   mission: string;
   vision: string;
   coreValues: string; // Mapped from core_values

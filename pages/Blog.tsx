@@ -42,20 +42,20 @@ export const Blog: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      {/* Unified Branded Header */}
-      <header className="relative bg-brand-light pt-20 pb-32 md:pt-32 md:pb-48 overflow-hidden text-center border-b border-brand-green/10">
+      {/* Unified Branded Header - Compact Version */}
+      <header className="relative bg-brand-light pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/10">
         {/* Consistent Halos */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[40rem] h-[40rem] bg-brand-hope/20 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/10 rounded-full blur-[100px]"></div>
 
         <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <span className="text-brand-green text-[11px] font-black uppercase tracking-[0.5em] mb-6 inline-block bg-white px-6 py-2 rounded-full shadow-sm border border-brand-green/10">
+          <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-white px-6 py-2 rounded-full shadow-sm border border-brand-green/10">
             Digital Witness
           </span>
-          <h1 className="text-5xl md:text-9xl font-serif font-bold text-brand-dark mb-8 tracking-tighter leading-none">
-            The <span className="text-brand-green">Journal</span>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-brand-dark mb-6 tracking-tighter leading-none">
+            The Journey of <span className="text-brand-green">Journaled Faith</span>
           </h1>
-          <p className="text-lg md:text-2xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
+          <p className="text-base md:text-xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
             "Threading faith into the fabric of everyday life."
           </p>
         </div>
@@ -64,18 +64,18 @@ export const Blog: React.FC = () => {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20 pb-32 overflow-visible">
         
-        {/* Floating Category Nav - Reduced rounding to 2xl to match app standard */}
+        {/* Floating Category Nav */}
         <div className="mb-12 relative"> 
-          <div className="bg-white p-2 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-slate-200 max-w-5xl mx-auto relative z-10 overflow-hidden">
+          <div className="bg-white p-2 rounded-3xl shadow-[0_20px_50px_rgba(46,125,50,0.1)] border border-slate-200 max-w-5xl mx-auto relative z-10 overflow-hidden">
             <div className="flex gap-2 overflow-x-auto no-scrollbar justify-start md:justify-center px-4 sm:px-8 py-1">
               {blogCategories.map(cat => (
                 <button
                   key={cat.key}
                   onClick={() => setActiveCategory(cat.key)}
-                  className={`flex-shrink-0 px-6 md:px-8 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                  className={`flex-shrink-0 px-6 md:px-8 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
                     activeCategory === cat.key
                       ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
-                      : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-slate-50'
+                      : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
                   }`}
                 >
                   {cat.label}
@@ -90,7 +90,7 @@ export const Blog: React.FC = () => {
             {filteredPosts.map((post) => (
               <article
                 key={post.id}
-                className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-brand-green/5 transition-all duration-500 transform hover:-translate-y-2"
               >
                 <Link to={`/blog/${post.slug}`} className="block relative aspect-[4/3] overflow-hidden">
                   <img
