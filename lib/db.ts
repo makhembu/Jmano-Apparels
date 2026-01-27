@@ -1,12 +1,10 @@
 import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress, EmailTemplate } from '../types';
-import { ProductService, CategoryService, ReviewService } from './services/catalog';
+import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
 import { supabase } from './supabaseClient';
-
-// --- INSTANTIATE SERVICES ---
 
 const productService = new ProductService();
 const categoryService = new CategoryService();
@@ -22,11 +20,10 @@ const userService = new UserService();
 const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
-// --- PUBLIC API AGGREGATOR ---
-
 export const api = {
   // PRODUCTS
   getProducts: () => productService.getAll(),
+  getPaginatedProducts: (page: number, pageSize: number, filters: ProductFilters) => productService.getPaginated(page, pageSize, filters),
   getProduct: (id: string) => productService.getById(id),
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
@@ -40,7 +37,7 @@ export const api = {
     if (error) throw error;
   },
 
-  // CATEGORIES (PRODUCTS)
+  // CATEGORIES
   getCategories: () => categoryService.getAll(),
   createCategory: (c: Category) => categoryService.create(c),
   deleteCategory: (key: string) => categoryService.delete(key),
@@ -80,7 +77,7 @@ export const api = {
   createUserProfile: (u: Partial<User>) => userService.createProfile(u),
   adminDeleteUser: (id: string) => userService.deleteUser(id),
   
-  // PUBLIC SECURITY
+  // AUTH
   requestPasswordReset: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
@@ -91,8 +88,6 @@ export const api = {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
   },
-
-  // ADMIN SECURITY
   adminSendPasswordReset: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + '/#/dashboard?reset=true',
@@ -136,7 +131,6 @@ export const api = {
   // SUPPORT
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
   submitContact: (data: { name: string, email: string, message: string, subject?: string }) => supportService.submitContact(data),
-  // Admin Support Methods
   getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
   getContactSubmissions: () => supportService.getContactSubmissions(),
   markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),

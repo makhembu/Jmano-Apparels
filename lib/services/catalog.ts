@@ -3,12 +3,56 @@ import { Mappers } from '../mappers';
 import { log } from '../logger';
 import { Product, Category, ProductReview, DbProduct, DbCategory } from '../../types';
 
+export interface ProductFilters {
+  categoryKey?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: 'newest' | 'low-high' | 'high-low';
+}
+
+export interface PaginatedResult {
+  data: Product[];
+  total: number;
+  hasMore: boolean;
+  page: number;
+}
+
 export class ProductService {
+  // Legacy method kept for Admin/Home compatibility, but restricted
   async getAll(): Promise<Product[]> {
-    log('SELECT', 'products');
+    log('SELECT', 'products', 'ALL');
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
+  }
+
+  // New Paginated Method
+  async getPaginated(page: number = 1, pageSize: number = 12, filters: ProductFilters = {}): Promise<PaginatedResult> {
+    log('RPC', 'get_products_paginated', { page, ...filters });
+    
+    const { data, error } = await supabase.rpc('get_products_paginated', {
+      p_page: page,
+      p_page_size: pageSize,
+      p_category_key: filters.categoryKey || null,
+      p_search_query: filters.search || null,
+      p_min_price: filters.minPrice || null,
+      p_max_price: filters.maxPrice || null,
+      p_sort_by: filters.sortBy || 'newest'
+    });
+
+    if (error) throw error;
+
+    // Determine type of 'data' based on RPC return
+    const result = data as any;
+    const mappedProducts = (result.data || []).map((p: any) => Mappers.toProduct(p));
+
+    return {
+      data: mappedProducts,
+      total: result.total || 0,
+      hasMore: result.hasMore || false,
+      page: page
+    };
   }
 
   async getById(id: string): Promise<Product | null> {
@@ -124,7 +168,7 @@ export class ReviewService {
       title: review.title,
       comment: review.comment,
       verified_purchase: review.verifiedPurchase,
-      is_approved: true // Default to true for prototype so reviews appear immediately
+      is_approved: true // Default to true for prototype
     });
     if (error) throw error;
   }

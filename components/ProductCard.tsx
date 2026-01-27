@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
+import { OptimizedImage } from './ui/OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
@@ -10,46 +11,45 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { categories } = useShop();
-  
   const category = categories.find(c => c.key === product.categoryKey);
   
   // Define color rotation palette with Accessible Contrast Ratios
   const colors = [
     { 
-      bg: 'bg-brand-hope', // Yellow #F1C40F
-      text: 'text-slate-900', // Black text for AAA contrast
+      bg: 'bg-brand-hope', 
+      text: 'text-slate-900', 
       price: 'text-slate-900', 
-      muted: 'text-slate-800/80', // High opacity for readability
+      muted: 'text-slate-800/80', 
       border: 'border-brand-hope', 
       hover: 'hover:shadow-brand-hope/30' 
     }, 
     { 
-      bg: 'bg-brand-testament', // Purple #B96AD9
-      text: 'text-slate-900', // Black text on Lilac is accessible
+      bg: 'bg-brand-testament', 
+      text: 'text-slate-900', 
       price: 'text-slate-900', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-testament', 
       hover: 'hover:shadow-brand-testament/30' 
     }, 
     { 
-      bg: 'bg-brand-humility', // Green #2DC26B
-      text: 'text-slate-900', // Black text on mid-green
+      bg: 'bg-brand-humility', 
+      text: 'text-slate-900', 
       price: 'text-slate-900', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-humility', 
       hover: 'hover:shadow-brand-humility/30' 
     }, 
     { 
-      bg: 'bg-brand-patience', // Red #E03E2D
-      text: 'text-white', // White text on Red is accessible
+      bg: 'bg-brand-patience', 
+      text: 'text-white', 
       price: 'text-white', 
       muted: 'text-white/90', 
       border: 'border-brand-patience', 
       hover: 'hover:shadow-brand-patience/30' 
     }, 
     { 
-      bg: 'bg-brand-triumph', // Orange #E67E22
-      text: 'text-slate-900', // Black text on Orange
+      bg: 'bg-brand-triumph', 
+      text: 'text-slate-900', 
       price: 'text-slate-900', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-triumph', 
@@ -57,24 +57,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
     }, 
   ];
 
-  // Default clean white style for non-indexed cards
   const defaultStyle = { 
     bg: 'bg-white', 
     text: 'text-gray-900', 
-    price: category?.color || 'text-brand-green', // Use category color for price in default mode
+    price: category?.color || 'text-brand-green', 
     muted: 'text-gray-500', 
     border: 'border-gray-100',
     hover: 'hover:shadow-brand-green/10'
   };
 
-  // Determine active style
   const style = index !== undefined ? colors[index % colors.length] : defaultStyle;
-
-  // For category label: 
-  // If colored card -> use the high-contrast muted color defined in palette.
-  // If white card -> use the category's specific brand color.
   const categoryColor = index !== undefined ? style.muted : (category?.color || '#2E7D32');
-
   const primaryImage = product.images?.[0] || 'https://via.placeholder.com/800x800.png?text=Image+Not+Found';
   
   return (
@@ -82,13 +75,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       to={`/product/${product.id}`} 
       className={`group block ${style.bg} border ${style.border} rounded-2xl overflow-hidden hover:shadow-xl ${style.hover} transition-all duration-300 transform hover:-translate-y-1 h-full flex flex-col`}
     >
-      <div className="aspect-w-1 aspect-h-1 w-full bg-gray-100 overflow-hidden relative">
-        <img
+      <div className="aspect-square w-full bg-gray-100 overflow-hidden relative">
+        <OptimizedImage
           src={primaryImage}
           alt={product.title}
-          className="w-full h-64 sm:h-72 md:h-64 object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          width={500}
+          height={500}
+          className="group-hover:scale-105 transition-transform duration-500"
         />
-        {/* Category Color Tag on Image - Only show if not using full color card to avoid clash */}
         {category && index === undefined && (
            <div 
              className="absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"

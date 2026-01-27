@@ -151,9 +151,8 @@ export class SettingsService {
       enable_contact_form: settings.enableContactForm,
       enable_reviews: settings.enableReviews,
       
-      // PayPal Settings Mapping
+      // PayPal Settings Mapping - Secret Key REMOVED
       paypal_client_id: settings.paypalClientId,
-      paypal_secret_key: settings.paypalSecretKey,
       paypal_mode: settings.paypalMode,
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };
@@ -205,8 +204,6 @@ export class SupportService {
     });
     if (error) throw error;
   }
-
-  // --- ADMIN METHODS ---
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
     log('SELECT', 'newsletter_subscribers');

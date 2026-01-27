@@ -2,14 +2,24 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
+import { ProductFilters } from '../lib/services/catalog';
 
 interface ShopContextType {
-  products: Product[];
+  products: Product[]; // Currently visible products in the shop
+  allProducts: Product[]; // Keeping a cache for Admin/Legacy use if needed
   categories: Category[];
   blogPosts: BlogPost[];
   latestReviews: ProductReview[];
   settings: AppSettings;
   loading: boolean;
+  
+  // Pagination Props
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  loadMore: () => void;
+  filters: ProductFilters;
+  updateFilters: (f: Partial<ProductFilters>) => void;
+  
   refreshData: () => Promise<void>;
   updateSettings: (s: AppSettings) => Promise<void>;
 }
@@ -28,28 +38,42 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
+  
+  // Data
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [latestReviews, setLatestReviews] = useState<ProductReview[]>([]);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
+  // Pagination State
+  const [filters, setFilters] = useState<ProductFilters>({ sortBy: 'newest' });
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Initial Data Load (Settings, Cats, Blogs - Small payloads)
   const refreshData = useCallback(async () => {
     try {
-      setLoading(true);
-      const [fetchedSettings, fetchedCats, fetchedProds, fetchedPosts, fetchedReviews] = await Promise.all([
+      const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
         api.getAppSettings(),
         api.getCategories(),
-        api.getProducts(),
         api.getBlogPosts(),
-        api.getRecentReviews(6) // Fetch latest 6 reviews for home
+        api.getRecentReviews(6)
       ]);
 
       if (fetchedSettings) setSettings(fetchedSettings);
       if (fetchedCats) setCategories(fetchedCats);
-      if (fetchedProds) setProducts(fetchedProds);
       if (fetchedPosts) setBlogPosts(fetchedPosts);
       if (fetchedReviews) setLatestReviews(fetchedReviews);
+      
+      // Load All Products for Admin/Home compatibility (legacy support)
+      const all = await api.getProducts();
+      setAllProducts(all);
+
+      // Initial Paginated Load
+      await fetchPaginated(1, filters, true);
 
     } catch (error) {
       console.error("Data fetch error:", error);
@@ -57,11 +81,44 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, filters]); // Note: Adding filters to dep array of refreshData might loop, handle carefully
+
+  // Specialized fetcher for the shop grid
+  const fetchPaginated = async (p: number, currentFilters: ProductFilters, reset: boolean = false) => {
+    try {
+        const res = await api.getPaginatedProducts(p, 12, currentFilters);
+        if (reset) {
+            setProducts(res.data);
+        } else {
+            setProducts(prev => [...prev, ...res.data]);
+        }
+        setHasMore(res.hasMore);
+        setPage(p);
+    } catch (e) {
+        console.error("Pagination error", e);
+    }
+  };
+
+  // Called when user changes filters (Category, Search)
+  const updateFilters = useCallback((newFilters: Partial<ProductFilters>) => {
+      const updated = { ...filters, ...newFilters };
+      setFilters(updated);
+      setLoading(true); // Show loading state on grid
+      fetchPaginated(1, updated, true).finally(() => setLoading(false));
+  }, [filters]);
+
+  // Called when user clicks "Load More"
+  const loadMore = useCallback(async () => {
+      if (!hasMore || isLoadingMore) return;
+      setIsLoadingMore(true);
+      await fetchPaginated(page + 1, filters, false);
+      setIsLoadingMore(false);
+  }, [page, hasMore, isLoadingMore, filters]);
 
   useEffect(() => {
+    // Initial boot
     refreshData();
-  }, [refreshData]);
+  }, []);
 
   const updateSettings = useCallback(async (newSettings: AppSettings) => {
     try {
@@ -74,7 +131,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [settings.id, showToast]);
 
-  const value = useMemo(() => ({ products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings }), [products, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings]);
+  const value = useMemo(() => ({ 
+      products, 
+      allProducts,
+      categories, 
+      blogPosts, 
+      latestReviews, 
+      settings, 
+      loading, 
+      refreshData, 
+      updateSettings,
+      hasMore,
+      isLoadingMore,
+      loadMore,
+      filters,
+      updateFilters
+  }), [products, allProducts, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings, hasMore, isLoadingMore, loadMore, filters, updateFilters]);
 
   return (
     <ShopContext.Provider value={value}>

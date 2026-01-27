@@ -242,27 +242,29 @@ export const Checkout: React.FC = () => {
   const onPayPalApprove = async (data: any, actions: any) => {
     try {
         setIsProcessing(true);
-        // 1. Capture the payment on client side to get details (or do it server side)
-        // Note: For best security, verification should happen on server.
-        // We will call our Edge Function here.
-        
-        // Retrieve the DB Order ID we sent as custom_id
+        // 1. Retrieve the DB Order ID we sent as custom_id
         const orderDetails = await actions.order.get();
         const dbOrderId = orderDetails.purchase_units[0].custom_id;
         const paypalOrderId = data.orderID;
 
         // 2. Call Supabase Edge Function to verify and update DB
+        // We use invoke directly to keep sensitive logic off the client
         const { data: verifyData, error } = await supabase.functions.invoke('verify-paypal-payment', {
             body: { orderId: dbOrderId, paypalOrderId: paypalOrderId }
         });
 
         if (error || !verifyData?.success) {
-            throw new Error(verifyData?.message || "Payment verification failed");
+            console.error("Payment verification failed:", error || verifyData);
+            throw new Error(verifyData?.message || "Payment verification failed. Please contact support.");
         }
 
         // 3. Success!
         clearCart();
         showToast('Payment successful! Order confirmed.', 'success');
+        
+        // Wait a brief moment for the DB to propagate update before redirecting
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         if (user) {
             navigate(`/order/${dbOrderId}`);
         } else {
@@ -271,10 +273,9 @@ export const Checkout: React.FC = () => {
 
     } catch (e: any) {
         console.error("PayPal Error:", e);
-        showToast(`Payment failed: ${e.message}`, 'error');
-        // Optional: Call cancelOrder API here if stock needs to be returned immediately
-    } finally {
+        showToast(`Payment Error: ${e.message}`, 'error');
         setIsProcessing(false);
+        // Note: The order remains in 'Pending' state in DB. Admin can review.
     }
   };
 
@@ -443,7 +444,16 @@ export const Checkout: React.FC = () => {
 
         {/* Right Side: Order Summary (Sticky) */}
         <div className="w-full lg:w-2/5 lg:sticky lg:top-24 space-y-6">
-          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 ring-1 ring-gray-100">
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 ring-1 ring-gray-100 relative">
+            
+            {/* Loading Overlay */}
+            {isProcessing && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div>
+                    <p className="mt-4 text-brand-dark font-bold animate-pulse">Processing Payment...</p>
+                </div>
+            )}
+
             <h2 className="text-2xl font-serif font-bold text-brand-dark mb-6">Order Summary</h2>
             
             <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar mb-6">
@@ -512,11 +522,14 @@ export const Checkout: React.FC = () => {
                {paypalConfig && paypalConfig.enabled && paypalConfig.clientId ? (
                  <div className="pt-4 animate-fade-in relative z-0">
                     <PayPalScriptProvider options={{ "clientId": paypalConfig.clientId, currency: settings.currency || "GBP" }}>
+                       {/* FIX: Cast props to any to avoid TS error with style prop */}
                        <PayPalButtons 
-                          style={{ layout: "vertical", shape: "rect", borderRadius: 12 }}
-                          createOrder={createPayPalOrder}
-                          onApprove={onPayPalApprove}
-                          disabled={isProcessing}
+                          {...({
+                            style: { layout: "vertical", shape: "rect", borderRadius: 12 },
+                            createOrder: createPayPalOrder,
+                            onApprove: onPayPalApprove,
+                            disabled: isProcessing
+                          } as any)}
                        />
                     </PayPalScriptProvider>
                  </div>

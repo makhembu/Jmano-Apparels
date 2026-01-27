@@ -21,11 +21,11 @@ export const ProductPreview: React.FC<ProductPreviewProps> = ({ product, categor
       </div>
       
       {/* Image Area */}
-      <div className="aspect-w-1 aspect-h-1 w-full bg-gray-100 relative">
+      <div className="aspect-square w-full bg-gray-100 relative overflow-hidden">
         {primaryImage ? (
-          <img src={primaryImage} alt={product.title} className="w-full h-64 object-cover object-center" />
+          <img src={primaryImage} alt={product.title} className="w-full h-full object-cover object-center" />
         ) : (
-          <div className="flex items-center justify-center h-64 text-gray-300 bg-gray-50">
+          <div className="flex items-center justify-center w-full h-full text-gray-300 bg-gray-50">
             <div className="text-center">
                <svg className="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

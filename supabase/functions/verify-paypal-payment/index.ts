@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Declare Deno to avoid TypeScript errors in environments without Deno types
 declare const Deno: any;
 
 const corsHeaders = {
@@ -15,34 +14,32 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Parse Request
     const { orderId, paypalOrderId } = await req.json();
-    if (!orderId || !paypalOrderId) {
-      throw new Error("Missing orderId or paypalOrderId");
+    if (!orderId || !paypalOrderId) throw new Error("Missing params");
+
+    // 1. Robust Environment Check
+    const sbUrl = Deno.env.get('SUPABASE_URL');
+    const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const clientId = Deno.env.get('PAYPAL_CLIENT_ID');
+    const secretKey = Deno.env.get('PAYPAL_SECRET_KEY');
+
+    if (!sbUrl || !sbKey) {
+        console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+        throw new Error("Server configuration error: Database connection missing.");
     }
 
-    // 2. Initialize Supabase Admin Client (to read secret keys)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // 3. Fetch PayPal Credentials from Database
-    const { data: settings, error: settingsError } = await supabaseClient
-      .from('app_settings')
-      .select('paypal_client_id, paypal_secret_key, paypal_mode')
-      .eq('id', 1)
-      .single();
-
-    if (settingsError || !settings?.paypal_secret_key) {
-      throw new Error("PayPal settings not configured on server.");
+    if (!clientId || !secretKey) {
+        console.error("Missing PAYPAL_CLIENT_ID or PAYPAL_SECRET_KEY");
+        throw new Error("Server configuration error: Payment provider credentials missing.");
     }
 
-    // 4. Authenticate with PayPal to get Access Token
-    const auth = btoa(`${settings.paypal_client_id}:${settings.paypal_secret_key}`);
-    const baseUrl = settings.paypal_mode === 'live' 
-      ? 'https://api-m.paypal.com' 
-      : 'https://api-m.sandbox.paypal.com';
+    const supabaseClient = createClient(sbUrl, sbKey);
+    
+    const mode = Deno.env.get('PAYPAL_MODE') || 'sandbox';
+
+    // Authenticate PayPal
+    const auth = btoa(`${clientId}:${secretKey}`);
+    const baseUrl = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
     const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: 'POST',
@@ -54,11 +51,12 @@ serve(async (req) => {
     });
 
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) {
-      throw new Error("Failed to authenticate with PayPal");
+    if (!tokenRes.ok) {
+        console.error("PayPal Token Error:", tokenData);
+        throw new Error("Failed to authenticate with payment provider");
     }
 
-    // 5. Verify the Order Details
+    // Verify Order
     const orderRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}`, {
       method: 'GET',
       headers: {
@@ -68,35 +66,28 @@ serve(async (req) => {
     });
 
     const orderData = await orderRes.json();
-    
-    // Check if status is COMPLETED or APPROVED
-    // Note: If using 'capture' on client, it should be COMPLETED. If 'authorize', APPROVED.
     if (orderData.status !== 'COMPLETED' && orderData.status !== 'APPROVED') {
        throw new Error(`PayPal order status is ${orderData.status}`);
     }
 
-    // Optional: Verify amount matches DB order (omitted for brevity, but recommended)
-
-    // 6. Update Order in Supabase
+    // Update Order in DB
     const { error: updateError } = await supabaseClient
       .from('orders')
       .update({ 
         payment_status: 'paid', 
         status: 'Processing',
-        payment_intent_id: paypalOrderId, // Store PayPal ID
-        // Could also store transaction_id from capture details
+        payment_intent_id: paypalOrderId, 
       })
       .eq('id', orderId);
 
     if (updateError) throw updateError;
 
-    return new Response(JSON.stringify({ success: true, message: "Payment verified" }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error(error);
     return new Response(JSON.stringify({ success: false, message: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
