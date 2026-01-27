@@ -54,23 +54,25 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center bg-brand-dark py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-green/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 -left-24 w-72 h-72 bg-brand-hope/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-3xl shadow-2xl shadow-black/20 border-t-8 border-brand-hope animate-fade-in relative z-10">
         <div className="text-center">
-          <img 
-            src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
-            className="hidden sm:block h-16 sm:h-20 mx-auto mb-6 sm:mb-8 object-contain" 
-            alt="Jambo" 
-          />
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          {/* Logo removed */}
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-brand-dark mt-4">
+            {isSignUp ? 'Join the Family' : 'Welcome Back'}
           </h2>
-          <p className="mt-3 text-sm text-slate-500">
-            {isSignUp ? 'Join our community to start your journey.' : 'Sign in to access your dashboard and orders.'}
+          <p className="mt-3 text-sm text-slate-500 font-medium">
+            {isSignUp ? 'Thread your faith into every day.' : 'Sign in to access your dashboard.'}
           </p>
           {location.state?.from && (
-             <div className="mt-4 inline-block px-4 py-1.5 bg-brand-light/50 rounded-full border border-brand-green/10">
-                <p className="text-[10px] font-black text-brand-green uppercase tracking-widest">
+             <div className="mt-4 inline-block px-4 py-1.5 bg-brand-light rounded-full border border-brand-green/20">
+                <p className="text-[10px] font-black text-brand-dark uppercase tracking-widest">
                    Sign in to continue to Checkout
                 </p>
              </div>
@@ -91,7 +93,7 @@ export const Login: React.FC = () => {
                 <input
                   type="text"
                   required
-                  className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+                  className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                   placeholder="Simon Peter"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -104,7 +106,7 @@ export const Login: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+                className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +116,7 @@ export const Login: React.FC = () => {
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
                 {!isSignUp && (
-                  <Link to="/forgot-password" className="text-xs font-bold text-brand-green hover:underline">
+                  <Link to="/forgot-password" className="text-xs font-bold text-brand-green hover:text-brand-hope transition-colors">
                     Forgot Password?
                   </Link>
                 )}
@@ -123,7 +125,7 @@ export const Login: React.FC = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+                className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -144,13 +146,13 @@ export const Login: React.FC = () => {
                 />
               </div>
               <div className="ml-3 text-xs">
-                <label htmlFor="terms" className="text-slate-500">
+                <label htmlFor="terms" className="text-slate-500 font-medium">
                   I agree to the{' '}
-                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-green hover:underline">
+                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-green hover:text-brand-dark">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-green hover:underline">
+                  <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-green hover:text-brand-dark">
                     Privacy Policy
                   </Link>
                   .
@@ -160,23 +162,29 @@ export const Login: React.FC = () => {
           )}
 
           <div className="pt-2">
-            <Button
+            <button
               type="submit"
-              isLoading={loading}
-              fullWidth
-              className="h-14 rounded-2xl font-bold uppercase tracking-wider text-xs shadow-xl shadow-brand-green/20 hover:scale-[1.02] active:scale-95 transition-all"
+              disabled={loading}
+              className="w-full h-14 bg-brand-hope text-brand-dark rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-hope/20 hover:bg-brand-dark hover:text-white hover:shadow-brand-dark/20 transform hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSignUp ? 'Create My Account' : 'Sign In'}
-            </Button>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Processing...
+                </span>
+              ) : (
+                isSignUp ? 'Create My Account' : 'Sign In'
+              )}
+            </button>
           </div>
         </form>
 
-        <div className="text-center">
+        <div className="text-center pt-2 border-t border-slate-100">
           <button 
             onClick={() => { setIsSignUp(!isSignUp); setErrorMsg(''); }}
-            className="text-sm font-medium text-slate-500 hover:text-brand-green transition-colors"
+            className="text-sm font-bold text-slate-400 hover:text-brand-dark transition-colors"
           >
-            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Join Us"}
           </button>
         </div>
       </div>

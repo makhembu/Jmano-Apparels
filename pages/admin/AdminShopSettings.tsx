@@ -198,11 +198,25 @@ export const AdminShopSettings: React.FC = () => {
              </div>
              
              <div className="pt-4 border-t">
-                 <div className="flex items-center mb-2">
+                 <div className="flex items-center mb-4">
+                    <input type="checkbox" name="requireLoginForCheckout" checked={!!generalForm.requireLoginForCheckout} onChange={handleGeneralChange} className="h-4 w-4 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
+                    <div className="ml-2">
+                        <label className="text-sm font-bold block text-gray-900">Require Account for Checkout</label>
+                        <p className="text-xs text-gray-500">If enabled, users must log in before purchasing. If disabled, guest checkout is allowed.</p>
+                    </div>
+                 </div>
+
+                 <div className="flex items-center mb-4">
                     <input type="checkbox" name="isAnnouncementEnabled" checked={!!generalForm.isAnnouncementEnabled} onChange={handleGeneralChange} className="h-4 w-4 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
                     <label className="ml-2 text-sm font-bold">Enable Announcement Bar</label>
                  </div>
-                 <input type="text" name="announcementText" value={generalForm.announcementText || ''} onChange={handleGeneralChange} className="w-full border rounded p-2" placeholder="Announcement text..." />
+                 <input type="text" name="announcementText" value={generalForm.announcementText || ''} onChange={handleGeneralChange} className="w-full border rounded p-2 mb-4" placeholder="Announcement text..." />
+                 
+                 <div className="flex items-center">
+                    <input type="checkbox" name="enableReviews" checked={!!generalForm.enableReviews} onChange={handleGeneralChange} className="h-4 w-4 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
+                    <label className="ml-2 text-sm font-bold">Enable Reviews & Testimonials</label>
+                 </div>
+                 <p className="text-xs text-gray-500 ml-6 mt-1">Show product reviews and customer testimonies on the storefront.</p>
              </div>
 
              <div className="pt-4">

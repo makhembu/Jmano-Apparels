@@ -1,9 +1,10 @@
 import React from 'react';
-import { Product } from '../../types';
+import { Product, Category } from '../../types';
 import { Button } from '../ui/Button';
 
 interface ProductPurchaseFormProps {
   product: Product;
+  category?: Category;
   buySectionRef: React.RefObject<HTMLDivElement>;
   optionsRef: React.RefObject<HTMLDivElement>;
   selectedSize: string;
@@ -18,7 +19,7 @@ interface ProductPurchaseFormProps {
 }
 
 export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({ 
-  product, buySectionRef, optionsRef,
+  product, category, buySectionRef, optionsRef,
   selectedSize, setSelectedSize,
   selectedColor, setSelectedColor,
   quantity, setQuantity,
@@ -29,6 +30,20 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
   const isOutOfStock = stock <= 0;
   const lowStock = stock > 0 && stock <= (product.lowStockThreshold || 5);
 
+  // Default theme fallback
+  const themeColorClass = category?.bgColorClass?.replace('bg-', '') || 'brand-green'; 
+  // Map brand classes to specific hex/text/border styles dynamically
+  const isHope = themeColorClass.includes('hope');
+  const isPatience = themeColorClass.includes('patience');
+  
+  // Dynamic classes based on category theme
+  const activeBorderClass = `border-${themeColorClass}`;
+  const activeBgClass = `bg-${themeColorClass}`;
+  const activeTextClass = `text-${themeColorClass}`;
+  
+  // For text contrast: Hope/Yellow needs dark text, others white usually ok (or stick to white for all primary buttons except yellow)
+  const buttonTextClass = isHope ? 'text-brand-dark' : 'text-white';
+
   return (
     <div className="space-y-10 transition-all duration-300 rounded-3xl" ref={optionsRef}>
       {product.colors && product.colors.length > 0 && (
@@ -36,7 +51,15 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
           <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4">Choose Color</h3>
           <div className="flex flex-wrap gap-3">
             {product.colors.map(color => (
-              <button key={color} onClick={() => setSelectedColor(color)} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border-2 transition-all duration-300 ${ selectedColor === color ? 'border-brand-green bg-brand-light/60 text-brand-green shadow-md scale-105' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200' }`}>
+              <button 
+                key={color} 
+                onClick={() => setSelectedColor(color)} 
+                className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border-2 transition-all duration-300 ${ 
+                  selectedColor === color 
+                    ? `${activeBorderClass} ${activeTextClass} bg-white shadow-md scale-105` 
+                    : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200' 
+                }`}
+              >
                 {color}
               </button>
             ))}
@@ -48,7 +71,15 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
         <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4">Select Size</h3>
         <div className="flex flex-wrap gap-3">
           {product.sizes.map(size => (
-            <button key={size} onClick={() => setSelectedSize(size)} className={`min-w-[4rem] h-14 flex items-center justify-center rounded-2xl text-sm font-black border-2 transition-all duration-300 ${ selectedSize === size ? 'border-brand-green bg-brand-green text-white shadow-xl scale-105' : 'border-slate-100 text-slate-600 hover:border-slate-200 bg-white' }`}>
+            <button 
+              key={size} 
+              onClick={() => setSelectedSize(size)} 
+              className={`min-w-[4rem] h-14 flex items-center justify-center rounded-2xl text-sm font-black border-2 transition-all duration-300 ${ 
+                selectedSize === size 
+                  ? `${activeBgClass} ${activeBorderClass} ${buttonTextClass} shadow-xl scale-105` 
+                  : 'border-slate-100 text-slate-600 hover:border-slate-200 bg-white' 
+              }`}
+            >
               {size}
             </button>
           ))}
@@ -57,20 +88,31 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
 
       <div className="pt-4 flex flex-col sm:flex-row gap-4" ref={buySectionRef}>
         <div className="flex items-center border-2 border-slate-100 rounded-2xl bg-white w-full sm:w-fit h-14">
-          <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-6 h-full text-slate-400 hover:text-brand-green transition-colors text-xl font-bold">-</button>
+          <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className={`px-6 h-full text-slate-400 hover:${activeTextClass} transition-colors text-xl font-bold`}>-</button>
           <span className="px-4 font-black text-slate-900 w-12 text-center text-lg">{quantity}</span>
-          <button onClick={() => setQuantity(quantity + 1)} className="px-6 h-full text-slate-400 hover:text-brand-green transition-colors text-xl font-bold">+</button>
+          <button onClick={() => setQuantity(quantity + 1)} className={`px-6 h-full text-slate-400 hover:${activeTextClass} transition-colors text-xl font-bold`}>+</button>
         </div>
         
         <div className="flex-1 flex flex-col sm:flex-row gap-4">
-          <Button onClick={() => handleAddToCart(false)} isLoading={isAdding} disabled={isOutOfStock || isOrderingNow} variant="outline" fullWidth className="h-14 font-black uppercase tracking-widest text-xs rounded-2xl border-2">
-            {isOutOfStock ? 'Sold Out' : 'Add to Basket'}
-          </Button>
+          <button 
+            onClick={() => handleAddToCart(false)} 
+            disabled={isAdding || isOutOfStock || isOrderingNow}
+            className={`flex-1 h-14 font-black uppercase tracking-widest text-xs rounded-2xl border-2 transition-all ${
+                isOutOfStock ? 'border-slate-100 text-slate-400 bg-slate-50' : 
+                `bg-white ${activeBorderClass} ${activeTextClass} hover:bg-slate-50`
+            }`}
+          >
+            {isAdding ? 'Adding...' : isOutOfStock ? 'Sold Out' : 'Add to Basket'}
+          </button>
 
           {!isOutOfStock && (
-            <Button onClick={() => handleAddToCart(true)} isLoading={isOrderingNow} disabled={isAdding} fullWidth className="h-14 font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-brand-green/20">
-              Checkout Now
-            </Button>
+            <button 
+                onClick={() => handleAddToCart(true)} 
+                disabled={isOrderingNow || isAdding}
+                className={`flex-1 h-14 font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 ${activeBgClass} ${buttonTextClass} shadow-black/5`}
+            >
+              {isOrderingNow ? 'Processing...' : 'Checkout Now'}
+            </button>
           )}
         </div>
       </div>
@@ -85,8 +127,8 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
             <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse"></span> Only {stock} remaining
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-brand-green font-black text-[10px] uppercase tracking-widest">
-            <span className="w-2 h-2 rounded-full bg-brand-green"></span> Divinely Stocked & Ready
+          <div className={`flex items-center gap-2 font-black text-[10px] uppercase tracking-widest ${activeTextClass}`}>
+            <span className={`w-2 h-2 rounded-full ${activeBgClass}`}></span> Divinely Stocked & Ready
           </div>
         )}
       </div>

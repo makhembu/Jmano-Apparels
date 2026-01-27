@@ -41,10 +41,22 @@ export const Home: React.FC = () => {
     ? categories.filter(c => settings.featuredCategories!.includes(c.key))
     : categories;
 
+  // Helper to rotate brand colors for cards with WCAG compliant text
+  const getCardColorStyles = (index: number) => {
+    const colors = [
+      { bg: 'bg-brand-hope', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-hope' }, // Yellow -> Black Text
+      { bg: 'bg-brand-testament', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-testament' }, // Purple -> Black Text
+      { bg: 'bg-brand-humility', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-humility' }, // Green -> Black Text
+      { bg: 'bg-brand-patience', text: 'text-white', muted: 'text-white/90', accent: 'text-white', border: 'border-brand-patience' }, // Red -> White Text
+      { bg: 'bg-brand-triumph', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-triumph' }, // Orange -> Black Text
+    ];
+    return colors[index % colors.length];
+  };
+
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in bg-slate-50">
       {/* Hero Section - Redesigned for Mobile Match */}
       <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block">
         <div className="max-w-7xl mx-auto w-full">
@@ -86,11 +98,11 @@ export const Home: React.FC = () => {
 
       {/* Featured Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-3xl font-bold text-brand-dark mb-8 font-serif border-b-2 border-brand-light pb-4">Featured Collections</h2>
+        <h2 className="text-3xl font-bold text-brand-dark mb-8 font-serif border-b-2 border-brand-green/20 pb-4">Featured Collections</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredProducts.length > 0 ? (
-            featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
+            featuredProducts.map((product, idx) => (
+              <ProductCard key={product.id} product={product} index={idx} />
             ))
           ) : (
             <div className="col-span-4 text-center py-10 text-gray-500">
@@ -101,15 +113,15 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Categories Banner */}
-      <div className="bg-white py-16 border-t border-brand-light">
+      <div className="bg-brand-light py-16 border-t border-brand-green/10">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
                <h2 className="text-3xl font-bold font-serif text-brand-dark mb-4">Shop by Category</h2>
-               <p className="text-gray-500">Explore our curated collections, each designed with a specific spiritual intention.</p>
+               <p className="text-brand-dark/70">Explore our curated collections, each designed with a specific spiritual intention.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-4">
                {displayCategories.map(cat => (
-                  <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-2xl shadow-sm hover:shadow-lg transition transform hover:-translate-y-1 text-base font-bold`}>
+                  <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 text-base font-bold border-2 border-white/20`}>
                      {cat.label}
                   </Link>
                ))}
@@ -117,9 +129,9 @@ export const Home: React.FC = () => {
          </div>
       </div>
 
-      {/* Latest Blog Posts Section */}
+      {/* Latest Blog Posts Section - Colorful Cards */}
       {latestBlogs.length > 0 && (
-        <div className="bg-brand-light/30 py-16 border-y border-brand-light">
+        <div className="bg-white py-16 border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
                <div>
@@ -132,66 +144,72 @@ export const Home: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {latestBlogs.map(post => (
-                <div 
-                  key={post.id} 
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-brand-green/5 transition-all duration-300"
-                >
-                  <Link to={`/blog/${post.slug}`} className="block relative aspect-[16/10] overflow-hidden">
-                    <img 
-                      src={post.thumbnail || post.featuredImage} 
-                      alt={post.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                    />
-                  </Link>
-                  <div className="p-6 flex flex-col flex-1">
-                    <div className="flex items-center text-xs font-bold text-brand-green uppercase tracking-widest mb-3">
-                       <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                       {post.readingTime && (
-                         <>
-                           <span className="mx-2 opacity-30">•</span>
-                           <span className="text-gray-400">{post.readingTime} min read</span>
-                         </>
-                       )}
+              {latestBlogs.map((post, idx) => {
+                const colors = getCardColorStyles(idx);
+                return (
+                  <div 
+                    key={post.id} 
+                    className={`${colors.bg} rounded-2xl shadow-lg overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-white/10`}
+                  >
+                    <Link to={`/blog/${post.slug}`} className="block relative aspect-[16/10] overflow-hidden">
+                      <img 
+                        src={post.thumbnail || post.featuredImage} 
+                        alt={post.title} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      />
+                    </Link>
+                    <div className="p-6 flex flex-col flex-1">
+                      <div className={`flex items-center text-[10px] font-black uppercase tracking-widest mb-3 ${colors.accent}`}>
+                         <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                         {post.readingTime && (
+                           <>
+                             <span className="mx-2 opacity-50">•</span>
+                             <span>{post.readingTime} min read</span>
+                           </>
+                         )}
+                      </div>
+                      <Link to={`/blog/${post.slug}`}>
+                        <h3 className={`text-xl font-serif font-bold ${colors.text} leading-tight mb-3`}>
+                          {post.title}
+                        </h3>
+                      </Link>
+                      <p className={`${colors.muted} text-sm line-clamp-3 mb-6 flex-1 font-medium`}>
+                        {post.summary}
+                      </p>
+                      <Link to={`/blog/${post.slug}`} className={`${colors.text} font-black text-xs uppercase tracking-widest inline-flex items-center gap-2 hover:opacity-75 transition-opacity`}>
+                        Read Story <span className="text-lg">→</span>
+                      </Link>
                     </div>
-                    <Link to={`/blog/${post.slug}`}>
-                      <h3 className="text-xl font-serif font-bold text-gray-900 group-hover:text-brand-green transition-colors line-clamp-2 mb-3">
-                        {post.title}
-                      </h3>
-                    </Link>
-                    <p className="text-gray-600 text-sm line-clamp-3 mb-6 flex-1">
-                      {post.summary}
-                    </p>
-                    <Link to={`/blog/${post.slug}`} className="text-brand-dark font-bold text-sm hover:text-brand-green inline-flex items-center gap-1 transition-colors">
-                      Read Story <span className="text-lg">→</span>
-                    </Link>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* Testimonials / Reviews Section */}
-      {latestReviews.length > 0 && (
-        <section className="bg-white py-20">
+      {/* Testimonials / Reviews Section - Colorful Rotation */}
+      {settings.enableReviews && latestReviews.length > 0 && (
+        <section className="bg-brand-light py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-serif font-bold text-brand-dark">Voices of the Community</h2>
-              <p className="text-gray-500 mt-4">Real stories from those wearing their faith boldly.</p>
+              <p className="text-brand-dark/60 mt-4">Real stories from those wearing their faith boldly.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {latestReviews.map(review => {
+              {latestReviews.map((review, idx) => {
                 const product = products.find(p => p.id === review.productId);
+                // Offset index by 2 so colors don't align perfectly with blog above for visual variety
+                const colors = getCardColorStyles(idx + 2);
+                
                 return (
-                  <div key={review.id} className="bg-brand-light/10 p-8 rounded-2xl relative border border-brand-green/10 hover:shadow-lg hover:shadow-brand-green/5 transition-all duration-300">
-                    <div className="absolute top-6 right-8 text-brand-green opacity-20">
+                  <div key={review.id} className={`${colors.bg} p-8 rounded-2xl relative shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
+                    <div className={`absolute top-6 right-8 opacity-20 ${colors.text}`}>
                        <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017V14H15.017C13.3591 14 12.017 12.6579 12.017 11V7C12.017 5.34315 13.3591 4 15.017 4H19.017C20.6738 4 22.017 5.34215 22.017 7V11C22.017 12.6569 20.6738 14 19.017 14V16C19.017 18.2091 17.2261 20 15.017 20L14.017 20V21ZM2.017 21L2.017 18C2.017 16.8954 2.91243 16 4.017 16H7.017V14H3.017C1.35914 14 0.017 12.6579 0.017 11V7C0.017 5.34315 1.35914 4 3.017 4H7.017C8.67386 4 10.017 5.34215 10.017 7V11C10.017 12.6569 8.67386 14 7.017 14V16C7.017 18.2091 5.22614 20 3.017 20L2.017 20V21Z"/></svg>
                     </div>
                     
-                    <div className="flex text-brand-hope mb-4">
+                    <div className="flex mb-4 text-white drop-shadow-md">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <span key={i} className="text-lg">
                           {i < (review.rating || 5) ? '★' : '☆'}
@@ -199,20 +217,19 @@ export const Home: React.FC = () => {
                       ))}
                     </div>
 
-                    <p className="text-gray-700 italic mb-6 line-clamp-4 font-light leading-relaxed">
+                    <p className={`${colors.text} italic mb-6 line-clamp-4 font-medium leading-relaxed`}>
                       "{review.comment}"
                     </p>
 
-                    <div className="mt-auto pt-6 border-t border-brand-green/5 flex items-center justify-between">
+                    <div className={`mt-auto pt-6 border-t border-white/20 flex items-center justify-between`}>
                        <div>
-                          <p className="font-bold text-gray-900 text-sm">{review.title}</p>
-                          <p className="text-xs text-brand-green font-bold uppercase tracking-wide">Verified Believer</p>
+                          <p className={`font-bold text-sm ${colors.text}`}>{review.title}</p>
+                          <p className={`text-[10px] font-black uppercase tracking-wide ${colors.muted}`}>Verified Believer</p>
                        </div>
                        
                        {product && (
                          <Link to={`/product/${product.id}`} className="group flex items-center gap-2 max-w-[120px]">
-                            <img src={product.images[0]} alt="" className="w-10 h-10 rounded-full object-cover border border-white shadow-sm transition-transform group-hover:scale-110" />
-                            <span className="text-[10px] font-bold text-brand-green hover:underline truncate uppercase tracking-tighter">View {product.title.split(' ')[0]}</span>
+                            <img src={product.images[0]} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-110" />
                          </Link>
                        )}
                     </div>

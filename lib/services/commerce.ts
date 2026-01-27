@@ -29,7 +29,6 @@ export class OrderService {
     log('RPC', 'create_order_secure', order);
     
     // Map products to ensure correct field names for the RPC
-    // We now include title, price, and image to ensure the itemized receipt works correctly
     const itemsPayload = (order.products || []).map((item: any) => ({
         product_id: item.productId,
         quantity: item.quantity,
@@ -41,11 +40,15 @@ export class OrderService {
     }));
 
     const { data, error } = await supabase.rpc('create_order_secure', {
-      p_user_id: order.userId,
+      p_user_id: order.userId || null, // Allow null for guests
+      p_customer_email: order.customerEmail || null,
+      p_customer_name: order.customerName || null,
       p_items: itemsPayload,
       p_shipping_address: order.shippingAddress as any,
       p_discount_code: order.discountCode || null,
-      p_notes: order.notes || null
+      p_notes: order.notes || null,
+      p_payment_status: order.paymentStatus || 'paid', // 'pending' for PayPal
+      p_payment_intent_id: order.paymentIntentId || null
     });
 
     if (error) throw error;
@@ -71,8 +74,8 @@ export class OrderService {
   
   async cancelOrder(orderId: string, userId: string): Promise<void> {
     log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
+    
     // Check if order is in a cancellable state first
-    // FIX: Also select 'total' to satisfy the strict update type which requires it.
     const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('status, total')
@@ -80,11 +83,10 @@ export class OrderService {
       .single();
 
     if (fetchError || !order) throw new Error("Order not found or permission denied.");
-    if (!['Pending', 'Processing'].includes(order.status)) {
+    if (!['Pending', 'Processing', 'Pending Payment'].includes(order.status)) {
       throw new Error("This order can no longer be cancelled.");
     }
 
-    // FIX: Include the existing total in the update payload to satisfy the strict type.
     const { error } = await supabase
       .from('orders')
       .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), total: order.total })

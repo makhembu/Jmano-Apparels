@@ -10,18 +10,18 @@ export const MobileTopNav: React.FC<MobileTopNavProps> = ({ onSearchClick }) => 
   const { settings } = useApp();
   
   return (
-    <nav className="h-16 flex items-center px-4 justify-between bg-white/95 backdrop-blur-md">
+    <nav className="h-16 flex items-center px-4 justify-between bg-brand-dark">
       <Link to="/" className="flex-shrink-0">
         <img 
           src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
           alt="Jambo" 
-          className="h-10 w-auto object-contain" 
+          className="h-10 w-auto object-contain brightness-0 invert" 
         />
       </Link>
       <div className="flex items-center gap-2">
         <button 
           onClick={onSearchClick} 
-          className="p-2 text-slate-500 hover:text-brand-green transition-colors"
+          className="p-2 text-brand-light hover:text-white transition-colors"
           aria-label="Open search"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

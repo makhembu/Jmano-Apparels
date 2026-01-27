@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  createdAt?: string; // Mapped from created_at
+  createdAt?: string;
 }
 
 export interface UserAddress {
@@ -27,9 +27,9 @@ export interface Category {
   key: string;
   label: string;
   color: string;
-  bgColorClass: string; // Mapped from bg_class
-  seoTitle?: string; // Mapped from seo_title
-  seoDescription?: string; // Mapped from seo_description
+  bgColorClass: string;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface BlogCategory {
@@ -43,69 +43,66 @@ export interface Product {
   id: string;
   title: string;
   price: number;
-  salePrice?: number | null; // Mapped from sale_price
-  isOnSale?: boolean; // Mapped from is_on_sale
-  categoryKey: string; // Mapped from category_key
+  salePrice?: number | null;
+  isOnSale?: boolean;
+  categoryKey: string;
   images: string[];
   description: string;
   sizes: string[];
   colors?: string[];
   tags?: string[];
-  isFeatured: boolean; // Mapped from is_featured
-  isPublished?: boolean; // Mapped from is_published
+  isFeatured: boolean;
+  isPublished?: boolean;
   sku?: string;
   slug?: string;
-  stockQuantity?: number; // Mapped from stock_quantity
-  lowStockThreshold?: number; // Mapped from low_stock_threshold
+  stockQuantity?: number;
+  lowStockThreshold?: number;
   weight?: number;
-  seoTitle?: string; // Mapped from seo_title
-  seoDescription?: string; // Mapped from seo_description
-  createdAt?: string; // Mapped from created_at
-  
-  // Read-only stats from DB
-  averageRating?: number; // Mapped from average_rating
-  reviewCount?: number; // Mapped from review_count
-  totalSales?: number; // Mapped from total_sales
+  seoTitle?: string;
+  seoDescription?: string;
+  createdAt?: string;
+  averageRating?: number;
+  reviewCount?: number;
+  totalSales?: number;
 }
 
 export interface ProductReview {
   id: string;
-  productId: string; // Mapped from product_id
-  userId?: string; // Mapped from user_id
+  productId: string;
+  userId?: string;
   rating: number;
   title: string;
   comment: string;
-  verifiedPurchase: boolean; // Mapped from verified_purchase
-  createdAt: string; // Mapped from created_at
-  isApproved?: boolean; // Mapped from is_approved
+  verifiedPurchase: boolean;
+  createdAt: string;
+  isApproved?: boolean;
 }
 
 export interface DiscountCode {
   id: string;
   code: string;
-  discountType: 'percentage' | 'fixed'; // Mapped from discount_type
-  discountValue: number; // Mapped from discount_value
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
   description: string;
-  minimumPurchase?: number; // Mapped from minimum_purchase
-  validFrom: string; // Mapped from valid_from
-  validUntil: string; // Mapped from valid_until
-  maxUses?: number; // Mapped from max_uses
-  isActive: boolean; // Mapped from is_active
-  applicableCategories?: string[]; // Mapped from applicable_categories
+  minimumPurchase?: number;
+  validFrom: string;
+  validUntil: string;
+  maxUses?: number;
+  isActive: boolean;
+  applicableCategories?: string[];
 }
 
 export interface ShippingZone {
   id: string;
   name: string;
   countries: string[];
-  baseRate: number; // Mapped from base_rate
-  perKgRate?: number; // Mapped from per_kg_rate
-  freeShippingThreshold?: number; // Mapped from free_shipping_threshold
-  estimatedDays: string; // Mapped from estimated_days
-  isActive: boolean; // Mapped from is_active
+  baseRate: number;
+  perKgRate?: number;
+  freeShippingThreshold?: number;
+  estimatedDays: string;
+  isActive: boolean;
 }
 
-// CartItem extends Product but exists client-side (or in cart_items table)
 export interface CartItem extends Product {
   quantity: number;
   selectedSize: string;
@@ -128,34 +125,32 @@ export interface OrderItem {
   title: string;
   price: number;
   selectedColor?: string;
-  // Added image property to store product image snapshot in orders
   image?: string;
 }
 
 export interface Order {
   id: string;
-  userId: string; // Mapped from user_id
-  orderNumber?: string; // Mapped from order_number
+  userId: string | null;
+  customerName?: string;
+  customerEmail?: string;
+  orderNumber?: string;
   products: OrderItem[];
-  
-  // Financial breakdown
   total: number;
-  subtotal?: number; // Mapped from subtotal
-  shippingCost?: number; // Mapped from shipping_cost
-  taxAmount?: number; // Mapped from tax_amount
-  discountAmount?: number; // Mapped from discount_amount
-  discountCode?: string; // Mapped from discount_code
-  
+  subtotal?: number;
+  shippingCost?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  discountCode?: string;
   status: string;
-  createdAt: string; // Mapped from created_at
-  shippingAddress?: ShippingAddress; // Mapped from shipping_address
-  paymentStatus?: string; // Mapped from payment_status
-  trackingNumber?: string; // Mapped from tracking_number
-  notes?: string; // Mapped from notes
-  
-  shippedAt?: string; // Mapped from shipped_at
-  deliveredAt?: string; // Mapped from delivered_at
-  cancelledAt?: string; // Mapped from cancelled_at
+  createdAt: string;
+  shippingAddress?: ShippingAddress;
+  paymentStatus?: string;
+  paymentIntentId?: string; // Mapped from payment_intent_id
+  trackingNumber?: string;
+  notes?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+  cancelledAt?: string;
 }
 
 export interface BlogPost {
@@ -164,77 +159,73 @@ export interface BlogPost {
   summary: string;
   content: string;
   thumbnail: string;
-  featuredImage?: string; // Mapped from featured_image
+  featuredImage?: string;
   slug?: string;
   status?: string;
   author: string;
-  createdAt: string; // Mapped from created_at (date)
-  readingTime?: number; // Mapped from reading_time
-  categoryId?: string; // Mapped from category_id
-  seoTitle?: string; // Mapped from seo_title
-  seoDescription?: string; // Mapped from seo_description
-  viewCount?: number; // Mapped from view_count
+  createdAt: string;
+  readingTime?: number;
+  categoryId?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  viewCount?: number;
 }
 
 export interface AppSettings {
   id: number;
   slogan: string;
-  secondarySlogan: string; // Mapped from secondary_slogan
-  logoImage?: string; // Mapped from logo_image
+  secondarySlogan: string;
+  logoImage?: string;
   mission: string;
   vision: string;
-  coreValues: string; // Mapped from core_values
-  
-  // Founder Profile
-  founderName?: string; // Mapped from founder_name
-  founderBio?: string; // Mapped from founder_bio
-  founderImage?: string; // Mapped from founder_image
-  founderQuote?: string; // Mapped from founder_quote
-
-  // SEO (Global & Page Specific)
-  seoTitle?: string; // Mapped from seo_title
-  seoDescription?: string; // Mapped from seo_description
-  shopSeoTitle?: string; // Mapped from shop_seo_title
-  shopSeoDescription?: string; // Mapped from shop_seo_description
-  blogSeoTitle?: string; // Mapped from blog_seo_title
-  blogSeoDescription?: string; // Mapped from blog_seo_description
-  aboutSeoTitle?: string; // Mapped from about_seo_title
-  aboutSeoDescription?: string; // Mapped from about_seo_description
-  
-  // Contact & Business
-  contactEmail?: string; // Mapped from contact_email
-  contactPhone?: string; // Mapped from contact_phone
-  contactAddress?: string; // Mapped from contact_address
-  businessHours?: Record<string, string>; // Mapped from business_hours
-  socialLinks?: Record<string, string>; // Mapped from social_links
-  supportEmail?: string; // Mapped from support_email
-  
-  // Commerce
+  coreValues: string;
+  founderName?: string;
+  founderBio?: string;
+  founderImage?: string;
+  founderQuote?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  shopSeoTitle?: string;
+  shopSeoDescription?: string;
+  blogSeoTitle?: string;
+  blogSeoDescription?: string;
+  aboutSeoTitle?: string;
+  aboutSeoDescription?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactAddress?: string;
+  businessHours?: Record<string, string>;
+  socialLinks?: Record<string, string>;
+  supportEmail?: string;
   currency?: string;
-  taxRate?: number; // Mapped from tax_rate
-  freeShippingThreshold?: number; // Mapped from free_shipping_threshold
-  
-  // Policies
-  shippingPolicy?: string; // Mapped from shipping_policy
-  returnPolicy?: string; // Mapped from return_policy
-  privacyPolicy?: string; // Mapped from privacy_policy
-  termsConditions?: string; // Mapped from terms_conditions
-  
-  // UI/Marketing
-  heroBannerImage?: string; // Mapped from hero_banner_image
-  heroBannerText?: string; // Mapped from hero_banner_text
-  announcementText?: string; // Mapped from announcement_text
-  isAnnouncementEnabled?: boolean; // Mapped from is_announcement_enabled
-  maintenanceMode?: boolean; // Mapped from maintenance_mode
-  maintenanceMessage?: string; // Mapped from maintenance_message
-  featuredCategories?: string[]; // Mapped from featured_categories
-  smtpSettings?: Record<string, any>; // Mapped from smtp_settings
-
-  // Email Notifications
+  taxRate?: number;
+  freeShippingThreshold?: number;
+  requireLoginForCheckout?: boolean;
+  shippingPolicy?: string;
+  returnPolicy?: string;
+  privacyPolicy?: string;
+  termsConditions?: string;
+  heroBannerImage?: string;
+  heroBannerText?: string;
+  announcementText?: string;
+  isAnnouncementEnabled?: boolean;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  featuredCategories?: string[];
+  smtpSettings?: Record<string, any>;
   enableEmailNotifications?: boolean;
   enableEmailWelcome?: boolean;
   enableEmailNewOrder?: boolean;
   enableEmailOrderShipped?: boolean;
+  enableNewsletterSignup?: boolean;
+  enableContactForm?: boolean;
+  enableReviews?: boolean;
+  
+  // PayPal Settings
+  paypalClientId?: string; // Mapped from paypal_client_id
+  paypalSecretKey?: string; // Mapped from paypal_secret_key (Only exposed to admin/server)
+  paypalMode?: 'sandbox' | 'live'; // Mapped from paypal_mode
+  paymentGatewayEnabled?: boolean; // Mapped from payment_gateway_enabled
 }
 
 export interface EmailTemplate {
@@ -248,10 +239,10 @@ export interface EmailTemplate {
 export interface NewsletterSubscriber {
   id: string;
   email: string;
-  name?: string; // Mapped from name
-  source?: string; // Mapped from source
-  isSubscribed: boolean; // Mapped from is_subscribed
-  subscribedAt: string; // Mapped from subscribed_at
+  name?: string;
+  source?: string;
+  isSubscribed: boolean;
+  subscribedAt: string;
 }
 
 export interface ContactSubmission {
@@ -261,8 +252,8 @@ export interface ContactSubmission {
   message: string;
   subject?: string;
   phone?: string;
-  isRead: boolean; // Mapped from is_read
-  createdAt: string; // Mapped from created_at
+  isRead: boolean;
+  createdAt: string;
 }
 
 // --- DB Raw Types (for internal mapping) ---

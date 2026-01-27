@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -12,8 +13,9 @@ export const DesktopNavbar: React.FC = () => {
   const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
-  const activeClass = "text-brand-green font-semibold";
-  const inactiveClass = "text-gray-500 hover:text-brand-green";
+  // White text for active, light green for inactive to contrast with brand-dark bg
+  const activeClass = "text-brand-hope font-bold border-b-2 border-brand-hope pb-1";
+  const inactiveClass = "text-brand-light/90 hover:text-white transition-colors font-medium";
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -39,20 +41,19 @@ export const DesktopNavbar: React.FC = () => {
               <img 
                 src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
                 alt="Jambo Apparels" 
-                className="h-10 w-auto object-contain" 
+                className="h-12 w-auto object-contain brightness-0 invert" 
               />
             </Link>
           </div>
           
           <div className="flex items-center space-x-8 h-full">
             <div className="flex items-center space-x-8 h-10">
-              <Link to="/" className={`${isActive('/') ? activeClass : inactiveClass} text-sm transition-colors`}>Home</Link>
-              <Link to="/shop" className={`${isActive('/shop') ? activeClass : inactiveClass} text-sm transition-colors`}>Shop</Link>
-              <Link to="/blog" className={`${isActive('/blog') ? activeClass : inactiveClass} text-sm transition-colors`}>Journal</Link>
-              <Link to="/about" className={`${isActive('/about') ? activeClass : inactiveClass} text-sm transition-colors`}>About Us</Link>
+              <Link to="/shop" className={`${isActive('/shop') ? activeClass : inactiveClass} text-sm transition-all`}>Shop</Link>
+              <Link to="/blog" className={`${isActive('/blog') ? activeClass : inactiveClass} text-sm transition-all`}>Journal</Link>
+              <Link to="/about" className={`${isActive('/about') ? activeClass : inactiveClass} text-sm transition-all`}>About Us</Link>
             </div>
 
-            <div className="h-6 w-px bg-gray-200"></div>
+            <div className="h-6 w-px bg-brand-green"></div>
 
             <div className="flex items-center space-x-6 h-10">
               <div className="relative h-10" ref={searchRef}>
@@ -63,9 +64,9 @@ export const DesktopNavbar: React.FC = () => {
                     onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
                     onFocus={() => setShowResults(true)}
                     placeholder="Search..."
-                    className="pl-10 pr-4 h-10 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-900 placeholder-slate-400 w-40 lg:w-56 focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all"
+                    className="pl-10 pr-4 h-10 text-sm border border-transparent rounded-xl bg-brand-green/30 text-white placeholder-brand-light/60 w-40 lg:w-56 focus:outline-none focus:bg-white focus:text-brand-dark focus:placeholder-gray-400 transition-all shadow-inner"
                   />
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-light/70 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </form>
@@ -95,12 +96,12 @@ export const DesktopNavbar: React.FC = () => {
                 )}
               </div>
 
-              <Link to="/cart" className="relative text-gray-400 hover:text-brand-green transition-colors">
+              <Link to="/cart" className="relative text-brand-light hover:text-brand-hope transition-colors">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-brand-green text-white text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute -top-1 -right-1 bg-brand-hope text-brand-dark text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-sm">
                     {cartCount}
                   </span>
                 )}
@@ -108,9 +109,12 @@ export const DesktopNavbar: React.FC = () => {
 
               {user ? (
                 <div className="relative group">
-                  <button className="flex items-center text-gray-500 hover:text-brand-green text-sm font-medium">
-                    <span>{user.name.split(' ')[0]}</span>
-                    <svg className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  <button className="flex items-center text-brand-light hover:text-white text-sm font-medium">
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="ml-2 hidden lg:block">{user.name.split(' ')[0]}</span>
+                    <svg className="h-4 w-4 ml-1 hidden lg:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   <div className="absolute right-0 top-full w-48 bg-white border border-gray-100 rounded-lg shadow-xl hidden group-hover:block pt-2 overflow-hidden z-50">
                     <Link to="/dashboard" className="block px-4 py-2 text-xs text-gray-700 hover:bg-brand-light">Dashboard</Link>
@@ -119,7 +123,12 @@ export const DesktopNavbar: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <Link to="/login" className="bg-brand-dark text-white px-5 py-2 rounded-lg hover:bg-brand-green transition-all text-xs font-bold shadow-sm">Sign In</Link>
+                // Guest View: Subtle "User Icon" Link instead of loud button
+                <Link to="/login" className="text-brand-light hover:text-brand-hope transition-colors flex items-center group" aria-label="Log In">
+                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                   </svg>
+                </Link>
               )}
             </div>
           </div>

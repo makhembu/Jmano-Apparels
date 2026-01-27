@@ -23,7 +23,7 @@ export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { products, categories, loading } = useShop();
+  const { products, categories, settings, loading } = useShop();
   const { user } = useAuth();
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -133,55 +133,81 @@ export const ProductDetails: React.FC = () => {
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in relative">
+    <div className="bg-slate-50 min-h-screen">
       <MobileStickyBar 
         product={product} 
         show={showStickyBar && !isExpanded} 
         onAddToCart={() => handleAddToCart(false)}
       />
-      
-      <div className="mb-8">
-        <BackButton />
-      </div>
 
-      <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
-        {/* Left Column: Image Gallery - Set to col-span-6 (50%) */}
-        <div className="lg:col-span-6 lg:sticky lg:top-28">
-          <ProductImageGallery 
-            product={product}
-            isWishlisted={isWishlisted}
-            onWishlistToggle={handleWishlistToggle}
-            onImageExpand={handleImageExpand}
-          />
+      {/* Branded Header */}
+      <header className="relative bg-brand-dark pt-12 pb-32 md:pt-24 md:pb-40 overflow-hidden text-center border-b border-brand-green/20">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+           <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-green/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
         </div>
-        
-        {/* Right Column: Information and Purchase - Set to col-span-6 (50%) */}
-        <div className="lg:col-span-6 mt-12 lg:mt-0">
-          <div className="bg-white lg:p-10 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
-            <ProductInfo product={product} category={category} />
-            <ProductPurchaseForm 
-              product={product} 
-              buySectionRef={buySectionRef}
-              optionsRef={optionsRef}
-              selectedSize={selectedSize}
-              setSelectedSize={setSelectedSize}
-              selectedColor={selectedColor}
-              setSelectedColor={setSelectedColor}
-              quantity={quantity}
-              setQuantity={setQuantity}
-              handleAddToCart={handleAddToCart}
-              isAdding={isAdding}
-              isOrderingNow={isOrderingNow}
+        <div className="max-w-5xl mx-auto px-4 relative z-10">
+          <Link to="/shop" className="inline-block">
+            <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-6 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg hover:bg-white transition-colors cursor-pointer">
+              Back to Collection
+            </span>
+          </Link>
+          <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6 leading-tight">
+            {category?.label || 'Ethically Threaded'}
+          </h1>
+          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
+            "{settings.secondarySlogan}"
+          </p>
+        </div>
+      </header>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-20 pb-20 animate-fade-in">
+        <div className="mb-8 hidden md:block">
+          <BackButton className="text-white hover:text-brand-hope" />
+        </div>
+
+        <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
+          {/* Left Column: Image Gallery */}
+          <div className="lg:col-span-6 lg:sticky lg:top-28">
+            <ProductImageGallery 
+              product={product}
+              isWishlisted={isWishlisted}
+              onWishlistToggle={handleWishlistToggle}
+              onImageExpand={handleImageExpand}
             />
-            <ProductDetailsSection />
+          </div>
+          
+          {/* Right Column: Information and Purchase */}
+          <div className="lg:col-span-6 mt-12 lg:mt-0">
+            <div className="bg-white lg:p-10 p-6 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
+              <ProductInfo product={product} category={category} />
+              <ProductPurchaseForm 
+                product={product}
+                category={category} // Passing category for theme colors
+                buySectionRef={buySectionRef}
+                optionsRef={optionsRef}
+                selectedSize={selectedSize}
+                setSelectedSize={setSelectedSize}
+                selectedColor={selectedColor}
+                setSelectedColor={setSelectedColor}
+                quantity={quantity}
+                setQuantity={setQuantity}
+                handleAddToCart={handleAddToCart}
+                isAdding={isAdding}
+                isOrderingNow={isOrderingNow}
+              />
+              <ProductDetailsSection />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer Content */}
-      <ProductShare product={product} />
-      <SimilarProducts similarProducts={similarProducts} />
-      <ProductReviews productId={product.id} user={user} reviewsRef={reviewsRef} />
+        {/* Footer Content */}
+        <ProductShare product={product} />
+        <SimilarProducts similarProducts={similarProducts} />
+        {settings.enableReviews && (
+          <ProductReviews productId={product.id} user={user} reviewsRef={reviewsRef} />
+        )}
+      </div>
 
       {isExpanded && (
         <ImageExpandModal 

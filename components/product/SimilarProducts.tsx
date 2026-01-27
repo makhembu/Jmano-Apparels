@@ -17,8 +17,8 @@ export const SimilarProducts: React.FC<SimilarProductsProps> = ({ similarProduct
          <Link to="/shop" className="text-[10px] font-black text-brand-green uppercase tracking-[0.2em] border-b-2 border-brand-green/20 pb-1">View Full Collection</Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {similarProducts.map(similar => (
-          <ProductCard key={similar.id} product={similar} />
+        {similarProducts.map((similar, index) => (
+          <ProductCard key={similar.id} product={similar} index={index} />
         ))}
       </div>
     </section>

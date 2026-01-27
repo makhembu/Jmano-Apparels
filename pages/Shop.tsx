@@ -74,23 +74,22 @@ export const Shop: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      {/* Editorial Shop Header */}
-      <header className="relative bg-brand-light pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden border-b border-brand-green/10">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-hope/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/10 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-          <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.4em] mb-4 inline-block bg-white px-6 py-1.5 rounded-full shadow-sm border border-brand-green/10">
+      {/* Unified Branded Header - Matches Blog/About */}
+      <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
+        <div className="max-w-5xl mx-auto px-4 relative z-10">
+          <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
             The Collection
           </span>
-          <h1 className="text-4xl md:text-7xl font-serif font-bold text-brand-dark mb-6 tracking-tight">Ethically <span className="text-brand-green">Threaded</span></h1>
-          <p className="text-sm md:text-xl text-slate-600 font-light italic max-w-2xl mx-auto border-l-2 md:border-l-0 border-brand-hope pl-4 md:pl-0">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
+            Ethically <span className="text-brand-humility">Threaded</span>
+          </h1>
+          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
             "{settings.secondarySlogan}"
           </p>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
         {/* Modern Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
@@ -171,7 +170,7 @@ export const Shop: React.FC = () => {
                             className={`w-full text-left px-5 py-3 rounded-2xl transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 border-2 ${isActive ? 'text-white border-transparent' : 'text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-900'}`}
                             style={isActive ? { backgroundColor: cat.color, boxShadow: `0 10px 20px -5px ${cat.color}44` } : {}}
                           >
-                            {cat.label}
+                            {cat.key}
                           </button>
                         </li>
                       );
@@ -200,8 +199,8 @@ export const Shop: React.FC = () => {
           <div className="flex-grow min-w-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
               {filteredProducts.length > 0 ? (
-                filteredProducts.map(product => (
-                  <ProductCard key={product.id} product={product} />
+                filteredProducts.map((product, idx) => (
+                  <ProductCard key={product.id} product={product} index={idx} />
                 ))
               ) : (
                 <div className="col-span-full pt-10">

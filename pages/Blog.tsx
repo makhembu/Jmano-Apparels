@@ -38,24 +38,32 @@ export const Blog: React.FC = () => {
     });
   }, [blogPosts, activeCategory]);
 
+  // Helper to rotate brand colors for cards with accessible text contrast
+  const getCardColorStyles = (index: number) => {
+    const colors = [
+      { bg: 'bg-brand-hope', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-hope' }, // Yellow -> Black Text
+      { bg: 'bg-brand-testament', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-testament' }, // Purple -> Black Text
+      { bg: 'bg-brand-humility', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-white text-brand-green', border: 'border-brand-humility' }, // Green -> Black Text
+      { bg: 'bg-brand-patience', text: 'text-white', muted: 'text-white/90', accent: 'bg-white text-brand-patience', border: 'border-brand-patience' }, // Red -> White Text
+      { bg: 'bg-brand-triumph', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-triumph' }, // Orange -> Black Text
+    ];
+    return colors[index % colors.length];
+  };
+
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen">
       {/* Unified Branded Header - Compact Version */}
-      <header className="relative bg-brand-light pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/10">
-        {/* Consistent Halos */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[40rem] h-[40rem] bg-brand-hope/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/10 rounded-full blur-[100px]"></div>
-
+      <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-white px-6 py-2 rounded-full shadow-sm border border-brand-green/10">
+          <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
             Digital Witness
           </span>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-brand-dark mb-6 tracking-tighter leading-none">
-            The Journey of <span className="text-brand-green">Journaled Faith</span>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
+            Journey of <span className="text-brand-humility">Journalled Faith</span>
           </h1>
-          <p className="text-base md:text-xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
+          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
             "Threading faith into the fabric of everyday life."
           </p>
         </div>
@@ -66,7 +74,7 @@ export const Blog: React.FC = () => {
         
         {/* Floating Category Nav */}
         <div className="mb-12 relative"> 
-          <div className="bg-white p-2 rounded-3xl shadow-[0_20px_50px_rgba(46,125,50,0.1)] border border-slate-200 max-w-5xl mx-auto relative z-10 overflow-hidden">
+          <div className="bg-white p-2 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 overflow-hidden">
             <div className="flex gap-2 overflow-x-auto no-scrollbar justify-start md:justify-center px-4 sm:px-8 py-1">
               {blogCategories.map(cat => (
                 <button
@@ -87,52 +95,54 @@ export const Blog: React.FC = () => {
 
         {filteredPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-            {filteredPosts.map((post) => (
-              <article
-                key={post.id}
-                className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-brand-green/5 transition-all duration-500 transform hover:-translate-y-2"
-              >
-                <Link to={`/blog/${post.slug}`} className="block relative aspect-[4/3] overflow-hidden">
-                  <img
-                    src={post.thumbnail || post.featuredImage}
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/40 to-transparent opacity-60"></div>
-                  <div className="absolute bottom-6 left-6">
-                    <span className="bg-brand-hope text-brand-dark text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg">
-                      {new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                </Link>
-
-                <div className="p-8 flex-1 flex flex-col">
-                  <Link to={`/blog/${post.slug}`} className="block mb-4">
-                    <h3 className="text-xl font-serif font-bold text-slate-900 leading-tight group-hover:text-brand-green transition-colors">
-                      {post.title}
-                    </h3>
+            {filteredPosts.map((post, idx) => {
+              const colors = getCardColorStyles(idx);
+              return (
+                <article
+                  key={post.id}
+                  className={`group flex flex-col ${colors.bg} rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-white/10`}
+                >
+                  <Link to={`/blog/${post.slug}`} className="block relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={post.thumbnail || post.featuredImage}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    />
+                    <div className="absolute bottom-4 left-4">
+                      <span className={`${colors.accent} text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg`}>
+                        {new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
                   </Link>
 
-                  <p className="text-slate-500 text-sm font-light leading-relaxed flex-1 mb-8">
-                    {post.summary}
-                  </p>
-
-                  <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                    <Link
-                      to={`/blog/${post.slug}`}
-                      className="text-brand-green font-black text-[10px] uppercase tracking-widest inline-flex items-center gap-3 hover:text-brand-dark transition-colors"
-                    >
-                      Read Entry 
-                      <span className="text-xl">&rarr;</span>
+                  <div className="p-8 flex-1 flex flex-col">
+                    <Link to={`/blog/${post.slug}`} className="block mb-4">
+                      <h3 className={`text-xl font-serif font-bold ${colors.text} leading-tight`}>
+                        {post.title}
+                      </h3>
                     </Link>
-                    
-                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                      {post.readingTime || 5} Min Read
-                    </span>
+
+                    <p className={`${colors.muted} text-sm font-medium leading-relaxed flex-1 mb-8`}>
+                      {post.summary}
+                    </p>
+
+                    <div className={`pt-6 border-t border-black/10 flex items-center justify-between`}>
+                      <Link
+                        to={`/blog/${post.slug}`}
+                        className={`${colors.text} font-black text-[10px] uppercase tracking-widest inline-flex items-center gap-3 hover:opacity-75 transition-opacity`}
+                      >
+                        Read Entry 
+                        <span className="text-xl">&rarr;</span>
+                      </Link>
+                      
+                      <span className={`text-[10px] font-bold ${colors.muted} uppercase tracking-widest`}>
+                        {post.readingTime || 5} Min Read
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="py-32 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
@@ -144,7 +154,6 @@ export const Blog: React.FC = () => {
 
       {/* Unified CTA Section */}
       <section className="bg-brand-dark py-24 relative overflow-hidden">
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 to-transparent"></div>
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
            <h2 className="text-3xl md:text-6xl font-serif font-bold text-white mb-8">Stay <span className="text-brand-hope">Connected</span></h2>
            <p className="text-brand-light/70 text-lg mb-12 font-light">Join our list for weekly testimonies and styling secrets.</p>

@@ -95,6 +95,21 @@ export class SettingsService {
     return Mappers.toAppSettings(data as DbAppSettings);
   }
 
+  async getPublicPaymentSettings(): Promise<{ paypalClientId: string; paypalMode: string; paymentGatewayEnabled: boolean; currency: string } | null> {
+    log('RPC', 'get_public_payment_settings');
+    const { data, error } = await supabase.rpc('get_public_payment_settings');
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return {
+      paypalClientId: data.paypal_client_id,
+      paypalMode: data.paypal_mode,
+      paymentGatewayEnabled: data.payment_gateway_enabled,
+      currency: data.currency
+    };
+  }
+
   async update(id: number, settings: Partial<AppSettings>): Promise<void> {
     log('UPDATE', 'app_settings', { id });
     const dbSettings: any = {
@@ -125,13 +140,27 @@ export class SettingsService {
       shipping_policy: settings.shippingPolicy,
       tax_rate: settings.taxRate,
       free_shipping_threshold: settings.freeShippingThreshold,
+      require_login_for_checkout: settings.requireLoginForCheckout,
       featured_categories: settings.featuredCategories,
       smtp_settings: settings.smtpSettings,
       enable_email_notifications: settings.enableEmailNotifications,
       enable_email_welcome: settings.enableEmailWelcome,
       enable_email_new_order: settings.enableEmailNewOrder,
-      enable_email_order_shipped: settings.enableEmailOrderShipped
+      enable_email_order_shipped: settings.enableEmailOrderShipped,
+      enable_newsletter_signup: settings.enableNewsletterSignup,
+      enable_contact_form: settings.enableContactForm,
+      enable_reviews: settings.enableReviews,
+      
+      // PayPal Settings Mapping
+      paypal_client_id: settings.paypalClientId,
+      paypal_secret_key: settings.paypalSecretKey,
+      paypal_mode: settings.paypalMode,
+      payment_gateway_enabled: settings.paymentGatewayEnabled
     };
+    
+    // Remove undefined keys to avoid overwriting with null if partial
+    Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
+
     const { error } = await supabase.from('app_settings').update(dbSettings).eq('id', id);
     if (error) throw error;
   }
@@ -160,7 +189,7 @@ export class SupportService {
     const { error } = await supabase.from('newsletter_subscribers').upsert({ 
         email, 
         source, 
-        subscribed_at: new Date().toISOString(),
+        subscribed_at: new Date().toISOString(), 
         is_subscribed: true 
     }, { onConflict: 'email' });
     if (error) throw error;

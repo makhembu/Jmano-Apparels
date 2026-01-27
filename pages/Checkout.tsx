@@ -8,12 +8,13 @@ import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ShippingAddress, ShippingZone, DiscountCode, UserAddress } from '../types';
 import { useToast } from '../context/ToastContext';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { supabase } from '../lib/supabaseClient';
 
 export const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const { settings } = useApp();
-  // Fix: Added 'const' to declare navigate
   const navigate = useNavigate();
   const { showToast } = useToast();
   
@@ -24,16 +25,40 @@ export const Checkout: React.FC = () => {
   const [activeDiscount, setActiveDiscount] = useState<DiscountCode | null>(null);
   const [orderNotes, setOrderNotes] = useState('');
 
+  // Payment Config
+  const [paypalConfig, setPaypalConfig] = useState<{ clientId: string; mode: string; enabled: boolean } | null>(null);
+
   // Address Selection State
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [saveThisAddress, setSaveThisAddress] = useState(true);
+
+  // Guest Checkout State
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
 
   const [address, setAddress] = useState<ShippingAddress>({
     address1: '', city: '', postcode: '', country: 'United Kingdom', phone: ''
   });
 
   useEffect(() => {
+    // Safety check: if login is required but user is not logged in, bounce them
+    if (settings.requireLoginForCheckout && !user) {
+        navigate('/login', { state: { from: '/checkout' } });
+        return;
+    }
+
+    // Load PayPal Settings Securely
+    api.getPublicPaymentSettings().then((config) => {
+      if (config) {
+        setPaypalConfig({
+          clientId: config.paypalClientId,
+          mode: config.paypalMode,
+          enabled: config.paymentGatewayEnabled
+        });
+      }
+    });
+
     api.getShippingZones().then(setZones);
     if (user) {
       api.getUserAddresses(user.id).then(addresses => {
@@ -52,7 +77,7 @@ export const Checkout: React.FC = () => {
         }
       });
     }
-  }, [user]);
+  }, [user, settings, navigate]);
 
   const handleAddressSelect = (id: string) => {
     setSelectedAddressId(id);
@@ -104,7 +129,6 @@ export const Checkout: React.FC = () => {
     ? (activeDiscount.discountType === 'percentage' ? cartTotal * (activeDiscount.discountValue / 100) : activeDiscount.discountValue)
     : 0;
   
-  // Robust Tax Rate handling: Normalizes e.g. 20.00 to 0.20
   const rawTaxRate = settings.taxRate ?? 0.20;
   const taxRate = rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate;
   
@@ -112,53 +136,145 @@ export const Checkout: React.FC = () => {
   const taxAmount = (taxableTotal / (1 + taxRate)) * taxRate;
   const finalTotal = Math.max(0, cartTotal + shippingCost - discountAmount);
 
-  const handleOrder = async () => {
-    // Fix: navigate is now correctly declared and usable
-    if (!user) { navigate('/login'); return; }
+  // Validation Logic
+  const validateOrder = (): boolean => {
+    if (!user) {
+        if (!guestName || !guestEmail) {
+            showToast('Please provide your name and email.', 'error');
+            return false;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+            showToast('Please enter a valid email address.', 'error');
+            return false;
+        }
+    }
     if (!address.address1 || !address.city || !address.postcode) {
         showToast('Please provide your full delivery details', 'error');
-        return;
+        return false;
+    }
+    return true;
+  };
+
+  const prepareOrderPayload = () => {
+    // Save address only if logged in and new
+    if (user && selectedAddressId === 'new' && saveThisAddress) {
+        api.saveUserAddress(user.id, { ...address, label: 'Saved Address' }).catch(console.error);
     }
 
+    const orderItems = cart.map(c => ({
+      productId: c.id, 
+      quantity: c.quantity, 
+      size: c.selectedSize, 
+      title: c.title, 
+      price: c.price, 
+      selectedColor: c.selectedColor,
+      image: c.images[0]
+    }));
+
+    return {
+      userId: user?.id || null, 
+      customerName: user ? user.name : guestName,
+      customerEmail: user ? user.email : guestEmail,
+      products: orderItems,
+      total: finalTotal,
+      subtotal: cartTotal,
+      shippingCost: shippingCost,
+      taxAmount: taxAmount,
+      discountAmount: discountAmount,
+      discountCode: activeDiscount?.code,
+      shippingAddress: address,
+      notes: orderNotes
+    };
+  };
+
+  const handleManualOrder = async () => {
+    if (!validateOrder()) return;
     setIsProcessing(true);
     try {
-       if (selectedAddressId === 'new' && saveThisAddress) {
-          await api.saveUserAddress(user.id, { ...address, label: 'Saved Address' });
-       }
-
-       // Updated: included image in order items for history snapshots
-       const orderItems = cart.map(c => ({
-         productId: c.id, 
-         quantity: c.quantity, 
-         size: c.selectedSize, 
-         title: c.title, 
-         price: c.price, 
-         selectedColor: c.selectedColor,
-         image: c.images[0]
-       }));
-       
-       await api.createOrder({
-         userId: user.id,
-         products: orderItems,
-         total: finalTotal,
-         subtotal: cartTotal,
-         shippingCost: shippingCost,
-         taxAmount: taxAmount,
-         discountAmount: discountAmount,
-         discountCode: activeDiscount?.code,
-         shippingAddress: address,
-         notes: orderNotes
-       });
-       
+       const payload = prepareOrderPayload();
+       await api.createOrder({ ...payload, paymentStatus: 'paid' }); // Mock immediate payment
        clearCart();
-       // Fix: navigate is now correctly declared and usable
-       navigate('/dashboard', { state: { orderConfirmed: true } });
+       if (user) {
+           navigate('/dashboard', { state: { orderConfirmed: true } });
+       } else {
+           navigate('/shop');
+       }
        showToast('Order confirmed! We’re threading your scriptures now.', 'success');
     } catch(e) {
        console.error(e);
        showToast('Something went wrong. Please check your connection.', 'error');
     } finally {
        setIsProcessing(false);
+    }
+  };
+
+  // --- PayPal Handlers ---
+
+  const createPayPalOrder = async (data: any, actions: any) => {
+    if (!validateOrder()) throw new Error("Invalid form data");
+    
+    try {
+        // 1. Create Order in DB as "Pending Payment" to reserve stock and get ID
+        const payload = prepareOrderPayload();
+        // Set explicit pending status for PayPal flow
+        const dbOrder = await api.createOrder({ 
+            ...payload, 
+            paymentStatus: 'pending' 
+        });
+
+        // 2. Create PayPal Order with the correct total
+        return actions.order.create({
+            purchase_units: [{
+                description: `Order #${dbOrder.orderNumber}`,
+                custom_id: dbOrder.id, // Link DB Order ID
+                amount: {
+                    currency_code: settings.currency || 'GBP',
+                    value: finalTotal.toFixed(2)
+                }
+            }]
+        });
+    } catch (e: any) {
+        showToast("Failed to initialize payment. Please try again.", 'error');
+        throw e;
+    }
+  };
+
+  const onPayPalApprove = async (data: any, actions: any) => {
+    try {
+        setIsProcessing(true);
+        // 1. Capture the payment on client side to get details (or do it server side)
+        // Note: For best security, verification should happen on server.
+        // We will call our Edge Function here.
+        
+        // Retrieve the DB Order ID we sent as custom_id
+        const orderDetails = await actions.order.get();
+        const dbOrderId = orderDetails.purchase_units[0].custom_id;
+        const paypalOrderId = data.orderID;
+
+        // 2. Call Supabase Edge Function to verify and update DB
+        const { data: verifyData, error } = await supabase.functions.invoke('verify-paypal-payment', {
+            body: { orderId: dbOrderId, paypalOrderId: paypalOrderId }
+        });
+
+        if (error || !verifyData?.success) {
+            throw new Error(verifyData?.message || "Payment verification failed");
+        }
+
+        // 3. Success!
+        clearCart();
+        showToast('Payment successful! Order confirmed.', 'success');
+        if (user) {
+            navigate(`/order/${dbOrderId}`);
+        } else {
+            navigate('/shop'); // Or a generic success page
+        }
+
+    } catch (e: any) {
+        console.error("PayPal Error:", e);
+        showToast(`Payment failed: ${e.message}`, 'error');
+        // Optional: Call cancelOrder API here if stock needs to be returned immediately
+    } finally {
+        setIsProcessing(false);
     }
   };
 
@@ -175,7 +291,43 @@ export const Checkout: React.FC = () => {
             <p className="text-gray-500 font-light">Ethically threaded and ready to be delivered to your door.</p>
           </div>
 
-          {/* Saved Addresses Selector */}
+          {/* GUEST DETAILS SECTION */}
+          {!user && (
+             <section className="bg-white p-8 rounded-2xl shadow-sm border border-brand-green/20 ring-4 ring-brand-light/20">
+                <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                   <span className="bg-brand-green text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                   Guest Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Full Name</label>
+                      <input 
+                        type="text" 
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="block w-full border border-gray-200 rounded-xl p-4 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all"
+                        placeholder="e.g. John Doe"
+                      />
+                   </div>
+                   <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                      <input 
+                        type="email" 
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="block w-full border border-gray-200 rounded-xl p-4 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all"
+                        placeholder="john@example.com"
+                      />
+                   </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+                   <span>Already have an account?</span>
+                   <Link to="/login" state={{ from: '/checkout' }} className="text-brand-green font-bold hover:underline">Sign In</Link>
+                </div>
+             </section>
+          )}
+
+          {/* Saved Addresses Selector (Only for logged in users) */}
           {user && savedAddresses.length > 0 && (
             <section className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -208,8 +360,10 @@ export const Checkout: React.FC = () => {
           )}
 
           {/* New Address Form */}
-          <section className={`bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all ${selectedAddressId !== 'new' ? 'opacity-50 pointer-events-none' : ''}`}>
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Delivery Address</h2>
+          <section className={`bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all ${user && selectedAddressId !== 'new' ? 'opacity-50 pointer-events-none' : ''}`}>
+            <h2 className="text-lg font-bold text-gray-900 mb-6">
+               {user ? "Delivery Address" : "2. Shipping Destination"}
+            </h2>
             <div className="space-y-4">
               <input 
                 type="text" placeholder="Address Line 1" 
@@ -354,18 +508,32 @@ export const Checkout: React.FC = () => {
                   <Button onClick={applyDiscount} variant="outline" className="px-6">Apply</Button>
                </div>
 
-               <Button 
-                fullWidth 
-                onClick={handleOrder} 
-                isLoading={isProcessing}
-                className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-2xl"
-               >
-                 Confirm Order
-               </Button>
+               {/* PAYMENT BUTTONS */}
+               {paypalConfig && paypalConfig.enabled && paypalConfig.clientId ? (
+                 <div className="pt-4 animate-fade-in relative z-0">
+                    <PayPalScriptProvider options={{ "clientId": paypalConfig.clientId, currency: settings.currency || "GBP" }}>
+                       <PayPalButtons 
+                          style={{ layout: "vertical", shape: "rect", borderRadius: 12 }}
+                          createOrder={createPayPalOrder}
+                          onApprove={onPayPalApprove}
+                          disabled={isProcessing}
+                       />
+                    </PayPalScriptProvider>
+                 </div>
+               ) : (
+                 <Button 
+                  fullWidth 
+                  onClick={handleManualOrder} 
+                  isLoading={isProcessing}
+                  className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-2xl"
+                 >
+                   Confirm Order (Manual)
+                 </Button>
+               )}
             </div>
 
             <p className="text-[10px] text-gray-400 text-center mt-6 uppercase tracking-widest font-bold">
-               Secure Payment Powered by Stripe
+               Secure Payment Powered by {paypalConfig?.enabled ? 'PayPal' : 'Jambo Secure'}
             </p>
           </div>
 

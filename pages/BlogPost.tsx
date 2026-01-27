@@ -61,44 +61,45 @@ export const BlogPost: React.FC = () => {
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Unified editorial Post Header */}
-      <header className="relative bg-brand-light pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden border-b border-brand-green/10">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-hope/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/10 rounded-full blur-3xl"></div>
+      {/* Unified editorial Post Header - Dark Theme */}
+      <header className="relative bg-brand-dark pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden border-b border-brand-green/20">
+        {/* Background Decor */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/20 rounded-full blur-3xl"></div>
         
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <div className="mb-12">
-            <BackButton to="/blog" className="inline-flex items-center text-[10px] font-black uppercase tracking-[0.3em] text-brand-green bg-white px-5 py-2 rounded-full shadow-sm border border-brand-green/5" />
+            <BackButton to="/blog" className="inline-flex items-center text-[10px] font-black uppercase tracking-[0.3em] text-white bg-white/10 px-5 py-2 rounded-full shadow-sm border border-white/10 hover:bg-white/20 transition-all" />
           </div>
           
           <div className="space-y-8 text-center md:text-left">
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
-              <span className="bg-brand-dark text-brand-hope px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.3em]">
+              <span className="bg-brand-hope text-brand-dark px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.3em]">
                 {category?.label || 'The Testimony'}
               </span>
-              <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.2em]">
+              <span className="text-brand-light text-[10px] font-black uppercase tracking-[0.2em]">
                 {post.readingTime} Min Read
               </span>
             </div>
             
-            <h1 className="text-4xl md:text-7xl font-serif font-bold text-brand-dark leading-[1.05] tracking-tight">
+            <h1 className="text-4xl md:text-7xl font-serif font-bold text-white leading-[1.05] tracking-tight">
               {post.title}
             </h1>
             
-            <div className="flex flex-col md:flex-row items-center gap-6 pt-10 border-t border-brand-green/10">
+            <div className="flex flex-col md:flex-row items-center gap-6 pt-10 border-t border-white/10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-brand-green text-white flex items-center justify-center font-serif font-black text-xl shadow-lg shadow-brand-green/20">
+                <div className="w-12 h-12 rounded-xl bg-brand-green text-white flex items-center justify-center font-serif font-black text-xl shadow-lg shadow-black/20 border border-white/10">
                   {post.author?.[0]}
                 </div>
                 <div className="text-left">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authored By</p>
-                  <p className="font-bold text-slate-800">{post.author}</p>
+                  <p className="text-[10px] font-black text-brand-light/60 uppercase tracking-widest">Authored By</p>
+                  <p className="font-bold text-white">{post.author}</p>
                 </div>
               </div>
-              <div className="hidden md:block w-px h-8 bg-slate-200"></div>
+              <div className="hidden md:block w-px h-8 bg-white/20"></div>
               <div className="text-left">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Journalled On</p>
-                 <p className="font-bold text-slate-800">{new Date(post.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                 <p className="text-[10px] font-black text-brand-light/60 uppercase tracking-widest">Journalled On</p>
+                 <p className="font-bold text-white">{new Date(post.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
               </div>
             </div>
           </div>
@@ -165,8 +166,8 @@ export const BlogPost: React.FC = () => {
               <Link to="/shop" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-green transition-all">Entire Collection &rarr;</Link>
            </div>
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {recommendedProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+              {recommendedProducts.map((product, index) => (
+                <ProductCard key={product.id} product={product} index={index} />
               ))}
            </div>
         </div>

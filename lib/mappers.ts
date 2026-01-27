@@ -79,6 +79,7 @@ export const Mappers = {
     currency: s.currency || 'GBP',
     taxRate: s.tax_rate || 0.2,
     freeShippingThreshold: s.free_shipping_threshold || undefined,
+    requireLoginForCheckout: (s as any).require_login_for_checkout || false,
     shippingPolicy: s.shipping_policy || undefined,
     returnPolicy: s.return_policy || undefined,
     privacyPolicy: s.privacy_policy || undefined,
@@ -94,7 +95,16 @@ export const Mappers = {
     enableEmailNotifications: s.enable_email_notifications ?? false,
     enableEmailWelcome: s.enable_email_welcome ?? false,
     enableEmailNewOrder: s.enable_email_new_order ?? false,
-    enableEmailOrderShipped: s.enable_email_order_shipped ?? false
+    enableEmailOrderShipped: s.enable_email_order_shipped ?? false,
+    enableNewsletterSignup: (s as any).enable_newsletter_signup ?? true,
+    enableContactForm: (s as any).enable_contact_form ?? true,
+    enableReviews: (s as any).enable_reviews ?? true,
+    
+    // PayPal Mapping
+    paypalClientId: (s as any).paypal_client_id || undefined,
+    paypalSecretKey: (s as any).paypal_secret_key || undefined,
+    paypalMode: (s as any).paypal_mode || 'sandbox',
+    paymentGatewayEnabled: (s as any).payment_gateway_enabled || false
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
@@ -130,7 +140,6 @@ export const Mappers = {
     let shippingAddress: ShippingAddress | undefined = undefined;
 
     if (Array.isArray(rawData)) {
-      // Intelligently map keys in case they are snake_case in JSON
       products = rawData.map((item: any) => ({
          productId: item.productId || item.product_id || '',
          quantity: item.quantity || 1,
@@ -154,14 +163,15 @@ export const Mappers = {
       shippingAddress = rawData.shippingAddress as ShippingAddress;
     }
 
-    // Fallback for standalone shipping_address column (if exists in o)
     if (!shippingAddress && (o as any).shipping_address) {
        shippingAddress = (o as any).shipping_address;
     }
 
     return {
       id: o.id,
-      userId: o.user_id || '',
+      userId: o.user_id || null, // Allow null for guests
+      customerName: (o as any).customer_name,
+      customerEmail: (o as any).customer_email,
       orderNumber: o.order_number || o.id.slice(0, 8),
       products: products,
       total: o.total,
@@ -174,6 +184,7 @@ export const Mappers = {
       createdAt: o.date || new Date().toISOString(),
       shippingAddress: shippingAddress,
       paymentStatus: o.payment_status || 'pending',
+      paymentIntentId: o.payment_intent_id || undefined,
       trackingNumber: o.tracking_number || undefined,
       shippedAt: o.shipped_at || undefined,
       deliveredAt: o.delivered_at || undefined,

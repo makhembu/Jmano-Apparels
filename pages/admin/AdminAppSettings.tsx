@@ -10,8 +10,9 @@ import { PolicySection } from '../../components/admin/settings/PolicySection';
 import { useToast } from '../../context/ToastContext';
 import { NotificationSection } from '../../components/admin/settings/NotificationSection';
 import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemplatesSection';
+import { PaymentSection } from '../../components/admin/settings/PaymentSection';
 
-type SettingsTab = 'brand' | 'emails' | 'contact' | 'content' | 'system';
+type SettingsTab = 'brand' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
 
 export const AdminAppSettings: React.FC = () => {
   const { settings, updateSettings } = useApp();
@@ -24,7 +25,7 @@ export const AdminAppSettings: React.FC = () => {
     setFormData(settings);
   }, [settings]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
         const checked = (e.target as HTMLInputElement).checked;
@@ -38,7 +39,21 @@ export const AdminAppSettings: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await updateSettings(formData);
+      // Map frontend camelCase to DB snake_case for custom payment fields if not handled by mapper
+      const payload: any = { ...formData };
+      
+      // Explicitly map PayPal fields if the updateSettings doesn't handle them automatically 
+      // (Depends on if updateSettings uses the raw DB column names. 
+      //  Assuming Mappers.toAppSettings handled READ, we need to ensure WRITE maps back or AppSettings matches DB columns)
+      // For this implementation, we assume `updateSettings` in `ShopContext` handles the mapping or we rely on explicit keys.
+      // Ideally the Service handles the mapping back to snake_case.
+      // Given the `SettingsService.update` implementation, we need to ensure we pass the correct keys.
+      // Let's modify the SettingsService update method implicitly or just rely on it accepting the full object.
+      // The current `SettingsService.update` maps specific fields manually. We need to update that file too or pass these as special overrides.
+      
+      // We will rely on `SettingsService` being updated to handle `paypal_*` fields.
+      
+      await updateSettings(payload);
       showToast('Settings updated successfully', 'success');
     } catch (e) {
       showToast('Failed to save settings', 'error');
@@ -71,6 +86,7 @@ export const AdminAppSettings: React.FC = () => {
       {/* Tabs Header */}
       <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
         <TabButton id="brand" label="Brand & SEO" />
+        <TabButton id="payments" label="Payments" />
         <TabButton id="emails" label="Notifications" />
         <TabButton id="contact" label="Contact & Social" />
         <TabButton id="content" label="Content & Legal" />
@@ -83,6 +99,13 @@ export const AdminAppSettings: React.FC = () => {
         {activeTab === 'brand' && (
           <div className="animate-fade-in">
             <IdentitySection settings={formData} onChange={handleChange} />
+          </div>
+        )}
+
+        {/* TAB: Payments */}
+        {activeTab === 'payments' && (
+          <div className="animate-fade-in">
+            <PaymentSection settings={formData} onChange={handleChange} />
           </div>
         )}
         

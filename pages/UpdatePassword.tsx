@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/db';
@@ -50,11 +49,11 @@ export const UpdatePassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-10 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center bg-brand-dark py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-brand-hope animate-fade-in">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-serif font-bold text-slate-900">Set New Password</h2>
-          <p className="mt-3 text-sm text-slate-500">
+          <h2 className="text-3xl font-serif font-bold text-brand-dark">Set New Password</h2>
+          <p className="mt-3 text-sm text-slate-500 font-medium">
             Secure your account with a new password.
           </p>
         </div>
@@ -65,7 +64,7 @@ export const UpdatePassword: React.FC = () => {
             <input
               type="password"
               required
-              className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+              className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -76,7 +75,7 @@ export const UpdatePassword: React.FC = () => {
             <input
               type="password"
               required
-              className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none transition-all"
+              className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -87,7 +86,7 @@ export const UpdatePassword: React.FC = () => {
             type="submit"
             isLoading={loading}
             fullWidth
-            className="h-14 rounded-2xl font-bold uppercase tracking-wider text-xs shadow-xl shadow-brand-green/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="h-14 rounded-2xl bg-brand-hope text-brand-dark font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-hope/20 hover:bg-brand-dark hover:text-white transition-all"
           >
             Update Password
           </Button>

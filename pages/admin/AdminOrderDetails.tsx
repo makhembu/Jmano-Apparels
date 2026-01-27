@@ -92,6 +92,11 @@ export const AdminOrderDetails: React.FC = () => {
     'Cancelled': 'bg-red-100 text-red-800 border-red-200'
   };
 
+  // Determine display name and email (prefer registered user, fallback to guest fields)
+  const displayName = customer?.name || order.customerName || 'Guest User';
+  const displayEmail = customer?.email || order.customerEmail || 'No email provided';
+  const isGuest = !customer && !order.userId;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
       {/* Print-Only Header */}
@@ -235,29 +240,27 @@ export const AdminOrderDetails: React.FC = () => {
              <div className="bg-white shadow-xl shadow-slate-200/50 rounded-3xl border border-slate-100 p-8">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                    <svg className="w-4 h-4 text-brand-green no-print" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                   Customer Ambassador
+                   Customer Details
                 </h3>
-                {customer ? (
-                  <div className="flex items-center gap-4">
-                     <div className="h-14 w-14 rounded-2xl bg-brand-light flex items-center justify-center text-brand-dark font-black text-xl border-2 border-white shadow-sm no-print">
-                        {customer.name.charAt(0).toUpperCase()}
-                     </div>
-                     <div>
-                        <Link to={`/admin/users?id=${customer.id}`} className="text-lg font-bold text-slate-900 hover:text-brand-green transition-colors no-print">{customer.name}</Link>
-                        <p className="hidden print:block text-lg font-bold text-slate-900">{customer.name}</p>
-                        <p className="text-sm text-slate-500">{customer.email}</p>
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1 no-print">Loyalty Tier: Standard User</p>
-                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4 animate-pulse no-print">
-                     <div className="h-14 w-14 rounded-2xl bg-slate-100"></div>
-                     <div className="space-y-2">
-                        <div className="h-4 w-32 bg-slate-100 rounded"></div>
-                        <div className="h-3 w-48 bg-slate-100 rounded"></div>
-                     </div>
-                  </div>
-                )}
+                
+                <div className="flex items-center gap-4">
+                   <div className="h-14 w-14 rounded-2xl bg-brand-light flex items-center justify-center text-brand-dark font-black text-xl border-2 border-white shadow-sm no-print">
+                      {displayName.charAt(0).toUpperCase()}
+                   </div>
+                   <div>
+                      {customer ? (
+                        <Link to={`/admin/users?id=${customer.id}`} className="text-lg font-bold text-slate-900 hover:text-brand-green transition-colors no-print">{displayName}</Link>
+                      ) : (
+                        <p className="text-lg font-bold text-slate-900">{displayName}</p>
+                      )}
+                      
+                      <p className="hidden print:block text-lg font-bold text-slate-900">{displayName}</p>
+                      <p className="text-sm text-slate-500">{displayEmail}</p>
+                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1 no-print">
+                         Tier: {isGuest ? 'Guest Checkout' : 'Registered Member'}
+                      </p>
+                   </div>
+                </div>
              </div>
 
              {/* Shipping Address Card */}
@@ -268,7 +271,7 @@ export const AdminOrderDetails: React.FC = () => {
                 </h3>
                 {order.shippingAddress ? (
                    <div className="space-y-1">
-                      <p className="text-sm font-bold text-slate-900">{customer?.name || 'Recipient'}</p>
+                      <p className="text-sm font-bold text-slate-900">{displayName || 'Recipient'}</p>
                       <address className="not-italic text-sm text-slate-600 leading-relaxed font-light">
                          {order.shippingAddress.address1}<br/>
                          {order.shippingAddress.address2 && <>{order.shippingAddress.address2}<br/></>}

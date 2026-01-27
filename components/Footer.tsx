@@ -34,27 +34,29 @@ export const Footer: React.FC = () => {
             <p className="text-brand-light text-sm italic">{settings.slogan}</p>
             <p className="text-brand-light text-sm mt-2">{settings.coreValues}</p>
             
-            {/* Newsletter Form */}
-            <div className="mt-6">
-              <h5 className="text-sm font-semibold mb-2">Join our Newsletter</h5>
-              <form onSubmit={handleSubscribe} className="flex flex-col space-y-2">
-                <input 
-                  type="email" 
-                  placeholder="Enter email..." 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="px-3 py-2 text-sm text-gray-900 bg-white rounded focus:outline-none focus:ring-2 focus:ring-brand-green"
-                />
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="bg-brand-green hover:bg-green-700 text-white text-sm py-2 px-3 rounded transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Subscribing...' : 'Subscribe'}
-                </button>
-              </form>
-            </div>
+            {/* Newsletter Form - Conditioned on setting */}
+            {settings.enableNewsletterSignup && (
+              <div className="mt-6">
+                <h5 className="text-sm font-semibold mb-2">Join our Newsletter</h5>
+                <form onSubmit={handleSubscribe} className="flex flex-col space-y-2">
+                  <input 
+                    type="email" 
+                    placeholder="Enter email..." 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="px-3 py-2 text-sm text-gray-900 bg-white rounded focus:outline-none focus:ring-2 focus:ring-brand-green"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="bg-brand-green hover:bg-green-700 text-white text-sm py-2 px-3 rounded transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Subscribing...' : 'Subscribe'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Shop</h4>

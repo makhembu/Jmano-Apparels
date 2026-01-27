@@ -1,4 +1,3 @@
-
 import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress, EmailTemplate } from '../types';
 import { ProductService, CategoryService, ReviewService } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
@@ -33,8 +32,6 @@ export const api = {
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
   adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    // For simplicity in the prototype, we loop updates, but in production, 
-    // a single .in() query is used.
     const promises = ids.map(id => productService.update(id, updates));
     return Promise.all(promises);
   },
@@ -51,6 +48,7 @@ export const api = {
   // APP SETTINGS
   getAppSettings: () => settingsService.get(),
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
+  getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   
   // EMAIL TEMPLATES
   getEmailTemplates: () => settingsService.getEmailTemplates(),
