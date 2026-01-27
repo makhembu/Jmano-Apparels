@@ -192,14 +192,15 @@ export const Checkout: React.FC = () => {
     setIsProcessing(true);
     try {
        const payload = prepareOrderPayload();
-       await api.createOrder({ ...payload, paymentStatus: 'paid' }); // Mock immediate payment
+       // Manual orders are 'Pending Payment' by default unless gateway confirms
+       await api.createOrder({ ...payload, paymentStatus: 'pending' }); 
        clearCart();
        if (user) {
            navigate('/dashboard', { state: { orderConfirmed: true } });
        } else {
            navigate('/shop');
        }
-       showToast('Order confirmed! We’re threading your scriptures now.', 'success');
+       showToast('Order received! Please check email for payment instructions.', 'success');
     } catch(e) {
        console.error(e);
        showToast('Something went wrong. Please check your connection.', 'error');
@@ -522,7 +523,6 @@ export const Checkout: React.FC = () => {
                {paypalConfig && paypalConfig.enabled && paypalConfig.clientId ? (
                  <div className="pt-4 animate-fade-in relative z-0">
                     <PayPalScriptProvider options={{ "clientId": paypalConfig.clientId, currency: settings.currency || "GBP" }}>
-                       {/* FIX: Cast props to any to avoid TS error with style prop */}
                        <PayPalButtons 
                           {...({
                             style: { layout: "vertical", shape: "rect", borderRadius: 12 },

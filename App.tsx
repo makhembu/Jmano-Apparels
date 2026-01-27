@@ -32,6 +32,7 @@ import { AdminBlog } from './pages/admin/AdminBlog';
 import { AdminBlogEditor } from './pages/admin/AdminBlogEditor';
 import { AdminNewsletter } from './pages/admin/AdminNewsletter';
 import { AdminContact } from './pages/admin/AdminContact';
+import { AdminProfile } from './pages/admin/AdminProfile';
 import { Terms, Privacy, Cookies, Returns } from './pages/Legal';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
@@ -112,6 +113,7 @@ const App: React.FC = () => {
                     <Route path="blog/:id" element={<AdminBlogEditor />} />
                     <Route path="newsletter" element={<AdminNewsletter />} />
                     <Route path="contact" element={<AdminContact />} />
+                    <Route path="profile" element={<AdminProfile />} />
                   </Route>
                 </Routes>
               </Router>

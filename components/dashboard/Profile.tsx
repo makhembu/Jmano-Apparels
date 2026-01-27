@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { Button } from '../ui/Button';
@@ -11,11 +12,18 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ user }) => {
   const { showToast } = useToast();
+  
+  // Profile State
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({ name: user.name, email: user.email });
   const [saving, setSaving] = useState(false);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  // Password State
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passForm, setPassForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passSaving, setPassSaving] = useState(false);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -26,6 +34,30 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
       showToast('Failed to update profile', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passForm.newPassword !== passForm.confirmPassword) {
+        showToast('Passwords do not match', 'error');
+        return;
+    }
+    if (passForm.newPassword.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    setPassSaving(true);
+    try {
+        await api.updateUserPassword(passForm.newPassword);
+        showToast('Password updated successfully', 'success');
+        setIsChangingPassword(false);
+        setPassForm({ newPassword: '', confirmPassword: '' });
+    } catch (e: any) {
+        showToast(e.message || 'Failed to update password', 'error');
+    } finally {
+        setPassSaving(false);
     }
   };
 
@@ -42,7 +74,7 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
         
         <div className="bg-white border border-gray-200 rounded-lg p-6">
            {isEditing ? (
-             <form onSubmit={handleUpdate} className="space-y-4">
+             <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                      <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
@@ -78,6 +110,53 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
              </div>
            )}
         </div>
+      </section>
+
+      {/* Security Section */}
+      <section>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Security</h3>
+          {!isChangingPassword && (
+            <button onClick={() => setIsChangingPassword(true)} className="text-xs font-bold text-brand-green hover:underline">Change Password</button>
+          )}
+        </div>
+
+        {isChangingPassword ? (
+            <form onSubmit={handleUpdatePassword} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">New Password</label>
+                        <input 
+                            type="password" required value={passForm.newPassword} 
+                            onChange={e => setPassForm({...passForm, newPassword: e.target.value})}
+                            className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-brand-green outline-none"
+                            placeholder="Min 6 characters"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Confirm Password</label>
+                        <input 
+                            type="password" required value={passForm.confirmPassword} 
+                            onChange={e => setPassForm({...passForm, confirmPassword: e.target.value})}
+                            className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-brand-green outline-none"
+                            placeholder="Re-enter password"
+                        />
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="outline" onClick={() => { setIsChangingPassword(false); setPassForm({newPassword:'', confirmPassword:''}); }} className="h-8 py-0">Cancel</Button>
+                    <Button type="submit" isLoading={passSaving} className="h-8 py-0">Update Password</Button>
+                </div>
+            </form>
+        ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <p className="text-sm font-bold text-gray-800">Password</p>
+                    <p className="text-xs text-gray-500">********</p>
+                </div>
+                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">Secure</span>
+            </div>
+        )}
       </section>
 
       {/* Address Management */}

@@ -1,18 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { EmailTemplate } from '../../../types';
 import { api } from '../../../lib/db';
 import { Button } from '../../ui/Button';
 import { useToast } from '../../../context/ToastContext';
+import { useApp } from '../../../context/AppContext';
 
 export const EmailTemplatesSection: React.FC = () => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  // View modes: 'edit' (code only), 'preview' (preview only), 'split' (side-by-side)
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
   
   const { showToast } = useToast();
+  const { settings } = useApp();
 
   useEffect(() => {
     loadTemplates();
@@ -66,6 +69,10 @@ export const EmailTemplatesSection: React.FC = () => {
       case 'new_order_customer': return 'Order Conf.';
       case 'order_shipped': return 'Shipped';
       case 'order_cancelled': return 'Cancelled';
+      case 'admin_new_order': return 'Admin: Sale';
+      case 'contact_notification_admin': return 'Admin: Contact';
+      case 'contact_autoreply': return 'User: Contact Reply';
+      case 'newsletter_welcome': return 'Newsletter Welcome';
       default: return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
   };
@@ -73,39 +80,61 @@ export const EmailTemplatesSection: React.FC = () => {
   const generatePreview = (html: string) => {
     let preview = html || '';
     const dummyData: Record<string, string> = {
+      // Branding Globals
+      '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png',
+      '{{shop_url}}': 'https://jamboapparels.com',
+      '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com',
+      '{{shop_link}}': 'https://jamboapparels.com/#/shop',
+      
+      // Dynamic Data
       '{{name}}': 'Sarah Jenkins',
       '{{order_number}}': 'ORD-2026-8892',
       '{{total}}': '45.00',
       '{{tracking_number}}': 'GB-123456789',
       '{{order_link}}': '#',
+      '{{customer_name}}': 'Sarah Jenkins',
+      '{{sender_name}}': 'John Doe',
+      '{{sender_email}}': 'john@example.com',
+      '{{subject}}': 'Question about bulk ordering',
+      '{{message}}': 'Hi, I would like to order 50 hoodies for our youth group. Do you offer bulk discounts?',
+      '{{admin_link}}': '#',
     };
 
     Object.entries(dummyData).forEach(([key, value]) => {
       preview = preview.split(key).join(value);
     });
 
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #ffffff; }
-            h1, h2, h3 { color: #1B5E20; margin-top: 0; }
-            p { margin-bottom: 1em; }
-            a { color: #2E7D32; text-decoration: none; font-weight: bold; }
-            .button { background: #2E7D32; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0; font-weight: bold; }
-            .footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #888; }
-          </style>
-        </head>
-        <body>
-          ${preview}
-        </body>
-      </html>
-    `;
+    return preview; 
+  };
+
+  const handleSendTest = async () => {
+    if (!selectedTemplate) return;
+    
+    const targetEmail = window.prompt("Send test email to:", settings.contactEmail || "");
+    if (!targetEmail) return;
+
+    setIsSendingTest(true);
+    try {
+      // Use the preview generator to populate dummy data for the test
+      const populatedHtml = generatePreview(selectedTemplate.bodyHtml);
+      const subject = generatePreview(selectedTemplate.subject);
+
+      const result = await api.sendTestEmail(targetEmail, subject, populatedHtml);
+      
+      if (result.success) {
+        showToast(`Test email sent to ${targetEmail}`, 'success');
+      } else {
+        showToast(result.message || 'Failed to send test email', 'error');
+      }
+    } catch (e) {
+      showToast('Error sending test email', 'error');
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   return (
-    <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 overflow-hidden flex flex-col h-[700px] md:h-[800px]">
+    <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 overflow-hidden flex flex-col h-[800px] md:h-[900px]">
       {/* 1. Header with Template Tabs */}
       <div className="bg-slate-50 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-4 gap-4">
@@ -113,9 +142,14 @@ export const EmailTemplatesSection: React.FC = () => {
               <h3 className="text-lg font-bold text-slate-800 font-serif">Email Templates</h3>
               <p className="text-xs text-slate-500 mt-1">Manage automated customer notifications.</p>
            </div>
-           <Button type="button" onClick={handleSave} isLoading={saving} className="shadow-lg shadow-brand-green/20 w-full sm:w-auto">
-              Save Changes
-           </Button>
+           <div className="flex gap-3 w-full sm:w-auto">
+               <Button type="button" variant="outline" onClick={handleSendTest} isLoading={isSendingTest} className="bg-white border-slate-300 text-slate-700 hover:border-brand-green hover:text-brand-green">
+                  Send Test
+               </Button>
+               <Button type="button" onClick={handleSave} isLoading={saving} className="shadow-lg shadow-brand-green/20">
+                  Save Changes
+               </Button>
+           </div>
         </div>
         
         {/* Horizontal Scrollable Tabs */}
@@ -165,12 +199,43 @@ export const EmailTemplatesSection: React.FC = () => {
            <div className="flex-1 flex min-h-0 relative">
               {/* Code Editor */}
               <div className={`flex-1 flex flex-col min-h-0 ${(viewMode === 'preview') ? 'hidden' : 'block'}`}>
-                 <div className="bg-slate-900 px-4 py-2 flex justify-between items-center border-b border-slate-700">
-                    <span className="text-[10px] font-mono text-slate-400 uppercase">HTML Source</span>
+                 <div className="bg-slate-900 px-4 py-2 border-b border-slate-700">
+                    <div className="flex justify-between items-center mb-2">
+                       <span className="text-[10px] font-mono text-slate-400 uppercase">Branding Globals (Auto-Injected)</span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                       <code className="text-[9px] bg-indigo-900/50 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-800 whitespace-nowrap cursor-help" title="Your uploaded Logo URL">{'{{logo_url}}'}</code>
+                       <code className="text-[9px] bg-indigo-900/50 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-800 whitespace-nowrap cursor-help" title="https://jamboapparels.com">{'{{shop_url}}'}</code>
+                       <code className="text-[9px] bg-indigo-900/50 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-800 whitespace-nowrap cursor-help" title="Your Support Email">{'{{contact_email}}'}</code>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2 mb-2">
+                       <span className="text-[10px] font-mono text-slate-400 uppercase">Context Variables</span>
+                    </div>
                     <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                       <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap">{`{{name}}`}</code>
-                       <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap">{`{{order_number}}`}</code>
-                       <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap">{`{{total}}`}</code>
+                       {/* Common Variables */}
+                       <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Customer Name">{'{{name}}'}</code>
+                       
+                       {/* Context Specific Variables Hint */}
+                       {selectedTemplate.name.includes('order') && (
+                          <>
+                             <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Order #">{'{{order_number}}'}</code>
+                             <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Total Price">{'{{total}}'}</code>
+                             <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="View Order Link">{'{{order_link}}'}</code>
+                          </>
+                       )}
+                       {selectedTemplate.name.includes('shipped') && (
+                          <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Tracking Number">{'{{tracking_number}}'}</code>
+                       )}
+                       {selectedTemplate.name.includes('contact') && (
+                          <>
+                             <code className="text-[9px] bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Sender Name">{'{{sender_name}}'}</code>
+                             <code className="text-[9px] bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Message Body">{'{{message}}'}</code>
+                          </>
+                       )}
+                       {selectedTemplate.name.includes('newsletter') && (
+                          <code className="text-[9px] bg-slate-800 text-brand-light px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap" title="Shop Link">{'{{shop_link}}'}</code>
+                       )}
                     </div>
                  </div>
                  <textarea

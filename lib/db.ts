@@ -1,3 +1,4 @@
+
 import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress, EmailTemplate } from '../types';
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
@@ -50,6 +51,7 @@ export const api = {
   // EMAIL TEMPLATES
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
+  sendTestEmail: (to: string, subject: string, html: string) => settingsService.sendTestTemplate(to, subject, html),
 
   // BLOG
   getBlogPosts: () => blogService.getAllPosts(),
@@ -74,7 +76,7 @@ export const api = {
   getAllUsers: () => userService.getAll(),
   getUserProfile: (id: string) => userService.getProfile(id),
   updateUserProfile: (id: string, u: { name: string, email: string, role?: string }) => userService.updateProfile(id, u),
-  createUserProfile: (u: Partial<User>) => userService.createProfile(u),
+  createUserProfile: (u: Partial<User> & { password?: string }) => userService.createProfile(u),
   adminDeleteUser: (id: string) => userService.deleteUser(id),
   
   // AUTH

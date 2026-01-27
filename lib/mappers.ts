@@ -1,3 +1,4 @@
+
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -91,11 +92,20 @@ export const Mappers = {
     maintenanceMode: s.maintenance_mode || false,
     maintenanceMessage: s.maintenance_message || undefined,
     featuredCategories: (s.featured_categories as string[]) || undefined,
+    
+    // Email Settings
+    emailProvider: (s as any).email_provider || 'smtp',
     smtpSettings: (s.smtp_settings as Record<string, any>) || undefined,
+    
+    // Notifications
     enableEmailNotifications: s.enable_email_notifications ?? false,
     enableEmailWelcome: s.enable_email_welcome ?? false,
     enableEmailNewOrder: s.enable_email_new_order ?? false,
     enableEmailOrderShipped: s.enable_email_order_shipped ?? false,
+    enableEmailAdminNewOrder: (s as any).enable_email_admin_new_order ?? false,
+    enableEmailContactAdmin: (s as any).enable_email_contact_admin ?? false,
+    
+    // Features
     enableNewsletterSignup: (s as any).enable_newsletter_signup ?? true,
     enableContactForm: (s as any).enable_contact_form ?? true,
     enableReviews: (s as any).enable_reviews ?? true,

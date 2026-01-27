@@ -1,52 +1,43 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../database.types';
 
-// Hardcoded fallbacks for development/testing
-const DEFAULT_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
-const DEFAULT_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
-
-// Helper to safely access environment variables
+// Helper to safely access environment variables across Vite/Node environments
 const getEnv = (key: string) => {
-  // Check import.meta.env (Vite)
   if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
     return (import.meta as any).env[key];
   }
-  // Check process.env (Node/Webpack)
   if (typeof process !== 'undefined' && process.env) {
     return process.env[key];
   }
   return undefined;
 };
 
-const envUrl = getEnv('VITE_SUPABASE_URL');
-const envKey = getEnv('VITE_SUPABASE_ANON_KEY');
+// Fallback keys for testing/development when env vars are not set
+// Using the credentials provided in your configuration
+const FALLBACK_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
+const FALLBACK_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
 
-// Use env vars if available, otherwise fall back to hardcoded values
-const supabaseUrl = envUrl || DEFAULT_URL;
-const supabaseKey = envKey || DEFAULT_KEY;
+const supabaseUrl = getEnv('VITE_SUPABASE_URL') || FALLBACK_URL;
+const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || FALLBACK_KEY;
 
-if (!envUrl || !envKey) {
-  console.warn('⚠️ Using hardcoded Supabase credentials. Ensure environment variables are set for production.');
+// Log to console if we are using fallbacks to help with debugging
+if (!getEnv('VITE_SUPABASE_URL')) {
+  console.log('Environment variables not found. Using fallback Supabase credentials for testing.');
 }
 
-let client;
-
-try {
-    client = createClient<Database>(
-      supabaseUrl,
-      supabaseKey,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-        },
-      }
-    );
-} catch (e) {
-    console.error("Failed to initialize Supabase client:", e);
-    // Fallback for extreme failure cases to prevent white screen crash
-    client = createClient<Database>('https://placeholder.supabase.co', 'placeholder');
+if (!supabaseUrl || !supabaseKey) {
+  console.error('CRITICAL: Supabase credentials missing. The app will not function correctly.');
 }
 
-export const supabase = client;
+// Initialize the client
+export const supabase = createClient<Database>(
+  supabaseUrl || '',
+  supabaseKey || '',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+);

@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -102,11 +103,12 @@ export class SettingsService {
       console.error(error);
       return null;
     }
+    const settings = data as any;
     return {
-      paypalClientId: data.paypal_client_id,
-      paypalMode: data.paypal_mode,
-      paymentGatewayEnabled: data.payment_gateway_enabled,
-      currency: data.currency
+      paypalClientId: settings.paypal_client_id,
+      paypalMode: settings.paypal_mode,
+      paymentGatewayEnabled: settings.payment_gateway_enabled,
+      currency: settings.currency
     };
   }
 
@@ -142,17 +144,21 @@ export class SettingsService {
       free_shipping_threshold: settings.freeShippingThreshold,
       require_login_for_checkout: settings.requireLoginForCheckout,
       featured_categories: settings.featuredCategories,
+      email_provider: settings.emailProvider,
       smtp_settings: settings.smtpSettings,
       enable_email_notifications: settings.enableEmailNotifications,
       enable_email_welcome: settings.enableEmailWelcome,
       enable_email_new_order: settings.enableEmailNewOrder,
       enable_email_order_shipped: settings.enableEmailOrderShipped,
+      enable_email_admin_new_order: settings.enableEmailAdminNewOrder, // New
+      enable_email_contact_admin: settings.enableEmailContactAdmin, // New
       enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm,
       enable_reviews: settings.enableReviews,
       
-      // PayPal Settings Mapping - Secret Key REMOVED
+      // PayPal Settings Mapping - Now supports Secret Key
       paypal_client_id: settings.paypalClientId,
+      paypal_secret_key: settings.paypalSecretKey,
       paypal_mode: settings.paypalMode,
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };
@@ -179,6 +185,48 @@ export class SettingsService {
     
     const { error } = await supabase.from('email_templates').update(payload).eq('id', id);
     if (error) throw error;
+  }
+  
+  async checkEmailHealth(testEmail: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: testEmail,
+          subject: 'Jambo Apparels - System Test',
+          htmlBody: '<p>This is a test email to verify your configuration settings.</p>',
+          testMode: true // Signal to edge function to return diagnostics
+        }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      
+      return { success: true };
+    } catch (e: any) {
+      console.error("Health check failed", e);
+      return { success: false, message: e.message || 'Unknown error during test' };
+    }
+  }
+
+  async sendTestTemplate(to: string, subject: string, htmlBody: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: to,
+          subject: subject,
+          htmlBody: htmlBody,
+          testMode: false
+        }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+      
+      return { success: true };
+    } catch (e: any) {
+      console.error("Test email failed", e);
+      return { success: false, message: e.message || 'Unknown error sending test email' };
+    }
   }
 }
 

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,27 +18,34 @@ serve(async (req) => {
     const { orderId, paypalOrderId } = await req.json();
     if (!orderId || !paypalOrderId) throw new Error("Missing params");
 
-    // 1. Robust Environment Check
+    // 1. Initial Environment Check (Supabase connection must exist)
     const sbUrl = Deno.env.get('SUPABASE_URL');
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const clientId = Deno.env.get('PAYPAL_CLIENT_ID');
-    const secretKey = Deno.env.get('PAYPAL_SECRET_KEY');
 
     if (!sbUrl || !sbKey) {
-        console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
         throw new Error("Server configuration error: Database connection missing.");
     }
 
+    const supabaseClient = createClient(sbUrl, sbKey);
+
+    // 2. Fetch Payment Credentials (DB Priority -> Env Fallback)
+    const { data: settings, error: settingsError } = await supabaseClient
+        .from('app_settings')
+        .select('paypal_client_id, paypal_secret_key, paypal_mode')
+        .single();
+
+    if (settingsError) throw new Error("Failed to fetch settings.");
+
+    const clientId = settings?.paypal_client_id || Deno.env.get('PAYPAL_CLIENT_ID');
+    const secretKey = settings?.paypal_secret_key || Deno.env.get('PAYPAL_SECRET_KEY');
+    const mode = settings?.paypal_mode || Deno.env.get('PAYPAL_MODE') || 'sandbox';
+
     if (!clientId || !secretKey) {
-        console.error("Missing PAYPAL_CLIENT_ID or PAYPAL_SECRET_KEY");
+        console.error("Payment credentials missing in both DB and ENV");
         throw new Error("Server configuration error: Payment provider credentials missing.");
     }
 
-    const supabaseClient = createClient(sbUrl, sbKey);
-    
-    const mode = Deno.env.get('PAYPAL_MODE') || 'sandbox';
-
-    // Authenticate PayPal
+    // 3. Authenticate with PayPal
     const auth = btoa(`${clientId}:${secretKey}`);
     const baseUrl = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
@@ -56,7 +64,7 @@ serve(async (req) => {
         throw new Error("Failed to authenticate with payment provider");
     }
 
-    // Verify Order
+    // 4. Verify Order
     const orderRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}`, {
       method: 'GET',
       headers: {
@@ -70,7 +78,7 @@ serve(async (req) => {
        throw new Error(`PayPal order status is ${orderData.status}`);
     }
 
-    // Update Order in DB
+    // 5. Update Order in DB
     const { error: updateError } = await supabaseClient
       .from('orders')
       .update({ 
@@ -88,6 +96,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error(error);
     return new Response(JSON.stringify({ success: false, message: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

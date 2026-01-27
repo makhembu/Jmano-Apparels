@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/db';
-import { User, UserRole, Order, UserAddress } from '../../types';
+import { User, UserRole, Order, UserAddress, EmailTemplate } from '../../types';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { Link } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -13,6 +14,7 @@ export const AdminUsers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'admin' | 'user'>('all');
   const { showToast } = useToast();
+  const { settings } = useApp();
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,15 +24,22 @@ export const AdminUsers: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
-  const [detailTab, setDetailTab] = useState<'profile' | 'orders' | 'addresses' | 'security'>('profile');
+  const [detailTab, setDetailTab] = useState<'profile' | 'orders' | 'addresses' | 'security' | 'communications'>('profile');
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Form States
-  const [form, setForm] = useState({ name: '', email: '', role: 'user' as UserRole });
+  const [form, setForm] = useState({ name: '', email: '', role: 'user' as UserRole, password: '' });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Email States
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emailForm, setEmailForm] = useState({ subject: '', body: '' });
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     fetchUsers();
+    // Pre-load templates
+    api.getEmailTemplates().then(setEmailTemplates).catch(console.error);
   }, []);
 
   const fetchUsers = async () => {
@@ -47,7 +56,7 @@ export const AdminUsers: React.FC = () => {
   };
 
   const handleOpenAdd = (role: UserRole) => {
-    setForm({ name: '', email: '', role: role });
+    setForm({ name: '', email: '', role: role, password: '' });
     setModalMode('add');
     setSelectedUser(null);
     setDetailTab('profile');
@@ -56,10 +65,12 @@ export const AdminUsers: React.FC = () => {
 
   const handleOpenEdit = async (user: User) => {
     setSelectedUser(user);
-    setForm({ name: user.name, email: user.email, role: user.role });
+    setForm({ name: user.name, email: user.email, role: user.role, password: '' });
     setModalMode('edit');
     setDetailTab('profile');
     setIsModalOpen(true);
+    // Reset email form
+    setEmailForm({ subject: '', body: '' });
     
     // Fetch detailed data
     setDetailLoading(true);
@@ -87,6 +98,10 @@ export const AdminUsers: React.FC = () => {
       showToast('Please enter a valid email address', 'error');
       return false;
     }
+    if (modalMode === 'add' && form.password.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return false;
+    }
     return true;
   };
 
@@ -97,11 +112,12 @@ export const AdminUsers: React.FC = () => {
     setIsSaving(true);
     try {
       if (modalMode === 'edit' && selectedUser) {
-        await api.updateUserProfile(selectedUser.id, form);
+        // Update existing user (Profile only)
+        await api.updateUserProfile(selectedUser.id, { name: form.name, email: form.email, role: form.role });
         showToast('User profile updated', 'success');
-        // Update local state immediately
-        setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, ...form } : u));
+        setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, name: form.name, email: form.email, role: form.role } : u));
       } else {
+        // Create new user (Auth + Profile)
         const newUser = await api.createUserProfile(form);
         showToast('New user added successfully', 'success');
         setUsers(prev => [newUser, ...prev]);
@@ -147,6 +163,61 @@ export const AdminUsers: React.FC = () => {
       } catch(e) {
           showToast('Failed to send magic link', 'error');
       }
+  };
+
+  // --- Email Logic ---
+
+  const handleLoadTemplate = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const templateId = e.target.value;
+    if (!templateId) return;
+    
+    const tmpl = emailTemplates.find(t => t.id === templateId);
+    if (tmpl) {
+        setEmailForm({
+            subject: tmpl.subject,
+            body: tmpl.bodyHtml
+        });
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedUser || !emailForm.subject || !emailForm.body) {
+        showToast('Subject and Message are required', 'error');
+        return;
+    }
+
+    setSendingEmail(true);
+    try {
+        // Perform variable substitution client-side before sending
+        let processedBody = emailForm.body;
+        let processedSubject = emailForm.subject;
+
+        const replacements: Record<string, string> = {
+            '{{name}}': selectedUser.name,
+            '{{email}}': selectedUser.email,
+            '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png',
+            '{{shop_url}}': 'https://jamboapparels.com',
+            '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com',
+        };
+
+        Object.entries(replacements).forEach(([key, value]) => {
+            processedBody = processedBody.split(key).join(value);
+            processedSubject = processedSubject.split(key).join(value);
+        });
+
+        const result = await api.sendTestEmail(selectedUser.email, processedSubject, processedBody);
+        
+        if (result.success) {
+            showToast(`Email sent to ${selectedUser.email}`, 'success');
+            setEmailForm({ subject: '', body: '' }); // Clear form on success
+        } else {
+            showToast(result.message || 'Failed to send email', 'error');
+        }
+    } catch (e) {
+        showToast('Error sending email', 'error');
+    } finally {
+        setSendingEmail(false);
+    }
   };
 
   const filteredUsers = users.filter(u => {
@@ -283,7 +354,7 @@ export const AdminUsers: React.FC = () => {
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
               
               {/* Modal Header */}
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -298,7 +369,7 @@ export const AdminUsers: React.FC = () => {
               {/* Modal Tabs (Only for Edit Mode) */}
               {modalMode === 'edit' && (
                   <div className="bg-white border-b border-gray-200 px-6 flex gap-6 overflow-x-auto no-scrollbar">
-                      {['profile', 'orders', 'addresses', 'security'].map(tab => (
+                      {['profile', 'orders', 'addresses', 'security', 'communications'].map(tab => (
                           <button
                             key={tab}
                             onClick={() => setDetailTab(tab as any)}
@@ -310,7 +381,7 @@ export const AdminUsers: React.FC = () => {
                   </div>
               )}
               
-              <div className="bg-white px-6 py-6">
+              <div className="bg-white px-6 py-6 max-h-[70vh] overflow-y-auto">
                 
                 {/* PROFILE TAB (Also used for ADD mode) */}
                 {(modalMode === 'add' || detailTab === 'profile') && (
@@ -335,6 +406,21 @@ export const AdminUsers: React.FC = () => {
                                 />
                             </div>
                         </div>
+                        
+                        {/* New Password Field (Add Mode Only) */}
+                        {modalMode === 'add' && (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Initial Password</label>
+                                <input 
+                                    type="password" required value={form.password} 
+                                    onChange={e => setForm({...form, password: e.target.value})}
+                                    className="w-full border border-gray-300 bg-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green outline-none"
+                                    placeholder="Minimum 6 characters"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">Required for new account creation.</p>
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">System Role</label>
                             <select 
@@ -367,7 +453,7 @@ export const AdminUsers: React.FC = () => {
                         {detailLoading ? <LoadingSpinner /> : userOrders.length === 0 ? (
                             <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">No orders found for this user.</div>
                         ) : (
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-3">
                                 {userOrders.map(order => (
                                     <div key={order.id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                         <div>
@@ -439,6 +525,63 @@ export const AdminUsers: React.FC = () => {
                             </div>
                             <p className="text-[10px] text-gray-400 mt-1">To ensure security compliance, please use the reset email flow.</p>
                         </div>
+                    </div>
+                )}
+
+                {/* COMMUNICATIONS TAB */}
+                {modalMode === 'edit' && detailTab === 'communications' && (
+                    <div className="space-y-6">
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Load Template</label>
+                            <select 
+                                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white"
+                                onChange={handleLoadTemplate}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>Select a template to pre-fill...</option>
+                                {emailTemplates.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Subject Line</label>
+                            <input 
+                                type="text" 
+                                className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
+                                value={emailForm.subject}
+                                onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
+                                placeholder="Email Subject"
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between mb-2">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Message Body</label>
+                                <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">HTML Supported</span>
+                            </div>
+                            <textarea 
+                                rows={8}
+                                className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none font-mono"
+                                value={emailForm.body}
+                                onChange={e => setEmailForm({ ...emailForm, body: e.target.value })}
+                                placeholder="Type your message here..."
+                            />
+                        </div>
+
+                        <div className="bg-brand-light/30 border border-brand-green/10 p-3 rounded-lg text-xs text-brand-dark">
+                            <span className="font-bold">Available Variables:</span> {'{{name}}'}, {'{{email}}'}, {'{{logo_url}}'}, {'{{shop_url}}'}
+                        </div>
+
+                        <Button 
+                            onClick={handleSendEmail} 
+                            isLoading={sendingEmail} 
+                            fullWidth 
+                            className="shadow-lg shadow-brand-green/10"
+                        >
+                            Send Email
+                        </Button>
                     </div>
                 )}
 

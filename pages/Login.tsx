@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 
 export const Login: React.FC = () => {
-  const { login, signUp, user, settings } = useApp();
+  const { login, signUp, user } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -22,7 +22,13 @@ export const Login: React.FC = () => {
   const from = location.state?.from || '/';
 
   // If user is already logged in, redirect immediately
-  if (user) return <Navigate to={from} replace />;
+  if (user) {
+    // Admin Redirect: If user is admin and going to home ('/'), send to Admin Dashboard
+    if (user.role === 'admin' && from === '/') {
+        return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to={from} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,18 +43,19 @@ export const Login: React.FC = () => {
           return;
         }
         await signUp(email, password, name);
-        // If signup is successful, the AuthContext should handle the profile sync and state change
+        // Signup successful - stop loading.
+        // If auto-confirm is enabled, `user` will update and trigger redirect.
+        setLoading(false);
       } else {
         await login(email, password);
-        // Note: successful login triggers redirection via the user effect or manual navigate
-        navigate(from, { replace: true });
+        // Login successful.
+        // We do NOT navigate manually here. We wait for the `user` state to update via AuthContext.
+        // This ensures the profile (and role) is loaded before the redirect logic above runs.
+        // We also do NOT set loading to false, to prevent the form from becoming interactive again before redirect.
       }
     } catch (err: any) {
       console.error("Form submission error:", err);
-      // Detailed error messages already handled by Toasts in AuthContext, 
-      // but we show them here for form-specific focus
       setErrorMsg(err.message || "Authentication failed. Please check your credentials.");
-    } finally {
       setLoading(false);
     }
   };
@@ -63,7 +70,6 @@ export const Login: React.FC = () => {
 
       <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-3xl shadow-2xl shadow-black/20 border-t-8 border-brand-hope animate-fade-in relative z-10">
         <div className="text-center">
-          {/* Logo removed */}
           <h2 className="text-3xl sm:text-4xl font-serif font-bold text-brand-dark mt-4">
             {isSignUp ? 'Join the Family' : 'Welcome Back'}
           </h2>

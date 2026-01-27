@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { IdentitySection } from '../../components/admin/settings/IdentitySection';
-import { BlogCategoriesSection } from '../../components/admin/settings/BlogCategoriesSection';
 import { ContactSection } from '../../components/admin/settings/ContactSection';
 import { SocialSection } from '../../components/admin/settings/SocialSection';
 import { SystemSection } from '../../components/admin/settings/SystemSection';
@@ -39,20 +39,7 @@ export const AdminAppSettings: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      // Map frontend camelCase to DB snake_case for custom payment fields if not handled by mapper
       const payload: any = { ...formData };
-      
-      // Explicitly map PayPal fields if the updateSettings doesn't handle them automatically 
-      // (Depends on if updateSettings uses the raw DB column names. 
-      //  Assuming Mappers.toAppSettings handled READ, we need to ensure WRITE maps back or AppSettings matches DB columns)
-      // For this implementation, we assume `updateSettings` in `ShopContext` handles the mapping or we rely on explicit keys.
-      // Ideally the Service handles the mapping back to snake_case.
-      // Given the `SettingsService.update` implementation, we need to ensure we pass the correct keys.
-      // Let's modify the SettingsService update method implicitly or just rely on it accepting the full object.
-      // The current `SettingsService.update` maps specific fields manually. We need to update that file too or pass these as special overrides.
-      
-      // We will rely on `SettingsService` being updated to handle `paypal_*` fields.
-      
       await updateSettings(payload);
       showToast('Settings updated successfully', 'success');
     } catch (e) {
@@ -138,10 +125,7 @@ export const AdminAppSettings: React.FC = () => {
         {/* TAB: Content & Legal */}
         {activeTab === 'content' && (
           <div className="space-y-8 animate-fade-in">
-            <BlogCategoriesSection />
-            <div className="border-t border-gray-100 pt-8">
-               <PolicySection settings={formData} onChange={handleChange} />
-            </div>
+             <PolicySection settings={formData} onChange={handleChange} />
           </div>
         )}
 

@@ -49,6 +49,7 @@ export type Database = {
           contact_phone: string | null
           core_values: string | null
           currency: string | null
+          email_provider: string | null
           enable_email_new_order: boolean | null
           enable_email_notifications: boolean | null
           enable_email_order_shipped: boolean | null
@@ -86,6 +87,7 @@ export type Database = {
           contact_phone?: string | null
           core_values?: string | null
           currency?: string | null
+          email_provider?: string | null
           enable_email_new_order?: boolean | null
           enable_email_notifications?: boolean | null
           enable_email_order_shipped?: boolean | null
@@ -123,6 +125,7 @@ export type Database = {
           contact_phone?: string | null
           core_values?: string | null
           currency?: string | null
+          email_provider?: string | null
           enable_email_new_order?: boolean | null
           enable_email_notifications?: boolean | null
           enable_email_order_shipped?: boolean | null
@@ -889,6 +892,22 @@ export type Database = {
       generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_products_paginated: {
+        Args: {
+          p_page: number
+          p_page_size: number
+          p_category_key?: string | null
+          p_search_query?: string | null
+          p_min_price?: number | null
+          p_max_price?: number | null
+          p_sort_by?: string | null
+        }
+        Returns: Json
+      }
+      get_public_payment_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       handle_default_address: {
         Args: Record<PropertyKey, never>

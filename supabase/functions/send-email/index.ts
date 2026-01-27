@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createTransport } from "https://esm.sh/nodemailer@6.9.1";
 
@@ -12,6 +13,17 @@ interface EmailRequest {
   to: string;
   subject: string;
   htmlBody: string;
+  providerConfig?: {
+    mode?: 'env' | 'custom';
+    provider: 'resend' | 'smtp';
+    apiKey?: string;
+    host?: string;
+    port?: number;
+    user?: string;
+    pass?: string;
+    from?: string;
+  };
+  testMode?: boolean;
 }
 
 serve(async (req) => {
@@ -20,44 +32,58 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, htmlBody }: EmailRequest = await req.json();
+    const { to, subject, htmlBody, providerConfig, testMode }: EmailRequest = await req.json();
 
-    // 1. Validate Config
-    const useResend = Deno.env.get('EMAIL_PROVIDER') === 'resend';
-    const smtpHost = Deno.env.get('SMTP_HOST');
-    const smtpUser = Deno.env.get('SMTP_USER');
-    const smtpPass = Deno.env.get('SMTP_PASS');
-    const fromEmail = Deno.env.get('SMTP_FROM') || 'noreply@jamboapparels.com';
+    // --- Configuration Logic ---
+    // 1. Determine Source: If mode is 'custom', we use the DB payload. Otherwise, we default to Env vars.
+    const useCustomMode = providerConfig?.mode === 'custom';
+    
+    // 2. Resolve Provider
+    const envProvider = Deno.env.get('EMAIL_PROVIDER'); // 'resend' or 'smtp'
+    // If custom, use DB provider. If env, use Env provider. Default to 'smtp' if undefined.
+    const effectiveProvider = useCustomMode ? (providerConfig?.provider || 'smtp') : (envProvider || 'smtp');
+    const useResend = effectiveProvider === 'resend';
+
+    // 3. Resolve Credentials
+    let resendKey, smtpHost, smtpUser, smtpPass, smtpPort, fromEmail;
+
+    if (useCustomMode) {
+        // --- CUSTOM MODE: Use DB Settings ---
+        resendKey = providerConfig?.apiKey;
+        smtpHost = providerConfig?.host;
+        smtpUser = providerConfig?.user;
+        smtpPass = providerConfig?.pass;
+        smtpPort = providerConfig?.port || 465;
+        fromEmail = providerConfig?.from || 'noreply@jamboapparels.com';
+    } else {
+        // --- ENV MODE: Use Secrets ---
+        resendKey = Deno.env.get('RESEND_API_KEY');
+        smtpHost = Deno.env.get('SMTP_HOST');
+        smtpUser = Deno.env.get('SMTP_USER');
+        smtpPass = Deno.env.get('SMTP_PASS');
+        smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '465');
+        fromEmail = Deno.env.get('SMTP_FROM') || 'noreply@jamboapparels.com';
+    }
 
     let info;
 
-    // 2. Wrap content in a professional template
-    const finalHtml = `
-      <!DOCTYPE html>
-      <html>
-      <body style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; border-top: 4px solid #2E7D32;">
-          <h1 style="color: #1B5E20; font-size: 24px; margin-bottom: 20px;">Jambo Apparels</h1>
-          <div style="color: #333; line-height: 1.6;">
-            ${htmlBody}
-          </div>
-          <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #888; font-size: 12px;">
-            <p>&copy; ${new Date().getFullYear()} Jambo Apparels. Divinely Threaded.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    // 4. Prepare HTML Wrapper
+    let finalHtml = htmlBody;
+    if (!htmlBody.trim().toLowerCase().startsWith('<!doctype') && !htmlBody.trim().toLowerCase().startsWith('<html')) {
+       finalHtml = `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; padding: 20px;">
+          ${htmlBody}
+        </body>
+        </html>
+       `;
+    }
 
-    // 3. Send via Selected Provider
+    // 5. Send
     if (useResend) {
-      const resendKey = Deno.env.get('RESEND_API_KEY');
       if (!resendKey) {
-         console.warn("RESEND_API_KEY missing. Email not sent.");
-         return new Response(JSON.stringify({ success: false, error: "Email configuration missing (Resend)" }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200, 
-         });
+         throw new Error(`Resend API Key missing in ${useCustomMode ? 'App Settings' : 'Environment Variables'}.`);
       }
 
       const res = await fetch('https://api.resend.com/emails', {
@@ -67,7 +93,7 @@ serve(async (req) => {
           'Authorization': `Bearer ${resendKey}`
         },
         body: JSON.stringify({
-          from: fromEmail,
+          from: `Jambo Apparels <${fromEmail}>`,
           to: [to],
           subject: subject,
           html: finalHtml
@@ -75,25 +101,31 @@ serve(async (req) => {
       });
       
       const data = await res.json();
-      if (!res.ok) throw new Error(JSON.stringify(data));
+      if (!res.ok) {
+          throw new Error(`Resend Error: ${JSON.stringify(data)}`);
+      }
       info = { id: data.id, provider: 'resend' };
 
     } else {
-      // Use Nodemailer for SMTP
-      if (!smtpHost || !smtpUser || !smtpPass) {
-         console.warn("SMTP credentials missing. Email not sent.");
-         return new Response(JSON.stringify({ success: false, error: "Email configuration missing (SMTP)" }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200, 
-         });
+      // SMTP
+      if (!smtpHost) {
+         throw new Error(`SMTP Host missing in ${useCustomMode ? 'App Settings' : 'Environment Variables'}.`);
       }
+
+      // Construct auth object only if user/pass exist
+      const auth = (smtpUser && smtpPass) ? { user: smtpUser, pass: smtpPass } : undefined;
 
       const transporter = createTransport({
         host: smtpHost,
-        port: 465, // or 587 for TLS
-        secure: true, // true for 465, false for other ports
-        auth: { user: smtpUser, pass: smtpPass },
+        port: smtpPort, 
+        secure: smtpPort === 465, // True for 465, false for 587 usually
+        auth: auth,
       });
+
+      // Verify connection if in test mode
+      if (testMode) {
+          await transporter.verify();
+      }
 
       info = await transporter.sendMail({
         from: `Jambo Apparels <${fromEmail}>`,
@@ -103,7 +135,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, info }), {
+    return new Response(JSON.stringify({ success: true, info, mode: useCustomMode ? 'custom' : 'env' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
@@ -112,7 +144,7 @@ serve(async (req) => {
     console.error('Email Error:', error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: 200, 
     });
   }
 });

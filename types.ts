@@ -1,3 +1,4 @@
+
 import { Tables, Json } from './database.types';
 
 export type UserRole = 'admin' | 'user';
@@ -212,18 +213,27 @@ export interface AppSettings {
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
   featuredCategories?: string[];
+  
+  // Email Settings
+  emailProvider?: 'smtp' | 'resend';
   smtpSettings?: Record<string, any>;
+  
+  // Notification Settings
   enableEmailNotifications?: boolean;
   enableEmailWelcome?: boolean;
   enableEmailNewOrder?: boolean;
   enableEmailOrderShipped?: boolean;
+  enableEmailAdminNewOrder?: boolean; // New: Notify Admin on new order
+  enableEmailContactAdmin?: boolean; // New: Notify Admin on contact submission
+  
+  // Feature Flags
   enableNewsletterSignup?: boolean;
   enableContactForm?: boolean;
   enableReviews?: boolean;
   
   // PayPal Settings
   paypalClientId?: string; // Mapped from paypal_client_id
-  paypalSecretKey?: string; // Mapped from paypal_secret_key (Only exposed to admin/server)
+  paypalSecretKey?: string; // Mapped from paypal_secret_key (Only accessible to Admin)
   paypalMode?: 'sandbox' | 'live'; // Mapped from paypal_mode
   paymentGatewayEnabled?: boolean; // Mapped from payment_gateway_enabled
 }

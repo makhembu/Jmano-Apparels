@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -24,14 +25,71 @@ export class UserService {
      if (error) throw error;
   }
 
-  async createProfile(user: Partial<User>): Promise<User> {
-    log('INSERT', 'users', user);
+  async createProfile(user: Partial<User> & { password?: string }): Promise<User> {
+    log('CREATE', 'user_account', user.email);
+
+    // If a password is provided, we must use the Edge Function to create the Auth account
+    if (user.password) {
+        try {
+            const { data, error } = await supabase.functions.invoke('admin-create-user', {
+                body: {
+                    email: user.email,
+                    password: user.password,
+                    name: user.name,
+                    role: user.role
+                }
+            });
+
+            if (error) {
+                console.error("Edge Function Invocation Error:", error);
+                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                     throw new Error("Connection failed. Please ensure the 'admin-create-user' Edge Function is deployed and reachable.");
+                }
+                throw error;
+            }
+
+            if (data?.error) {
+                throw new Error(data.error);
+            }
+
+            if (!data?.user?.id) {
+                throw new Error("User creation succeeded but returned no ID.");
+            }
+
+            // Fetch the newly created profile to return it
+            // We wait a brief moment to ensure the DB trigger/insert has propagated if it was async
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const newProfile = await this.getProfile(data.user.id);
+            
+            if (!newProfile) {
+                // If profile fetch fails, return a constructed object so the UI doesn't crash
+                return {
+                    id: data.user.id,
+                    name: user.name!,
+                    email: user.email!,
+                    role: (user.role as any) || 'user',
+                    createdAt: new Date().toISOString()
+                };
+            }
+            return newProfile;
+
+        } catch (err: any) {
+            console.error("User Creation Process Failed:", err);
+            // If it's the specific edge function error, pass it through
+            if (err.message.includes('Edge Function')) throw err;
+            
+            throw new Error(`Failed to create account: ${err.message}`);
+        }
+    } 
+    
+    // Fallback: Just insert into DB (Legacy/Shell profile only - cannot log in)
     const { data, error } = await supabase.from('users').insert({
         id: user.id || crypto.randomUUID(),
         name: user.name!,
         email: user.email!,
         role: user.role || 'user'
       }).select().single();
+      
     if (error) throw error;
     return Mappers.toUser(data);
   }
@@ -83,7 +141,6 @@ export class UserService {
       is_default: address.isDefault ?? false
     };
 
-    // FIX: Cast table name to `any` to bypass incorrect generated types.
     const { data, error } = await supabase
       .from('user_addresses' as any)
       .upsert(payload)
@@ -110,7 +167,6 @@ export class UserService {
 
   async deleteUserAddress(id: string): Promise<void> {
     log('DELETE', 'user_addresses', id);
-    // FIX: Cast table name to `any` to bypass incorrect generated types.
     const { error } = await supabase.from('user_addresses' as any).delete().eq('id', id);
     if (error) throw error;
   }
