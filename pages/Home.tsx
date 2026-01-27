@@ -1,36 +1,14 @@
-import React, { useEffect } from 'react';
+
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { SEO } from '../components/SEO';
 
 export const Home: React.FC = () => {
   const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);
-
-  // Dynamic SEO Update
-  useEffect(() => {
-    if (settings) {
-      const brandName = "Jambo Apparels";
-      document.title = settings.seoTitle || (settings.slogan ? `${brandName} | ${settings.slogan}` : brandName);
-      
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute('content', settings.seoDescription || settings.mission || '');
-      }
-
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', document.title);
-
-      const ogDesc = document.querySelector('meta[property="og:description"]');
-      if (ogDesc) ogDesc.setAttribute('content', settings.seoDescription || settings.secondarySlogan || '');
-      
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage && settings.heroBannerImage) {
-        ogImage.setAttribute('content', settings.heroBannerImage);
-      }
-    }
-  }, [settings]);
 
   const latestBlogs = [...blogPosts]
     .filter(post => post.status === 'published')
@@ -41,14 +19,13 @@ export const Home: React.FC = () => {
     ? categories.filter(c => settings.featuredCategories!.includes(c.key))
     : categories;
 
-  // Helper to rotate brand colors for cards with WCAG compliant text
   const getCardColorStyles = (index: number) => {
     const colors = [
-      { bg: 'bg-brand-hope', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-hope' }, // Yellow -> Black Text
-      { bg: 'bg-brand-testament', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-testament' }, // Purple -> Black Text
-      { bg: 'bg-brand-humility', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-humility' }, // Green -> Black Text
-      { bg: 'bg-brand-patience', text: 'text-white', muted: 'text-white/90', accent: 'text-white', border: 'border-brand-patience' }, // Red -> White Text
-      { bg: 'bg-brand-triumph', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-triumph' }, // Orange -> Black Text
+      { bg: 'bg-brand-hope', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-hope' },
+      { bg: 'bg-brand-testament', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-testament' },
+      { bg: 'bg-brand-humility', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-humility' },
+      { bg: 'bg-brand-patience', text: 'text-white', muted: 'text-white/90', accent: 'text-white', border: 'border-brand-patience' },
+      { bg: 'bg-brand-triumph', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'text-slate-900', border: 'border-brand-triumph' },
     ];
     return colors[index % colors.length];
   };
@@ -57,7 +34,24 @@ export const Home: React.FC = () => {
 
   return (
     <div className="animate-fade-in bg-slate-50">
-      {/* Hero Section - Redesigned for Mobile Match */}
+      <SEO 
+        title={settings.slogan || "Faith Based Apparel"}
+        description={settings.seoDescription || settings.mission}
+        image={settings.heroBannerImage}
+        type="website"
+        schema={{
+          "@type": "WebSite",
+          "name": "Jambo Apparels",
+          "url": "https://jamboapparels.com",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://jamboapparels.com/#/shop?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
+
+      {/* Hero Section */}
       <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block">
         <div className="max-w-7xl mx-auto w-full">
           <div className="relative z-10 bg-brand-dark lg:max-w-2xl lg:w-full pb-12 lg:pb-28 xl:pb-32">
@@ -84,14 +78,12 @@ export const Home: React.FC = () => {
           </div>
         </div>
         
-        {/* Responsive Image Positioning */}
         <div className="relative h-64 sm:h-72 md:h-96 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 lg:h-full bg-slate-900">
            <img 
              className="h-full w-full object-cover object-center lg:h-full lg:w-full opacity-90 lg:opacity-100" 
              src={settings.heroBannerImage || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop"} 
              alt="Jambo Apparels Faith Based Clothing" 
            />
-           {/* Mobile Bottom Vignette */}
            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/20 to-transparent lg:hidden"></div>
         </div>
       </div>
@@ -112,7 +104,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Categories Banner */}
+      {/* Categories */}
       <div className="bg-brand-light py-16 border-t border-brand-green/10">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
@@ -129,7 +121,7 @@ export const Home: React.FC = () => {
          </div>
       </div>
 
-      {/* Latest Blog Posts Section - Colorful Cards */}
+      {/* Latest Blog Posts */}
       {latestBlogs.length > 0 && (
         <div className="bg-white py-16 border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,12 +153,6 @@ export const Home: React.FC = () => {
                     <div className="p-6 flex flex-col flex-1">
                       <div className={`flex items-center text-[10px] font-black uppercase tracking-widest mb-3 ${colors.accent}`}>
                          <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                         {post.readingTime && (
-                           <>
-                             <span className="mx-2 opacity-50">•</span>
-                             <span>{post.readingTime} min read</span>
-                           </>
-                         )}
                       </div>
                       <Link to={`/blog/${post.slug}`}>
                         <h3 className={`text-xl font-serif font-bold ${colors.text} leading-tight mb-3`}>
@@ -188,7 +174,7 @@ export const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Testimonials / Reviews Section - Colorful Rotation */}
+      {/* Reviews */}
       {settings.enableReviews && latestReviews.length > 0 && (
         <section className="bg-brand-light py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -200,7 +186,6 @@ export const Home: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {latestReviews.map((review, idx) => {
                 const product = products.find(p => p.id === review.productId);
-                // Offset index by 2 so colors don't align perfectly with blog above for visual variety
                 const colors = getCardColorStyles(idx + 2);
                 
                 return (

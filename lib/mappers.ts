@@ -27,21 +27,30 @@ export const Mappers = {
     stockQuantity: p.stock_quantity ?? 0,
     lowStockThreshold: p.low_stock_threshold || 5,
     weight: p.weight || 0,
+    
+    // SEO
     seoTitle: p.seo_title || undefined,
     seoDescription: p.seo_description || undefined,
+    canonicalUrl: p.canonical_url || undefined,
+    isNoIndex: p.is_noindex || false,
+    isNoFollow: p.is_nofollow || false,
+    keywords: p.keywords || [],
+
     createdAt: p.created_at || undefined,
     averageRating: p.average_rating || 0,
     reviewCount: p.review_count || 0,
     totalSales: p.total_sales || 0
   }),
 
-  toCategory: (c: DbCategory): Category => ({
+  toCategory: (c: any): Category => ({
     key: c.key,
     label: c.label,
     color: c.color,
     bgColorClass: c.bg_class,
-    seoTitle: (c as any).seo_title || undefined,
-    seoDescription: (c as any).seo_description || undefined
+    seoTitle: c.seo_title || undefined,
+    seoDescription: c.seo_description || undefined,
+    canonicalUrl: c.canonical_url || undefined,
+    isNoIndex: c.is_noindex || false
   }),
 
   toBlogCategory: (c: DbBlogCategory): BlogCategory => ({
@@ -51,11 +60,11 @@ export const Mappers = {
     description: c.description || undefined
   }),
 
-  toAppSettings: (s: DbAppSettings): AppSettings => ({
+  toAppSettings: (s: any): AppSettings => ({
     id: s.id,
     slogan: s.slogan || '',
     secondarySlogan: s.secondary_slogan || '',
-    logoImage: (s as any).logo_image || undefined,
+    logoImage: s.logo_image || undefined,
     mission: s.mission || '',
     vision: s.vision || '',
     coreValues: s.core_values || '',
@@ -63,14 +72,20 @@ export const Mappers = {
     founderBio: s.founder_bio || undefined,
     founderImage: s.founder_image || undefined,
     founderQuote: s.founder_quote || undefined,
-    seoTitle: (s as any).seo_title || undefined,
-    seoDescription: (s as any).seo_description || undefined,
-    shopSeoTitle: (s as any).shop_seo_title || undefined,
-    shopSeoDescription: (s as any).shop_seo_description || undefined,
-    blogSeoTitle: (s as any).blog_seo_title || undefined,
-    blogSeoDescription: (s as any).blog_seo_description || undefined,
-    aboutSeoTitle: (s as any).about_seo_title || undefined,
-    aboutSeoDescription: (s as any).about_seo_description || undefined,
+    
+    // Global SEO & Scripts
+    seoTitle: s.seo_title || undefined,
+    seoDescription: s.seo_description || undefined,
+    defaultOgImage: s.default_og_image || undefined,
+    googleAnalyticsId: s.google_analytics_id || undefined,
+    customHeadScripts: s.custom_head_scripts || undefined,
+
+    shopSeoTitle: s.shop_seo_title || undefined,
+    shopSeoDescription: s.shop_seo_description || undefined,
+    blogSeoTitle: s.blog_seo_title || undefined,
+    blogSeoDescription: s.blog_seo_description || undefined,
+    aboutSeoTitle: s.about_seo_title || undefined,
+    aboutSeoDescription: s.about_seo_description || undefined,
     contactEmail: s.contact_email || undefined,
     contactPhone: s.contact_phone || undefined,
     contactAddress: s.contact_address || undefined,
@@ -80,7 +95,7 @@ export const Mappers = {
     currency: s.currency || 'GBP',
     taxRate: s.tax_rate || 0.2,
     freeShippingThreshold: s.free_shipping_threshold || undefined,
-    requireLoginForCheckout: (s as any).require_login_for_checkout || false,
+    requireLoginForCheckout: s.require_login_for_checkout || false,
     shippingPolicy: s.shipping_policy || undefined,
     returnPolicy: s.return_policy || undefined,
     privacyPolicy: s.privacy_policy || undefined,
@@ -94,7 +109,7 @@ export const Mappers = {
     featuredCategories: (s.featured_categories as string[]) || undefined,
     
     // Email Settings
-    emailProvider: (s as any).email_provider || 'smtp',
+    emailProvider: s.email_provider || 'smtp',
     smtpSettings: (s.smtp_settings as Record<string, any>) || undefined,
     
     // Notifications
@@ -102,19 +117,19 @@ export const Mappers = {
     enableEmailWelcome: s.enable_email_welcome ?? false,
     enableEmailNewOrder: s.enable_email_new_order ?? false,
     enableEmailOrderShipped: s.enable_email_order_shipped ?? false,
-    enableEmailAdminNewOrder: (s as any).enable_email_admin_new_order ?? false,
-    enableEmailContactAdmin: (s as any).enable_email_contact_admin ?? false,
+    enableEmailAdminNewOrder: s.enable_email_admin_new_order ?? false,
+    enableEmailContactAdmin: s.enable_email_contact_admin ?? false,
     
     // Features
-    enableNewsletterSignup: (s as any).enable_newsletter_signup ?? true,
-    enableContactForm: (s as any).enable_contact_form ?? true,
-    enableReviews: (s as any).enable_reviews ?? true,
+    enableNewsletterSignup: s.enable_newsletter_signup ?? true,
+    enableContactForm: s.enable_contact_form ?? true,
+    enableReviews: s.enable_reviews ?? true,
     
     // PayPal Mapping
-    paypalClientId: (s as any).paypal_client_id || undefined,
-    paypalSecretKey: (s as any).paypal_secret_key || undefined,
-    paypalMode: (s as any).paypal_mode || 'sandbox',
-    paymentGatewayEnabled: (s as any).payment_gateway_enabled || false
+    paypalClientId: s.paypal_client_id || undefined,
+    paypalSecretKey: s.paypal_secret_key || undefined,
+    paypalMode: s.paypal_mode || 'sandbox',
+    paymentGatewayEnabled: s.payment_gateway_enabled || false
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
@@ -125,7 +140,7 @@ export const Mappers = {
     description: t.description || undefined
   }),
 
-  toBlogPost: (b: DbBlogPost): BlogPost => ({
+  toBlogPost: (b: any): BlogPost => ({
     id: b.id,
     title: b.title,
     summary: b.summary || '',
@@ -138,8 +153,15 @@ export const Mappers = {
     createdAt: b.date || new Date().toISOString(),
     readingTime: b.reading_time || undefined,
     categoryId: b.category_id || undefined,
+    
+    // SEO
     seoTitle: b.seo_title || undefined,
     seoDescription: b.seo_description || undefined,
+    canonicalUrl: b.canonical_url || undefined,
+    isNoIndex: b.is_noindex || false,
+    isNoFollow: b.is_nofollow || false,
+    keywords: b.keywords || [],
+
     viewCount: b.view_count || 0
   }),
 

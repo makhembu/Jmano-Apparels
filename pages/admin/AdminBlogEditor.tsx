@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { BlogPost, BlogCategory } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
-// Added missing Button import
 import { Button } from '../../components/ui/Button';
-import { BlogEditorForm } from '../../components/admin/blog/BlogEditorForm';
 import { BlogEditorSidebar } from '../../components/admin/blog/BlogEditorSidebar';
 import { BlogEditorPreview } from '../../components/admin/blog/BlogEditorPreview';
+import { SafeReactQuill } from '../../components/admin/blog/SafeReactQuill';
+import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 
 export const AdminBlogEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +34,11 @@ export const AdminBlogEditor: React.FC = () => {
     readingTime: 0,
     categoryId: '',
     seoTitle: '',
-    seoDescription: ''
+    seoDescription: '',
+    keywords: [],
+    canonicalUrl: '',
+    isNoIndex: false,
+    isNoFollow: false
   });
 
   useEffect(() => {
@@ -67,7 +72,10 @@ export const AdminBlogEditor: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    if (name === 'title') {
+    if (type === 'checkbox') {
+       const checked = (e.target as HTMLInputElement).checked;
+       setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (name === 'title') {
       const shouldUpdateSlug = !id || !formData.slug;
       setFormData(prev => ({
         ...prev,
@@ -103,7 +111,6 @@ export const AdminBlogEditor: React.FC = () => {
       setFormData(prev => ({ ...prev, [field]: publicUrl }));
       showToast(`${field === 'featuredImage' ? 'Featured' : 'Thumbnail'} image ready`, 'success');
     } catch (error: any) {
-      // Descriptive error message from StorageService will guide the user
       showToast(error.message || 'Failed to upload image', 'error');
     } finally {
       setUploadingField(null);
@@ -162,7 +169,6 @@ export const AdminBlogEditor: React.FC = () => {
               Preview
             </button>
             <div className="w-px h-10 bg-slate-200 mx-2 hidden sm:block"></div>
-            {/* Button usage fixed by import above */}
             <Button type="submit" form="blog-form" isLoading={loading} className="px-8 shadow-lg shadow-brand-green/20">
                {id ? 'Update' : 'Publish'}
             </Button>
@@ -172,11 +178,46 @@ export const AdminBlogEditor: React.FC = () => {
       <form id="blog-form" onSubmit={handleSubmit} className="space-y-6">
         <div className={activeTab === 'write' ? 'block' : 'hidden'}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <BlogEditorForm 
-                formData={formData} 
-                onChange={handleChange} 
-                onEditorChange={handleEditorChange} 
-            />
+            {/* Main Editor */}
+            <div className="lg:col-span-2 space-y-6">
+               <div className="bg-white p-6 shadow rounded-lg space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Post Title</label>
+                    <input 
+                      type="text" 
+                      name="title" 
+                      value={formData.title} 
+                      onChange={handleChange} 
+                      required 
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-3 text-lg font-bold text-gray-900 placeholder-gray-400 focus:ring-brand-green focus:border-brand-green" 
+                      placeholder="Enter a captivating title..."
+                    />
+                  </div>
+                  
+                  <div className="h-[500px] mb-12 flex flex-col">
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                     <SafeReactQuill 
+                        value={formData.content || ''}
+                        onChange={handleEditorChange}
+                        className="flex-grow bg-white"
+                     />
+                  </div>
+               </div>
+
+               {/* Advanced SEO Group */}
+               <div className="bg-white p-6 shadow rounded-lg">
+                  <SeoFieldGroup 
+                     data={formData} 
+                     onChange={handleChange}
+                     onKeywordsChange={(k) => setFormData(prev => ({ ...prev, keywords: k }))}
+                     defaultTitle={formData.title}
+                     defaultDescription={formData.summary}
+                     previewImage={formData.featuredImage || formData.thumbnail}
+                     permalink={`https://jamboapparels.com/#/blog/${formData.slug || 'new-post'}`}
+                  />
+               </div>
+            </div>
+
             <BlogEditorSidebar 
                 formData={formData} 
                 categories={categories} 

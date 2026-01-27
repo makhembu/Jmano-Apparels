@@ -11,8 +11,9 @@ import { useToast } from '../../context/ToastContext';
 import { NotificationSection } from '../../components/admin/settings/NotificationSection';
 import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemplatesSection';
 import { PaymentSection } from '../../components/admin/settings/PaymentSection';
+import { SeoSection } from '../../components/admin/settings/SeoSection'; // New import
 
-type SettingsTab = 'brand' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
+type SettingsTab = 'brand' | 'seo' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
 
 export const AdminAppSettings: React.FC = () => {
   const { settings, updateSettings } = useApp();
@@ -72,7 +73,8 @@ export const AdminAppSettings: React.FC = () => {
       
       {/* Tabs Header */}
       <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
-        <TabButton id="brand" label="Brand & SEO" />
+        <TabButton id="brand" label="Brand" />
+        <TabButton id="seo" label="Global SEO" />
         <TabButton id="payments" label="Payments" />
         <TabButton id="emails" label="Notifications" />
         <TabButton id="contact" label="Contact & Social" />
@@ -82,10 +84,17 @@ export const AdminAppSettings: React.FC = () => {
       
       <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
         
-        {/* TAB: Brand & SEO */}
+        {/* TAB: Brand */}
         {activeTab === 'brand' && (
           <div className="animate-fade-in">
             <IdentitySection settings={formData} onChange={handleChange} />
+          </div>
+        )}
+
+        {/* TAB: SEO (New) */}
+        {activeTab === 'seo' && (
+          <div className="animate-fade-in">
+            <SeoSection settings={formData} onChange={handleChange} />
           </div>
         )}
 

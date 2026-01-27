@@ -11,6 +11,15 @@ export interface User {
   createdAt?: string;
 }
 
+export interface SeoConfig {
+  canonicalUrl?: string;
+  isNoIndex?: boolean;
+  isNoFollow?: boolean;
+  keywords?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
 export interface UserAddress {
   id: string;
   userId: string;
@@ -24,13 +33,11 @@ export interface UserAddress {
   isDefault: boolean;
 }
 
-export interface Category {
+export interface Category extends SeoConfig {
   key: string;
   label: string;
   color: string;
   bgColorClass: string;
-  seoTitle?: string;
-  seoDescription?: string;
 }
 
 export interface BlogCategory {
@@ -40,7 +47,7 @@ export interface BlogCategory {
   description?: string;
 }
 
-export interface Product {
+export interface Product extends SeoConfig {
   id: string;
   title: string;
   price: number;
@@ -59,8 +66,6 @@ export interface Product {
   stockQuantity?: number;
   lowStockThreshold?: number;
   weight?: number;
-  seoTitle?: string;
-  seoDescription?: string;
   createdAt?: string;
   averageRating?: number;
   reviewCount?: number;
@@ -146,7 +151,7 @@ export interface Order {
   createdAt: string;
   shippingAddress?: ShippingAddress;
   paymentStatus?: string;
-  paymentIntentId?: string; // Mapped from payment_intent_id
+  paymentIntentId?: string; 
   trackingNumber?: string;
   notes?: string;
   shippedAt?: string;
@@ -154,7 +159,7 @@ export interface Order {
   cancelledAt?: string;
 }
 
-export interface BlogPost {
+export interface BlogPost extends SeoConfig {
   id: string;
   title: string;
   summary: string;
@@ -167,8 +172,6 @@ export interface BlogPost {
   createdAt: string;
   readingTime?: number;
   categoryId?: string;
-  seoTitle?: string;
-  seoDescription?: string;
   viewCount?: number;
 }
 
@@ -184,14 +187,21 @@ export interface AppSettings {
   founderBio?: string;
   founderImage?: string;
   founderQuote?: string;
+  
+  // SEO Global
   seoTitle?: string;
   seoDescription?: string;
+  defaultOgImage?: string; // New
+  googleAnalyticsId?: string; // New
+  customHeadScripts?: string; // New
+  
   shopSeoTitle?: string;
   shopSeoDescription?: string;
   blogSeoTitle?: string;
   blogSeoDescription?: string;
   aboutSeoTitle?: string;
   aboutSeoDescription?: string;
+  
   contactEmail?: string;
   contactPhone?: string;
   contactAddress?: string;
@@ -223,8 +233,8 @@ export interface AppSettings {
   enableEmailWelcome?: boolean;
   enableEmailNewOrder?: boolean;
   enableEmailOrderShipped?: boolean;
-  enableEmailAdminNewOrder?: boolean; // New: Notify Admin on new order
-  enableEmailContactAdmin?: boolean; // New: Notify Admin on contact submission
+  enableEmailAdminNewOrder?: boolean; 
+  enableEmailContactAdmin?: boolean; 
   
   // Feature Flags
   enableNewsletterSignup?: boolean;
@@ -232,10 +242,10 @@ export interface AppSettings {
   enableReviews?: boolean;
   
   // PayPal Settings
-  paypalClientId?: string; // Mapped from paypal_client_id
-  paypalSecretKey?: string; // Mapped from paypal_secret_key (Only accessible to Admin)
-  paypalMode?: 'sandbox' | 'live'; // Mapped from paypal_mode
-  paymentGatewayEnabled?: boolean; // Mapped from payment_gateway_enabled
+  paypalClientId?: string; 
+  paypalSecretKey?: string; 
+  paypalMode?: 'sandbox' | 'live'; 
+  paymentGatewayEnabled?: boolean; 
 }
 
 export interface EmailTemplate {
@@ -266,8 +276,7 @@ export interface ContactSubmission {
   createdAt: string;
 }
 
-// --- DB Raw Types (for internal mapping) ---
-
+// --- DB Raw Types ---
 export type DbProduct = Tables<'products'>;
 export type DbCategory = Tables<'categories'>;
 export type DbBlogCategory = Tables<'blog_categories'>;

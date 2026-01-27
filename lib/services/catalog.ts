@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -101,8 +102,14 @@ export class ProductService {
       stock_quantity: product.stockQuantity,
       low_stock_threshold: product.lowStockThreshold,
       weight: product.weight,
+      
+      // SEO
       seo_title: product.seoTitle,
-      seo_description: product.seoDescription
+      seo_description: product.seoDescription,
+      canonical_url: product.canonicalUrl,
+      is_noindex: product.isNoIndex,
+      is_nofollow: product.isNoFollow,
+      keywords: product.keywords
     };
   }
 }
@@ -112,7 +119,7 @@ export class CategoryService {
     log('SELECT', 'categories');
     const { data, error } = await supabase.from('categories').select('*');
     if (error) throw error;
-    return ((data || []) as DbCategory[]).map(Mappers.toCategory);
+    return ((data || []) as any[]).map(Mappers.toCategory);
   }
 
   async create(category: Category): Promise<void> {
@@ -121,7 +128,10 @@ export class CategoryService {
       key: category.key,
       label: category.label,
       color: category.color,
-      bg_class: category.bgColorClass
+      bg_class: category.bgColorClass,
+      // SEO (Partial support in creation for now)
+      seo_title: category.seoTitle,
+      seo_description: category.seoDescription
     });
     if (error) throw error;
   }

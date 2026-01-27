@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
@@ -7,8 +8,6 @@ import { BackButton } from '../components/ui/BackButton';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/db';
 import { useCart } from '../context/CartContext';
-
-// Import newly created components
 import { ProductImageGallery } from '../components/product/ProductImageGallery';
 import { ProductInfo } from '../components/product/ProductInfo';
 import { ProductPurchaseForm } from '../components/product/ProductPurchaseForm';
@@ -18,6 +17,7 @@ import { SimilarProducts } from '../components/product/SimilarProducts';
 import { ProductReviews } from '../components/product/ProductReviews';
 import { MobileStickyBar } from '../components/product/MobileStickyBar';
 import { ImageExpandModal } from '../components/product/ImageExpandModal';
+import { SEO } from '../components/SEO';
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +31,6 @@ export const ProductDetails: React.FC = () => {
   const product = products.find(p => p.id === id);
   const category = categories.find(c => c.key === product?.categoryKey);
 
-  // State lifted from form to be shared with MobileStickyBar
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
@@ -52,19 +51,6 @@ export const ProductDetails: React.FC = () => {
         api.getWishlist(user.id).then(ids => setIsWishlisted(ids.includes(id))).catch(console.error);
      }
   }, [id, user]);
-
-  useEffect(() => {
-    if (product) {
-      document.title = product.seoTitle || `${product.title} | Jambo Apparels`;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute('content', product.seoDescription || product.description.substring(0, 160));
-      
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage && product.images && product.images.length > 0) {
-        ogImage.setAttribute('content', product.images[0]);
-      }
-    }
-  }, [product]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -134,13 +120,44 @@ export const ProductDetails: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
+      <SEO 
+        title={product.seoTitle || product.title}
+        description={product.seoDescription || product.description.substring(0, 160)}
+        image={product.images[0]}
+        type="product"
+        canonical={product.canonicalUrl}
+        noindex={product.isNoIndex}
+        nofollow={product.isNoFollow}
+        keywords={product.keywords}
+        schema={{
+          "@type": "Product",
+          "name": product.title,
+          "image": product.images,
+          "description": product.description,
+          "sku": product.sku || product.id,
+          "brand": { "@type": "Brand", "name": "Jambo Apparels" },
+          "offers": {
+            "@type": "Offer",
+            "url": `https://jamboapparels.com/#/product/${product.id}`,
+            "priceCurrency": settings.currency || "GBP",
+            "price": product.isOnSale ? product.salePrice : product.price,
+            "availability": (product.stockQuantity || 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            "itemCondition": "https://schema.org/NewCondition"
+          },
+          "aggregateRating": product.reviewCount && product.reviewCount > 0 ? {
+            "@type": "AggregateRating",
+            "ratingValue": product.averageRating,
+            "reviewCount": product.reviewCount
+          } : undefined
+        }}
+      />
+
       <MobileStickyBar 
         product={product} 
         show={showStickyBar && !isExpanded} 
         onAddToCart={() => handleAddToCart(false)}
       />
 
-      {/* Branded Header */}
       <header className="relative bg-brand-dark pt-12 pb-32 md:pt-24 md:pb-40 overflow-hidden text-center border-b border-brand-green/20">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
            <div className="absolute top-0 right-0 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -167,7 +184,6 @@ export const ProductDetails: React.FC = () => {
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
-          {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 lg:sticky lg:top-28">
             <ProductImageGallery 
               product={product}
@@ -177,13 +193,12 @@ export const ProductDetails: React.FC = () => {
             />
           </div>
           
-          {/* Right Column: Information and Purchase */}
           <div className="lg:col-span-6 mt-12 lg:mt-0">
             <div className="bg-white lg:p-10 p-6 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
               <ProductInfo product={product} category={category} />
               <ProductPurchaseForm 
                 product={product}
-                category={category} // Passing category for theme colors
+                category={category}
                 buySectionRef={buySectionRef}
                 optionsRef={optionsRef}
                 selectedSize={selectedSize}
@@ -201,7 +216,6 @@ export const ProductDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Content */}
         <ProductShare product={product} />
         <SimilarProducts similarProducts={similarProducts} />
         {settings.enableReviews && (

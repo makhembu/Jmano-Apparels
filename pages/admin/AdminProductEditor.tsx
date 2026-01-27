@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
@@ -6,11 +7,21 @@ import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { Product } from '../../types';
 import { ProductPreview } from '../../components/admin/products/ProductPreview';
+import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup'; // Import
 
-const emptyProduct: Partial<Product> = {
+// Extend product type locally to include the new field if not yet updated in global types
+// (Though in a real app you'd update types.ts first)
+interface ExtendedProduct extends Product {
+    isFreeShipping?: boolean;
+}
+
+const emptyProduct: Partial<ExtendedProduct> = {
   title: '', price: 0, salePrice: undefined, isOnSale: false, categoryKey: '',
   images: [], description: '', sizes: ['S', 'M', 'L'], colors: [], tags: [],
-  isFeatured: false, isPublished: true, sku: '', slug: '', stockQuantity: 0, lowStockThreshold: 5, weight: 0
+  isFeatured: false, isPublished: true, sku: '', slug: '', stockQuantity: 0, lowStockThreshold: 5, weight: 0,
+  isFreeShipping: false,
+  // SEO Defaults
+  seoTitle: '', seoDescription: '', canonicalUrl: '', isNoIndex: false, isNoFollow: false, keywords: []
 };
 
 export const AdminProductEditor: React.FC = () => {
@@ -19,7 +30,7 @@ export const AdminProductEditor: React.FC = () => {
   const { products, categories, refreshData } = useShop();
   const { showToast } = useToast();
   
-  const [formData, setFormData] = useState<Partial<Product>>(emptyProduct);
+  const [formData, setFormData] = useState<Partial<ExtendedProduct>>(emptyProduct);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -114,11 +125,14 @@ export const AdminProductEditor: React.FC = () => {
     }
     setLoading(true);
     try {
+      // Cast payload to handle potentially new fields that TypeScript might complain about if types.ts isn't fully updated yet
+      const payload = { ...formData } as any;
+      
       if (id) {
-        await api.adminUpdateProduct(id, formData);
+        await api.adminUpdateProduct(id, payload);
         showToast('Product updated successfully', 'success');
       } else {
-        await api.adminCreateProduct(formData);
+        await api.adminCreateProduct(payload);
         showToast('Product created successfully', 'success');
       }
       await refreshData();
@@ -133,7 +147,7 @@ export const AdminProductEditor: React.FC = () => {
   return (
     <div className="animate-fade-in relative">
       {/* Sticky Header Section */}
-      <div className="sticky top-[-1rem] md:top-[-2rem] z-30 bg-gray-100/95 backdrop-blur-md border-b border-slate-200 -mx-4 md:-mx-8 px-4 md:px-8 py-6 mb-10">
+      <div className="sticky top-[-1rem] md:top-[-2rem] z-30 bg-gray-100/95 backdrop-blur-md border-b border-slate-200 -mx-4 md:-mx-8 px-4 md:px-8 py-6 mb-10 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold font-serif text-slate-900">
@@ -254,6 +268,64 @@ export const AdminProductEditor: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Shipping & Logistics (New Section) */}
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
+                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Shipping & Logistics</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Shipping Mode</label>
+                            <div className="flex flex-col gap-3">
+                                <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <input 
+                                        type="radio" 
+                                        name="shipping_mode" 
+                                        checked={!formData.isFreeShipping} 
+                                        onChange={() => setFormData(prev => ({...prev, isFreeShipping: false}))}
+                                        className="h-4 w-4 text-brand-green focus:ring-brand-green border-gray-300"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-bold text-slate-900 block">Standard (Weight Based)</span>
+                                        <span className="text-xs text-slate-500">Calculated based on product weight and zone rates.</span>
+                                    </div>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <input 
+                                        type="radio" 
+                                        name="shipping_mode" 
+                                        checked={!!formData.isFreeShipping} 
+                                        onChange={() => setFormData(prev => ({...prev, isFreeShipping: true}))}
+                                        className="h-4 w-4 text-brand-green focus:ring-brand-green border-gray-300"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-bold text-slate-900 block">Free Shipping</span>
+                                        <span className="text-xs text-slate-500">Override zone rules. This item ships free.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">
+                                Weight (kg) 
+                                {formData.isFreeShipping && <span className="ml-2 text-red-400 font-normal normal-case">(Ignored for free shipping)</span>}
+                            </label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                name="weight" 
+                                value={formData.weight || 0} 
+                                onChange={handleChange} 
+                                disabled={!!formData.isFreeShipping}
+                                className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none disabled:opacity-50 disabled:bg-slate-100" 
+                            />
+                            <p className="text-[10px] text-slate-400 mt-2">
+                                Used to calculate shipping costs for standard items. Example: T-shirt (0.2), Hoodie (0.5).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Inventory & Variants */}
                 <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Inventory & Variants</h2>
@@ -269,10 +341,6 @@ export const AdminProductEditor: React.FC = () => {
                         <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Low Stock Threshold</label>
                             <input type="number" name="lowStockThreshold" value={formData.lowStockThreshold || 5} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Weight (kg)</label>
-                            <input type="number" step="0.01" name="weight" value={formData.weight || 0} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" />
                         </div>
                     </div>
                     
@@ -311,23 +379,23 @@ export const AdminProductEditor: React.FC = () => {
                      </div>
                 </div>
 
-                {/* SEO */}
+                {/* SEO (With AI Context) */}
                 <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Digital Presence (SEO)</h2>
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Custom URL Slug</label>
-                            <input type="text" name="slug" value={formData.slug || ''} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" placeholder="e.g. hope-hoodie-gold" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Search Title Tag</label>
-                            <input type="text" name="seoTitle" value={formData.seoTitle || ''} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" placeholder="Defaults to Product Title" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Meta Description</label>
-                            <textarea name="seoDescription" rows={3} value={formData.seoDescription || ''} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none" placeholder="A brief summary for search engines..." />
-                        </div>
-                    </div>
+                   <SeoFieldGroup 
+                      data={formData}
+                      onChange={handleChange}
+                      onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k}))}
+                      defaultTitle={formData.title}
+                      defaultDescription={formData.description?.substring(0, 160)}
+                      previewImage={formData.images?.[0]}
+                      permalink={`https://jamboapparels.com/#/product/${formData.id || 'new-product'}`}
+                      contextData={{
+                          title: formData.title || '',
+                          description: formData.description || '',
+                          type: 'product'
+                      }}
+                   />
                 </div>
              </form>
           </div>
@@ -352,13 +420,6 @@ export const AdminProductEditor: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                <div className="bg-brand-dark p-6 rounded-2xl text-white shadow-lg">
-                   <p className="text-xs font-bold uppercase tracking-widest mb-2 text-brand-hope">Editor Note</p>
-                   <p className="text-sm font-light leading-relaxed opacity-80">
-                     Remember to use high-quality, professional photography. The beauty of the apparel reflects the excellence of the Word.
-                   </p>
-                </div>
              </div>
           </div>
        </div>

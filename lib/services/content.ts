@@ -82,8 +82,14 @@ export class BlogService {
       author: post.author,
       reading_time: post.readingTime,
       category_id: post.categoryId,
+      
+      // SEO
       seo_title: post.seoTitle,
-      seo_description: post.seoDescription
+      seo_description: post.seoDescription,
+      canonical_url: post.canonicalUrl,
+      is_noindex: post.isNoIndex,
+      is_nofollow: post.isNoFollow,
+      keywords: post.keywords
     };
   }
 }
@@ -150,13 +156,28 @@ export class SettingsService {
       enable_email_welcome: settings.enableEmailWelcome,
       enable_email_new_order: settings.enableEmailNewOrder,
       enable_email_order_shipped: settings.enableEmailOrderShipped,
-      enable_email_admin_new_order: settings.enableEmailAdminNewOrder, // New
-      enable_email_contact_admin: settings.enableEmailContactAdmin, // New
+      enable_email_admin_new_order: settings.enableEmailAdminNewOrder,
+      enable_email_contact_admin: settings.enableEmailContactAdmin,
       enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm,
       enable_reviews: settings.enableReviews,
       
-      // PayPal Settings Mapping - Now supports Secret Key
+      // Global SEO
+      seo_title: settings.seoTitle,
+      seo_description: settings.seoDescription,
+      default_og_image: settings.defaultOgImage,
+      google_analytics_id: settings.googleAnalyticsId,
+      custom_head_scripts: settings.customHeadScripts,
+      
+      // Page Specific SEO
+      shop_seo_title: settings.shopSeoTitle,
+      shop_seo_description: settings.shopSeoDescription,
+      blog_seo_title: settings.blogSeoTitle,
+      blog_seo_description: settings.blogSeoDescription,
+      about_seo_title: settings.aboutSeoTitle,
+      about_seo_description: settings.aboutSeoDescription,
+      
+      // PayPal Settings Mapping
       paypal_client_id: settings.paypalClientId,
       paypal_secret_key: settings.paypalSecretKey,
       paypal_mode: settings.paypalMode,
@@ -194,7 +215,7 @@ export class SettingsService {
           to: testEmail,
           subject: 'Jambo Apparels - System Test',
           htmlBody: '<p>This is a test email to verify your configuration settings.</p>',
-          testMode: true // Signal to edge function to return diagnostics
+          testMode: true
         }
       });
       

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -9,6 +10,7 @@ import { useShop } from '../context/ShopContext';
 import { ProductCard } from '../components/ProductCard';
 import { Button } from '../components/ui/Button';
 import { BackButton } from '../components/ui/BackButton';
+import { SEO } from '../components/SEO';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -49,21 +51,42 @@ export const BlogPost: React.FC = () => {
     }
   }, [slug]);
 
-  useEffect(() => {
-    if (post) {
-      const title = post.seoTitle || `${post.title} | Jambo Journal`;
-      document.title = title;
-    }
-  }, [post]);
-
   if (loading) return <LoadingSpinner fullScreen />;
   if (!post) return <div className="p-32 text-center"><h1 className="text-4xl font-serif font-bold text-brand-dark mb-6">Entry Not Found</h1><Link to="/blog"><Button>Back to Journal</Button></Link></div>;
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Unified editorial Post Header - Dark Theme */}
+      <SEO 
+        title={post.seoTitle || post.title}
+        description={post.seoDescription || post.summary}
+        image={post.featuredImage || post.thumbnail}
+        type="article"
+        canonical={post.canonicalUrl}
+        noindex={post.isNoIndex}
+        nofollow={post.isNoFollow}
+        keywords={post.keywords}
+        schema={{
+          "@type": "BlogPosting",
+          "headline": post.title,
+          "image": post.featuredImage,
+          "author": {
+            "@type": "Person",
+            "name": post.author
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Jambo Apparels",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://i.imgur.com/pkaScEv.png"
+            }
+          },
+          "datePublished": post.createdAt,
+          "articleBody": post.content ? post.content.replace(/<[^>]*>?/gm, '').substring(0, 160) : ""
+        }}
+      />
+
       <header className="relative bg-brand-dark pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden border-b border-brand-green/20">
-        {/* Background Decor */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/20 rounded-full blur-3xl"></div>
         
@@ -106,7 +129,6 @@ export const BlogPost: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Feature Content - Reduced roundedness to 2xl */}
       <div className="max-w-6xl mx-auto px-4 -mt-16 md:-mt-24 mb-20 relative z-20">
         <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl border-[12px] border-white ring-1 ring-slate-100">
            <img src={post.featuredImage} alt="" className="w-full h-full object-cover" />
@@ -121,7 +143,6 @@ export const BlogPost: React.FC = () => {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
         </article>
 
-        {/* Share & Signature */}
         <div className="mt-24 pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
            <div className="flex flex-col items-center md:items-start gap-4">
               <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Share the Message</span>
@@ -138,7 +159,6 @@ export const BlogPost: React.FC = () => {
         </div>
       </div>
 
-      {/* Up Next - Royal Style */}
       {nextPost && (
         <section className="bg-brand-testament py-24 md:py-32 relative overflow-hidden">
            <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-white/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
@@ -155,7 +175,6 @@ export const BlogPost: React.FC = () => {
         </section>
       )}
 
-      {/* Recommended Context */}
       <section className="bg-slate-50 py-32 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4">
            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">

@@ -38,6 +38,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
 import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
 import { supabase } from './lib/supabaseClient';
+import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 
 // Component to handle global auth events like Password Recovery redirection
 const AuthEventHandler = () => {
@@ -67,6 +68,7 @@ const App: React.FC = () => {
           <CartProvider>
             {/* AppProvider wraps specific providers to bridge legacy useApp hooks */}
             <AppProvider>
+              <GlobalScriptInjector />
               <Router>
                 <ScrollToTop />
                 <AuthEventHandler />

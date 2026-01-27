@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
@@ -5,6 +6,7 @@ import { ProductCard } from '../components/ProductCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
+import { SEO } from '../components/SEO';
 
 export const Shop: React.FC = () => {
   const { 
@@ -23,30 +25,21 @@ export const Shop: React.FC = () => {
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sync URL params to Context Filters
   useEffect(() => {
      const cat = searchParams.get('cat') || 'ALL';
      const search = searchParams.get('search') || '';
      const newFilters = {
          categoryKey: cat === 'ALL' ? undefined : cat,
          search: search,
-         sortBy: filters.sortBy // keep existing sort
+         sortBy: filters.sortBy 
      };
      
-     // Only update if actually different to avoid loops
      if (newFilters.categoryKey !== filters.categoryKey || newFilters.search !== filters.search) {
          updateFilters(newFilters);
      }
      
      if (window.innerWidth >= 768) setShowFilters(true);
-     
-     // SEO
-     if (settings) {
-        const activeCat = categories.find(c => c.key === cat);
-        const title = activeCat?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
-        document.title = title;
-     }
-  }, [searchParams, settings, categories]); // Removed updateFilters/filters dep to avoid loop
+  }, [searchParams, settings, categories]); 
 
   const handleCategoryChange = (key: string) => {
     const newParams: Record<string, string> = {};
@@ -72,10 +65,22 @@ export const Shop: React.FC = () => {
       updateFilters({ minPrice: min, maxPrice: max });
   };
 
+  const activeCategory = categories.find(c => c.key === filters.categoryKey);
+  const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
+  const seoDesc = activeCategory?.seoDescription || settings.shopSeoDescription;
+
   if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen">
+      <SEO 
+        title={seoTitle}
+        description={seoDesc}
+        type="website"
+        canonical={activeCategory?.canonicalUrl}
+        noindex={activeCategory?.isNoIndex}
+      />
+
       <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
           <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
@@ -91,7 +96,6 @@ export const Shop: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
-        {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <button 
@@ -132,7 +136,6 @@ export const Shop: React.FC = () => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-0 md:gap-12 items-start relative pb-24">
-          {/* Sidebar Filters */}
           <div className={`flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-full md:w-72 opacity-100 mb-8 md:mb-0' : 'w-full md:w-0 h-0 md:h-auto opacity-0'}`}>
             <aside className="w-full md:w-72">
               <div className="md:sticky md:top-40 space-y-10 bg-white p-8 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
@@ -217,7 +220,6 @@ export const Shop: React.FC = () => {
               )}
             </div>
             
-            {/* Load More Trigger */}
             {hasMore && (
                 <div className="mt-16 text-center">
                     <Button 

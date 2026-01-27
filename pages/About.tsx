@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { api } from '../lib/db';
 import { useToast } from '../context/ToastContext';
+import { SEO } from '../components/SEO';
 
 export const About: React.FC = () => {
   const { settings, user } = useApp();
@@ -17,21 +19,6 @@ export const About: React.FC = () => {
     }
   }, [user]);
 
-  // Dynamic SEO
-  useEffect(() => {
-    if (settings) {
-      const title = settings.aboutSeoTitle || `Our Story | Jambo Apparels`;
-      const desc = settings.aboutSeoDescription || settings.mission || '';
-      
-      document.title = title;
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) metaDescription.setAttribute('content', desc);
-      
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', title);
-    }
-  }, [settings]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
@@ -42,7 +29,7 @@ export const About: React.FC = () => {
     try {
       await api.submitContact(form);
       showToast('Message sent! We will be in touch shortly.', 'success');
-      setForm({ ...form, message: '' }); // Reset message but keep name/email
+      setForm({ ...form, message: '' }); 
     } catch (e) {
       showToast('Failed to send message. Please try again.', 'error');
     } finally {
@@ -50,9 +37,30 @@ export const About: React.FC = () => {
     }
   };
 
+  const seoTitle = settings.aboutSeoTitle || `Our Story | Jambo Apparels`;
+  const seoDesc = settings.aboutSeoDescription || settings.mission;
+
   return (
     <div className="bg-slate-50 min-h-screen">
-      {/* Unified Branded Header - Matches Blog/Shop */}
+      <SEO 
+        title={seoTitle}
+        description={seoDesc}
+        type="website"
+        schema={{
+          "@type": "AboutPage",
+          "name": "About Jambo Apparels",
+          "description": settings.mission,
+          "mainEntity": {
+            "@type": "Organization",
+            "name": "Jambo Apparels",
+            "founder": {
+              "@type": "Person",
+              "name": settings.founderName
+            }
+          }
+        }}
+      />
+
       <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
           <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
@@ -69,7 +77,6 @@ export const About: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20 space-y-12 md:space-y-24 pb-24">
         
-        {/* Founder Section */}
         <section className="bg-white rounded-2xl shadow-2xl shadow-brand-dark/5 border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-5 relative group">
@@ -104,7 +111,6 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Mission & Vision */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           <div className="group relative bg-brand-dark p-10 md:p-16 rounded-2xl text-white shadow-2xl shadow-brand-dark/30 flex flex-col justify-center transition-transform hover:-translate-y-2">
             <h2 className="text-xs font-black uppercase tracking-[0.4em] mb-8 text-brand-hope">The Mission</h2>
@@ -121,7 +127,6 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Core Values Section */}
         <section className="py-12">
           <div className="text-center max-w-2xl mx-auto mb-16">
              <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block">The Foundation</span>
@@ -130,7 +135,6 @@ export const About: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-             {/* Honesty Card */}
              <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
                 <div className="bg-brand-humility p-10 rounded-xl text-center h-full flex flex-col items-center">
                     <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
@@ -143,7 +147,6 @@ export const About: React.FC = () => {
                 </div>
              </div>
 
-             {/* Excellence Card */}
              <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
                 <div className="bg-brand-hope p-10 rounded-xl text-center h-full flex flex-col items-center">
                     <div className="w-20 h-20 bg-white/30 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
@@ -156,7 +159,6 @@ export const About: React.FC = () => {
                 </div>
              </div>
 
-             {/* Boldness Card */}
              <div className="bg-white p-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all group overflow-hidden border border-slate-100">
                 <div className="bg-brand-patience p-10 rounded-xl text-center h-full flex flex-col items-center">
                     <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm group-hover:scale-110 transition-transform">
@@ -171,7 +173,6 @@ export const About: React.FC = () => {
           </div>
         </section>
         
-        {/* Contact Form Section (Restored & Togglable) */}
         {settings.enableContactForm && (
           <section className="bg-brand-dark text-white rounded-3xl overflow-hidden shadow-2xl shadow-brand-green/20">
             <div className="grid grid-cols-1 lg:grid-cols-2">
