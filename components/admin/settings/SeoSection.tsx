@@ -107,7 +107,7 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
                  Sitemap Endpoint
               </h4>
               <p className="text-xs text-slate-500 leading-relaxed">
-                 Your sitemap is automatically generated at <code>/sitemap.xml</code>. This endpoint fetches live product and blog data directly from the database.
+                 Your sitemap is automatically generated at <code>/sitemap.xml</code> via Vercel Serverless Functions. It fetches live product and blog data directly from your database.
               </p>
               <div className="flex gap-2">
                  <a 
@@ -127,8 +127,8 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
                    Download Manual Backup
                  </Button>
               </div>
-              <p className="text-[10px] text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 mt-2">
-                 <strong>Note:</strong> Ensure your hosting provider (e.g. Vercel) is configured to rewrite <code>/sitemap.xml</code> to your Supabase Edge Function URL.
+              <p className="text-[10px] text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 mt-2">
+                 <strong>System Status:</strong> Using Vercel Serverless API (`api/sitemap.js`) for generation. No Supabase configuration required.
               </p>
            </div>
            
