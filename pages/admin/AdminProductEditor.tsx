@@ -16,7 +16,7 @@ interface ExtendedProduct extends Product {
 
 const emptyProduct: Partial<ExtendedProduct> = {
   title: '', price: 0, salePrice: undefined, isOnSale: false, categoryKey: '',
-  images: [], description: '', sizes: ['S', 'M', 'L'], colors: [], tags: [],
+  images: [], description: '', sizes: ['S', 'M', 'L', 'XL'], colors: [], tags: [],
   isFeatured: false, isPublished: true, sku: '', slug: '', stockQuantity: 0, lowStockThreshold: 5, weight: 0,
   isFreeShipping: false,
   seoTitle: '', seoDescription: '', canonicalUrl: '', isNoIndex: false, isNoFollow: false, keywords: []
@@ -33,20 +33,25 @@ export const AdminProductEditor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Quick Add Category State
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryLabel, setNewCategoryLabel] = useState('');
-  const [creatingCategory, setCreatingCategory] = useState(false);
+  // Local state for array inputs (comma separated strings)
+  const [sizesInput, setSizesInput] = useState('');
+  const [colorsInput, setColorsInput] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   useEffect(() => {
     if (id && products.length > 0) {
       const p = products.find(prod => prod.id === id);
       if (p) {
           setFormData(p);
+          setSizesInput(p.sizes?.join(', ') || '');
+          setColorsInput(p.colors?.join(', ') || '');
+          setTagsInput(p.tags?.join(', ') || '');
           setPageData(p as any);
       }
     } else if (!id) {
       setFormData(emptyProduct);
+      setSizesInput(emptyProduct.sizes?.join(', ') || '');
       setPageData(undefined);
     }
     return () => setPageData(undefined);
@@ -60,49 +65,89 @@ export const AdminProductEditor: React.FC = () => {
     } else if (type === 'number') {
        setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : parseFloat(value) }));
     } else {
-        if (name === 'image') setFormData(prev => ({ ...prev, images: [value] }));
-        else setFormData(prev => ({ ...prev, [name]: value }));
+       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'sizes' | 'colors' | 'tags') => {
-      const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-      setFormData(prev => ({ ...prev, [field]: val }));
+  // Sync array inputs to formData on blur or specific actions
+  const handleArrayBlur = (field: 'sizes' | 'colors' | 'tags', value: string) => {
+      const arr = value.split(',').map(s => s.trim()).filter(Boolean);
+      setFormData(prev => ({ ...prev, [field]: arr }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File too large (max 5MB)', 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const publicUrl = await api.uploadImage(file);
+      // Append to images array
+      setFormData(prev => ({ 
+          ...prev, 
+          images: [...(prev.images || []), publicUrl] 
+      }));
+      showToast('Image uploaded', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to upload image', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const addImageUrl = () => {
+      if (!newImageUrl) return;
+      setFormData(prev => ({ ...prev, images: [...(prev.images || []), newImageUrl] }));
+      setNewImageUrl('');
+  };
+
+  const removeImage = (index: number) => {
+      setFormData(prev => ({
+          ...prev,
+          images: prev.images?.filter((_, i) => i !== index)
+      }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.categoryKey || !formData.images || formData.images.length === 0) {
-      showToast('Please fill in required fields', 'error');
+    if (!formData.title || !formData.categoryKey) {
+      showToast('Title and Category are required', 'error');
       return;
     }
+    
     setLoading(true);
     try {
       const payload = { ...formData } as any;
       if (id) await api.adminUpdateProduct(id, payload);
       else await api.adminCreateProduct(payload);
       await refreshData();
-      showToast('Product record synchronized', 'success');
+      showToast('Product saved successfully', 'success');
       navigate('/admin/products');
     } catch (err: any) {
-      showToast(`Sync Error: ${err.message}`, 'error');
+      showToast(`Error: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="animate-fade-in relative">
+    <div className="animate-fade-in relative pb-20">
+      {/* Sticky Header */}
       <div className="sticky top-[-1rem] md:top-[-2rem] z-30 bg-gray-100/95 backdrop-blur-md border-b border-slate-200 -mx-4 md:-mx-8 px-4 md:px-8 py-6 mb-10 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold font-serif text-slate-900">{id ? 'Edit Piece' : 'New Piece'}</h1>
-            <p className="text-slate-500 text-xs md:text-sm mt-1">Ethically threading scriptures for the modern believer.</p>
+            <p className="text-slate-500 text-xs md:text-sm mt-1">Manage inventory, variants, and visual presentation.</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Button variant="outline" className="flex-1 sm:flex-none h-11 bg-white" onClick={() => navigate('/admin/products')}>Discard</Button>
+            <Button variant="outline" className="flex-1 sm:flex-none h-11 bg-white" onClick={() => navigate('/admin/products')}>Cancel</Button>
             <Button id="btn-save-settings" onClick={handleSubmit} isLoading={loading} className="flex-1 sm:flex-none h-11 shadow-lg shadow-brand-green/20 px-8">
-              {id ? 'Update' : 'Publish'}
+              {id ? 'Save Changes' : 'Publish Product'}
             </Button>
           </div>
         </div>
@@ -110,33 +155,170 @@ export const AdminProductEditor: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 md:px-0">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Main Form Column */}
           <div className="lg:col-span-2 space-y-8">
              <form id="product-form" onSubmit={handleSubmit} className="space-y-8">
+                
+                {/* 1. Basic Info */}
                 <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
-                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Essential Details</h2>
-                    <div className="grid grid-cols-1 gap-6">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Product Title*</label>
-                            <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none transition-all" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Base Price (£)*</label>
-                                <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50" />
+                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Essential Information</h2>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Product Title*</label>
+                                <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none transition-all" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Stock Level*</label>
-                                <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50" />
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Category*</label>
+                                <select name="categoryKey" value={formData.categoryKey} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none">
+                                    <option value="">Select...</option>
+                                    {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                                </select>
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Description</label>
-                            <textarea name="description" rows={6} value={formData.description} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-4 bg-slate-50" />
+                            <textarea name="description" rows={5} value={formData.description} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" placeholder="Describe the material, fit, and spiritual inspiration..." />
                         </div>
                     </div>
                 </div>
+
+                {/* 2. Visuals */}
                 <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
-                   <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">SEO Optimization</h2>
+                    <div className="flex justify-between items-center border-b border-slate-50 pb-4 mb-6">
+                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Visual Gallery</h2>
+                        <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-1 rounded">Max 5MB per image</span>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        {/* Image List */}
+                        {formData.images && formData.images.length > 0 && (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                                {formData.images.map((img, idx) => (
+                                    <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                                        <img src={img} alt={`Product ${idx}`} className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                        {idx === 0 && <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] font-bold text-center py-1">PRIMARY</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upload & Add URL */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors relative cursor-pointer text-center">
+                                <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" disabled={uploading} />
+                                {uploading ? (
+                                    <div className="animate-spin h-6 w-6 border-2 border-brand-green rounded-full border-t-transparent"></div>
+                                ) : (
+                                    <>
+                                        <svg className="w-6 h-6 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                        <span className="text-xs font-bold text-brand-green uppercase tracking-wide">Upload File</span>
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex flex-col justify-center gap-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Add via URL</label>
+                                <div className="flex gap-2">
+                                    <input type="text" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://..." className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs" />
+                                    <button type="button" onClick={addImageUrl} className="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-slate-600">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Pricing & Inventory */}
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
+                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Commerce Data</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        
+                        {/* Price Block */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Regular Price (£)</label>
+                                <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 font-bold" />
+                            </div>
+                            <div className="p-4 bg-brand-light/10 rounded-xl border border-brand-green/10">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-bold text-brand-dark uppercase tracking-widest">Sale Options</label>
+                                    <input type="checkbox" name="isOnSale" checked={!!formData.isOnSale} onChange={handleChange} className="h-4 w-4 text-brand-green rounded focus:ring-brand-green" />
+                                </div>
+                                {formData.isOnSale && (
+                                    <input type="number" step="0.01" name="salePrice" value={formData.salePrice || ''} onChange={handleChange} placeholder="Sale Price £" className="w-full border border-slate-200 rounded-lg p-2 bg-white text-sm" />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Inventory Block */}
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">SKU (Opt)</label>
+                                    <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs font-mono" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Weight (kg)</label>
+                                    <input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Stock Level</label>
+                                    <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 font-bold" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Low Alert</label>
+                                    <input type="number" name="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Variants */}
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
+                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Variants</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Sizes (Comma separated)</label>
+                            <input 
+                                type="text" 
+                                value={sizesInput} 
+                                onChange={(e) => setSizesInput(e.target.value)} 
+                                onBlur={() => handleArrayBlur('sizes', sizesInput)}
+                                className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" 
+                                placeholder="S, M, L, XL"
+                            />
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {formData.sizes?.map(s => <span key={s} className="px-2 py-1 bg-gray-100 text-xs rounded border border-gray-200">{s}</span>)}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Colors (Comma separated)</label>
+                            <input 
+                                type="text" 
+                                value={colorsInput} 
+                                onChange={(e) => setColorsInput(e.target.value)} 
+                                onBlur={() => handleArrayBlur('colors', colorsInput)}
+                                className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" 
+                                placeholder="Red, Blue, Forest Green"
+                            />
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {formData.colors?.map(c => <span key={c} className="px-2 py-1 bg-gray-100 text-xs rounded border border-gray-200">{c}</span>)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. SEO */}
+                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
+                   <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-50 pb-4">Search Engine Optimization</h2>
                    <SeoFieldGroup 
                       data={formData} onChange={handleChange} 
                       onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k}))}
@@ -146,11 +328,37 @@ export const AdminProductEditor: React.FC = () => {
                       contextData={{ title: formData.title || '', description: formData.description || '', type: 'product' }}
                    />
                 </div>
+                
+                {/* 6. Visibility Control */}
+                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 className="font-bold text-slate-800">Publishing Status</h3>
+                        <p className="text-xs text-slate-500">Hidden products are only visible to admins.</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="isPublished" checked={!!formData.isPublished} onChange={handleChange} className="w-5 h-5 text-brand-green rounded focus:ring-brand-green" />
+                            <span className="text-sm font-bold text-slate-700">Visible in Shop</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="isFeatured" checked={!!formData.isFeatured} onChange={handleChange} className="w-5 h-5 text-brand-hope rounded focus:ring-brand-hope" />
+                            <span className="text-sm font-bold text-slate-700">Featured Item</span>
+                        </label>
+                    </div>
+                </div>
+
              </form>
           </div>
+
+          {/* Sidebar Preview */}
           <div className="lg:col-span-1">
              <div className="lg:sticky lg:top-[160px] space-y-8">
                 <ProductPreview product={formData} categories={categories} />
+                
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800 text-xs leading-relaxed">
+                    <strong className="block mb-1">Tip:</strong>
+                    Ensure your product images are high-resolution (min 800x800) and your description includes keywords like "Christian Hoodie", "Faith Apparel" for better SEO ranking.
+                </div>
              </div>
           </div>
        </div>
