@@ -10,7 +10,8 @@ import { CopilotDrawer } from './admin/copilot/CopilotDrawer';
 
 // Icons components
 const Icons = {
-  Dashboard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  Dashboard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  Analytics: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Products: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
   Orders: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
   Payments: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
@@ -60,8 +61,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <CopilotProvider>
-      <div className="flex min-h-screen bg-gray-100 overflow-hidden">
-        {/* Sidebar */}
+      <div className="flex min-h-screen bg-gray-100">
         <aside 
           className={`bg-brand-dark text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}
         >
@@ -77,6 +77,7 @@ export const AdminLayout: React.FC = () => {
 
           <nav className="flex-1 overflow-y-auto mt-2 px-2 space-y-1">
             <NavItem to="/admin" label="Dashboard" icon={Icons.Dashboard} />
+            <NavItem to="/admin/analytics" label="Analytics" icon={Icons.Analytics} />
             
             <SectionTitle title="Commerce" />
             <NavItem to="/admin/products" label="Products" icon={Icons.Products} />
@@ -102,13 +103,9 @@ export const AdminLayout: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-grow flex flex-col relative h-screen overflow-hidden">
-          <div className="flex-1 overflow-auto p-4 md:p-8">
-            <Outlet />
-          </div>
-          
-          {/* AI Copilot UI - Root Layered */}
+        {/* Main Content */}
+        <div className="flex-grow p-4 md:p-8 overflow-auto h-screen w-full relative">
+          <Outlet />
           <CopilotWidget />
           <CopilotDrawer />
         </div>

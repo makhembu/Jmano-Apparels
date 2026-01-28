@@ -1,12 +1,18 @@
 
-import { Product, AppSettings, BlogPost, User, Order, ProductReview, ShippingAddress, CartItem, Category, BlogCategory, ShippingZone, DiscountCode, UserAddress, EmailTemplate } from '../types';
+import { supabase } from './supabaseClient';
+import { 
+  Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
+  ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource
+} from '../types';
+
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
 import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
-import { supabase } from './supabaseClient';
 
+// Instantiate Services
 const productService = new ProductService();
 const categoryService = new CategoryService();
 const reviewService = new ReviewService();
@@ -22,38 +28,57 @@ const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
 export const api = {
-  // PRODUCTS
+  // Catalog
   getProducts: () => productService.getAll(),
-  getPaginatedProducts: (page: number, pageSize: number, filters: ProductFilters) => productService.getPaginated(page, pageSize, filters),
-  getProduct: (id: string) => productService.getById(id),
+  getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
+  getProductById: (id: string) => productService.getById(id),
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
   adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    const promises = ids.map(id => productService.update(id, updates));
-    return Promise.all(promises);
+    // Simple loop implementation or bulk RPC if available
+    for (const id of ids) {
+      await productService.update(id, updates);
+    }
   },
   adminBulkDeleteProducts: async (ids: string[]) => {
-    const { error } = await supabase.from('products').delete().in('id', ids);
-    if (error) throw error;
+    for (const id of ids) {
+      await productService.delete(id);
+    }
   },
 
-  // CATEGORIES
   getCategories: () => categoryService.getAll(),
   createCategory: (c: Category) => categoryService.create(c),
   deleteCategory: (key: string) => categoryService.delete(key),
 
-  // APP SETTINGS
-  getAppSettings: () => settingsService.get(),
-  updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
-  getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
-  
-  // EMAIL TEMPLATES
-  getEmailTemplates: () => settingsService.getEmailTemplates(),
-  updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
-  sendTestEmail: (to: string, subject: string, html: string) => settingsService.sendTestTemplate(to, subject, html),
+  getProductReviews: (productId: string) => reviewService.getByProduct(productId),
+  getRecentReviews: (limit: number) => reviewService.getRecent(limit),
+  addProductReview: (review: Partial<ProductReview>) => reviewService.add(review),
 
-  // BLOG
+  // Commerce
+  getUserOrders: (userId: string) => orderService.getUserOrders(userId), // Legacy alias
+  getOrders: (userId: string) => orderService.getUserOrders(userId),
+  getAllOrders: () => orderService.getAll(),
+  getOrderById: (id: string) => orderService.getById(id),
+  createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
+  adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
+  cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
+
+  fetchCart: (userId: string) => cartService.fetch(userId),
+  syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
+
+  getShippingZones: () => shippingService.getZones(),
+  createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
+  updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
+  deleteShippingZone: (id: string) => shippingService.deleteZone(id),
+
+  getDiscountCodes: () => discountService.getAll(),
+  validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
+  createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
+  updateDiscountCode: (id: string, d: Partial<DiscountCode>) => discountService.update(id, d),
+  deleteDiscountCode: (id: string) => discountService.delete(id),
+
+  // Content
   getBlogPosts: () => blogService.getAllPosts(),
   getBlogPostBySlug: (slug: string) => blogService.getPostBySlug(slug),
   getBlogCategories: () => blogService.getCategories(),
@@ -64,83 +89,94 @@ export const api = {
   adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
 
-  // ORDERS
-  getOrders: (userId: string) => orderService.getUserOrders(userId),
-  getAllOrders: () => orderService.getAll(),
-  getOrderById: (id: string) => orderService.getById(id),
-  createOrder: (o: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(o),
-  adminUpdateOrder: (id: string, u: { status?: string; trackingNumber?: string; paymentStatus?: string }) => orderService.update(id, u),
-  cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
+  getAppSettings: () => settingsService.get(),
+  updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
+  getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
+  getEmailTemplates: () => settingsService.getEmailTemplates(),
+  updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
+  sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
 
-  // USERS
+  // Support / Marketing
+  subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
+  submitContact: (data: any) => supportService.submitContact(data),
+  getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
+  deleteNewsletterSubscriber: (id: string) => supportService.deleteNewsletterSubscriber(id),
+  getContactSubmissions: () => supportService.getContactSubmissions(),
+  markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
+  deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
+
+  // User
   getAllUsers: () => userService.getAll(),
   getUserProfile: (id: string) => userService.getProfile(id),
-  updateUserProfile: (id: string, u: { name: string, email: string, role?: string }) => userService.updateProfile(id, u),
-  createUserProfile: (u: Partial<User> & { password?: string }) => userService.createProfile(u),
-  adminDeleteUser: (id: string) => userService.deleteUser(id),
-  
-  // AUTH
-  requestPasswordReset: async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    });
-    if (error) throw error;
-  },
+  updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
+  createUserProfile: (data: any) => userService.createProfile(data),
   updateUserPassword: async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
   },
+  requestPasswordReset: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/#/update-password' });
+    if (error) throw error;
+  },
+  adminDeleteUser: (id: string) => userService.deleteUser(id),
   adminSendPasswordReset: async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/#/dashboard?reset=true',
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
   },
   adminSendMagicLink: async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) throw error;
   },
-  
-  // ADDRESSES
+
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
-  saveUserAddress: (userId: string, a: Partial<UserAddress>) => userService.saveUserAddress(userId, a),
+  saveUserAddress: (userId: string, address: any) => userService.saveUserAddress(userId, address),
   deleteUserAddress: (id: string) => userService.deleteUserAddress(id),
 
-  // REVIEWS
-  getProductReviews: (id: string) => reviewService.getByProduct(id),
-  getRecentReviews: (limit?: number) => reviewService.getRecent(limit),
-  addProductReview: (r: Partial<ProductReview>) => reviewService.add(r),
-
-  // WISHLIST
   getWishlist: (userId: string) => wishlistService.getIds(userId),
   getWishlistProducts: (userId: string) => wishlistService.getProducts(userId),
-  toggleWishlist: (userId: string, prodId: string) => wishlistService.toggle(userId, prodId),
+  toggleWishlist: (userId: string, productId: string) => wishlistService.toggle(userId, productId),
 
-  // CART
-  syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
-  fetchCart: (userId: string) => cartService.fetch(userId),
-
-  // SHIPPING & DISCOUNTS
-  getShippingZones: () => shippingService.getZones(),
-  createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
-  updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
-  deleteShippingZone: (id: string) => shippingService.deleteZone(id),
-  
-  validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
-  getDiscountCodes: () => discountService.getAll(),
-  createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
-  updateDiscountCode: (id: string, d: Partial<DiscountCode>) => discountService.update(id, d),
-  deleteDiscountCode: (id: string) => discountService.delete(id),
-  
-  // SUPPORT
-  subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
-  submitContact: (data: { name: string, email: string, message: string, subject?: string }) => supportService.submitContact(data),
-  getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
-  getContactSubmissions: () => supportService.getContactSubmissions(),
-  markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
-  deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
-  deleteNewsletterSubscriber: (id: string) => supportService.deleteNewsletterSubscriber(id),
-
-  // STORAGE
+  // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
+
+  // Analytics
+  getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
+    const { data, error } = await supabase.rpc('get_analytics_overview', {
+      time_range_start: start.toISOString(),
+      time_range_end: end.toISOString()
+    });
+    if (error) {
+        console.error("Analytics Error", error);
+        // Return dummy data if RPC fails to prevent crash
+        return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
+    }
+    return data as AnalyticsOverview;
+  },
+
+  getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
+    const { data, error } = await supabase.rpc('get_daily_analytics', { days_lookback: days });
+    if (error) {
+        console.error("Analytics Error", error);
+        return [];
+    }
+    return data as DailyAnalytics[];
+  },
+
+  getProductAnalytics: async (): Promise<ProductPerformance[]> => {
+    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8 });
+    if (error) {
+        console.error("Analytics Error", error);
+        return [];
+    }
+    return data as ProductPerformance[];
+  },
+
+  getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
+    const { data, error } = await supabase.rpc('get_traffic_sources', { days_lookback: days });
+    if (error) {
+      console.error("Analytics Error", error);
+      return [];
+    }
+    return data as TrafficSource[];
+  }
 };

@@ -21,6 +21,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminAnalytics } from './pages/admin/AdminAnalytics';
 import { AdminAppSettings } from './pages/admin/AdminAppSettings';
 import { AdminShopSettings } from './pages/admin/AdminShopSettings';
 import { AdminProducts } from './pages/admin/AdminProducts';
@@ -41,6 +42,7 @@ import { SystemHealth } from './components/SystemHealth';
 import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
 import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
+import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 
 const Router = HashRouter;
 
@@ -74,6 +76,7 @@ const App: React.FC = () => {
             <AppProvider>
               <Router>
                 <GlobalScriptInjector />
+                <GlobalAnalyticsTracker />
                 <ScrollToTop />
                 <AuthEventHandler />
                 <Routes>
@@ -105,6 +108,7 @@ const App: React.FC = () => {
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
+                    <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="app-settings" element={<AdminAppSettings />} />
                     <Route path="shop-settings" element={<AdminShopSettings />} />
                     <Route path="products" element={<AdminProducts />} />
