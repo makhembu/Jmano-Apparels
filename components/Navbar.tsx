@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -8,6 +9,7 @@ import { MobileBottomNav } from './navbar/MobileBottomNav';
 import { MobileSearchOverlay } from './navbar/MobileSearchOverlay';
 import { MobileMenuOverlay } from './navbar/MobileMenuOverlay';
 import { CartPreviewPopup } from './navbar/CartPreviewPopup';
+import { AnnouncementBar } from './AnnouncementBar';
 
 export const Navbar: React.FC = () => {
   const { cart, cartTotal } = useApp();
@@ -34,7 +36,10 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-brand-dark shadow-md border-b border-brand-green">
+      <header className="sticky top-0 z-50 bg-brand-dark shadow-md border-b border-brand-green transition-all duration-200">
+        {/* --- ANNOUNCEMENT BAR --- */}
+        <AnnouncementBar />
+
         {/* --- DESKTOP NAVBAR --- */}
         <div className="hidden md:block">
           <DesktopNavbar />
