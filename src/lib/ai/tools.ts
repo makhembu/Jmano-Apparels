@@ -4,21 +4,49 @@ import { FunctionDeclaration, Type } from '@google/genai';
 export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: 'navigate',
-    description: 'Navigate to any page in the admin dashboard. Use this for both main sections and specific detail pages (e.g. /admin/orders/ID).',
+    description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
     parameters: {
       type: Type.OBJECT,
       properties: {
         path: {
           type: Type.STRING,
-          description: 'The full destination path starting with /admin. For specific orders, use /admin/orders/[ID].'
+          description: 'The full destination route starting with /admin.',
+        },
+        tab: {
+          type: Type.STRING,
+          description: 'The specific tab ID to open on that page (if applicable).',
         }
       },
       required: ['path']
     }
   },
   {
+    name: 'getDetailedInventoryReport',
+    description: 'Get a full breakdown of products, stock levels, and historical sales performance for trend analysis.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {}
+    }
+  },
+  {
     name: 'getLatestOrder',
-    description: 'Get the most recent order details including its unique ID. Essential for finding the "latest invoice".',
+    description: 'Fetches the most recent order record.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {}
+    }
+  },
+  {
+    name: 'getDashboardStats',
+    description: 'Retrieve store performance KPIs.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {}
+    }
+  },
+  {
+    name: 'getLiveTraffic',
+    description: 'Get real-time data about who is currently on the website.',
     parameters: {
       type: Type.OBJECT,
       properties: {}
@@ -26,78 +54,47 @@ export const functionDeclarations: FunctionDeclaration[] = [
   },
   {
     name: 'highlightElement',
-    description: 'Visually highlight a UI element with a pulsing gold ring.',
+    description: 'Visually pulse a gold ring around a specific UI element to guide the user.',
     parameters: {
       type: Type.OBJECT,
       properties: {
         elementId: {
           type: Type.STRING,
-          description: 'The DOM id of the element to highlight',
+          description: 'The DOM ID of the target element.',
           enum: [
             'btn-create-order',
             'btn-refresh-data',
             'btn-print-invoice',
-            'btn-save-changes',
+            'btn-save-settings',
             'input-tracking-number',
             'select-order-status',
-            'select-payment-status',
             'card-kpi-revenue',
-            'card-kpi-orders',
-            'section-customer-info',
-            'section-order-items'
+            'user-list-top-row',
+            'section-change-password',
+            'input-new-password',
+            'tab-brand',
+            'tab-seo',
+            'tab-payments',
+            'tab-emails',
+            'tab-contact',
+            'tab-content',
+            'tab-system',
+            'live-traffic-card'
           ]
-        },
-        duration: {
-          type: Type.NUMBER,
-          description: 'How long to highlight in milliseconds (default: 4500ms)',
         }
       },
       required: ['elementId']
-    }
-  },
-  {
-    name: 'findOrders',
-    description: 'Search for orders in the database.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        status: {
-          type: Type.STRING,
-          description: 'Filter by status',
-          enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
-        },
-        limit: {
-          type: Type.NUMBER,
-          description: 'Max results'
-        }
-      }
-    }
-  },
-  {
-    name: 'getProducts',
-    description: 'Retrieve product information from inventory.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        lowStock: {
-          type: Type.BOOLEAN,
-          description: 'Only low stock items'
-        }
-      }
     }
   }
 ];
 
 export const ELEMENT_ID_MAP = {
-  'Create Order Button': 'btn-create-order',
-  'Refresh Data Button': 'btn-refresh-data',
-  'Print Invoice Button': 'btn-print-invoice',
-  'Save Changes Button': 'btn-save-changes',
-  'Tracking Number Input': 'input-tracking-number',
-  'Order Status Select': 'select-order-status',
-  'Payment Status Select': 'select-payment-status',
-  'Revenue KPI Card': 'card-kpi-revenue',
-  'Orders KPI Card': 'card-kpi-orders',
-  'Customer Info Section': 'section-customer-info',
-  'Order Items Section': 'section-order-items'
+  'Password Section': 'section-change-password',
+  'New Password Input': 'input-new-password',
+  'Save Button': 'btn-save-settings',
+  'Revenue Card': 'card-kpi-revenue',
+  'Brand Tab': 'tab-brand',
+  'SEO Tab': 'tab-seo',
+  'Payments Tab': 'tab-payments',
+  'Live Traffic': 'live-traffic-card'
 } as const;

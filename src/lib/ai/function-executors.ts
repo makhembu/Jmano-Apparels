@@ -2,7 +2,6 @@
 import { HighlightTarget } from './types';
 import { api } from '../db';
 
-const DRAWER_ID = 'copilot-drawer';
 const HIGHLIGHT_CLASS = 'copilot-highlight-active';
 
 interface ExecutionContext {
@@ -11,100 +10,138 @@ interface ExecutionContext {
 
 export function createFunctionExecutors(context: ExecutionContext) {
   return {
-    navigate: async (args: { path: string }) => {
-      context.navigate(args.path);
-      return { success: true, message: `Navigated to ${args.path}` };
+    navigate: async (args: { path: string; tab?: string }) => {
+      let finalPath = args.path;
+      if (args.tab) {
+        const separator = finalPath.includes('?') ? '&' : '?';
+        finalPath = `${finalPath}${separator}tab=${encodeURIComponent(args.tab)}`;
+      }
+      context.navigate(finalPath);
+      return { success: true, message: `Navigated to ${finalPath}` };
     },
 
     getLatestOrder: async () => {
       try {
         const allOrders = await api.getAllOrders();
         if (!allOrders || allOrders.length === 0) return { error: "No orders found." };
-        
-        const latest = allOrders[0]; // Already sorted by date in api.getAllOrders
+        const latest = allOrders[0]; 
         return {
           id: latest.id,
           orderNumber: latest.orderNumber,
           total: latest.total,
           status: latest.status,
-          customer: latest.customerName || 'Guest',
-          date: latest.createdAt
+          customer: latest.customerName || 'Guest'
         };
       } catch (e: any) {
         return { error: e.message };
       }
     },
 
+    getDetailedInventoryReport: async () => {
+        try {
+            const [products, categories] = await Promise.all([
+                api.getProducts(),
+                api.getCategories()
+            ]);
+            
+            return {
+                summary: {
+                    totalProducts: products.length,
+                    lowStockCount: products.filter(p => (p.stockQuantity || 0) <= (p.lowStockThreshold || 5)).length,
+                    outOfStockCount: products.filter(p => (p.stockQuantity || 0) === 0).length,
+                },
+                categories: categories.map(c => {
+                    const catProducts = products.filter(p => p.categoryKey === c.key);
+                    const sales = catProducts.reduce((acc, p) => acc + (p.totalSales || 0), 0);
+                    return {
+                        name: c.label,
+                        productCount: catProducts.length,
+                        totalSales: sales,
+                        popularityRank: 0
+                    };
+                }),
+                topPerformers: [...products]
+                    .sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0))
+                    .slice(0, 3)
+                    .map(p => ({ title: p.title, sold: p.totalSales, revenue: (p.totalSales || 0) * p.price })),
+            };
+        } catch (e: any) {
+            return { error: e.message };
+        }
+    },
+
+    getDashboardStats: async () => {
+        try {
+            const orders = await api.getAllOrders();
+            const revenue = orders
+                .filter(o => !['Cancelled', 'Refunded'].includes(o.status))
+                .reduce((acc, curr) => acc + (curr.total || 0), 0);
+            
+            return {
+                totalRevenue: `£${revenue.toFixed(2)}`,
+                orderCount: orders.length,
+            };
+        } catch (e: any) {
+            return { error: e.message };
+        }
+    },
+
+    getLiveTraffic: async () => {
+        try {
+            const visitors = await api.getLiveVisitors();
+            return {
+                count: visitors.length,
+                active_users: visitors.slice(0, 5).map(v => ({
+                    page: v.path,
+                    location: v.geo_country === 'Unknown' ? 'Anonymous Location' : `${v.geo_city}, ${v.geo_country}`,
+                    user: v.user_email || 'Guest'
+                }))
+            };
+        } catch (e: any) {
+            return { error: e.message };
+        }
+    },
+
     highlightElement: async (args: HighlightTarget) => {
-      const { elementId, duration = 4500, scrollIntoView = true } = args;
-      const element = document.getElementById(elementId);
-
+      const { elementId, duration = 5000 } = args;
+      
+      const findElement = (): HTMLElement | null => {
+          // Check standard ID first
+          let el = document.getElementById(elementId);
+          // Fallback: Check if AI sent a name that matches our common button patterns
+          if (!el) el = document.querySelector(`[data-copilot-id="${elementId}"]`);
+          return el;
+      };
+      
+      let element = findElement();
+      
+      // Increased polling: Try up to 20 times (approx 5 seconds)
       if (!element) {
-        return {
-          success: false,
-          error: `Element with id "${elementId}" not found on current page.`
-        };
+          for (let i = 0; i < 20; i++) {
+              await new Promise(r => setTimeout(r, 250));
+              element = findElement();
+              if (element) break;
+          }
       }
 
-      if (scrollIntoView) {
-        element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        });
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      if (!element) return { 
+        success: false, 
+        error: `Target "${elementId}" not found. You might need to navigate to the specific page first.` 
+      };
 
-      // Reset animation if already active
+      // Ensure visibility
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Clear previous if still running
       element.classList.remove(HIGHLIGHT_CLASS);
       void element.offsetWidth; // Trigger reflow
       element.classList.add(HIGHLIGHT_CLASS);
 
       setTimeout(() => {
-        element.classList.remove(HIGHLIGHT_CLASS);
+        element?.classList.remove(HIGHLIGHT_CLASS);
       }, duration);
 
-      return {
-        success: true,
-        message: `Highlighted element ${elementId}`
-      };
-    },
-
-    findOrders: async (args: { status?: string; limit?: number }) => {
-      try {
-        const allOrders = await api.getAllOrders();
-        let filtered = allOrders;
-        if (args.status) {
-            filtered = filtered.filter(o => o.status?.toLowerCase() === args.status?.toLowerCase());
-        }
-        const limit = args.limit || 5;
-        const result = filtered.slice(0, limit).map(o => ({
-            id: o.id,
-            number: o.orderNumber,
-            total: o.total,
-            status: o.status,
-            customer: o.customerName || 'Guest'
-        }));
-        return { count: filtered.length, orders: result };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-
-    getProducts: async (args: { lowStock?: boolean }) => {
-        try {
-            const allProducts = await api.getProducts();
-            let filtered = allProducts;
-            if (args.lowStock) {
-                filtered = filtered.filter(p => (p.stockQuantity || 0) <= (p.lowStockThreshold || 5));
-            }
-            return { 
-                count: filtered.length, 
-                products: filtered.map(p => ({ title: p.title, stock: p.stockQuantity })) 
-            };
-        } catch (e: any) {
-            return { error: e.message };
-        }
+      return { success: true };
     }
   };
 }

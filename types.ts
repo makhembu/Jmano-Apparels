@@ -335,6 +335,16 @@ export interface PageStat {
   unique_visitors: number;
 }
 
+export interface LiveVisitor {
+  session_id: string;
+  user_id?: string;
+  user_email?: string;
+  path: string;
+  geo_country: string;
+  geo_city: string;
+  created_at: string;
+}
+
 // Database Row Types (for mappers)
 export type DbProduct = Tables<'products'>;
 export type DbCategory = Tables<'categories'>;

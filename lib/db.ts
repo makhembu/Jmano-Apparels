@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -190,5 +190,11 @@ export const api = {
     const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as PageStat[];
+  },
+
+  getLiveVisitors: async (lookbackMinutes: number = 5): Promise<LiveVisitor[]> => {
+    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes: lookbackMinutes });
+    if (error) { console.error("Analytics Error", error); return []; }
+    return data as LiveVisitor[];
   }
 };
