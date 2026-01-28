@@ -59,8 +59,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <CopilotProvider>
-      <div className="flex min-h-screen bg-gray-100 overflow-hidden">
-        {/* Sidebar */}
+      <div className="flex min-h-screen bg-gray-100">
         <aside 
           className={`bg-brand-dark text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}
         >
@@ -101,13 +100,9 @@ export const AdminLayout: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-grow flex flex-col relative h-screen overflow-hidden">
-          <div className="flex-1 overflow-auto p-4 md:p-8">
-            <Outlet />
-          </div>
-          
-          {/* AI Copilot UI - Moved outside scrolling area to avoid clipping */}
+        {/* Main Content */}
+        <div className="flex-grow p-4 md:p-8 overflow-auto h-screen w-full relative">
+          <Outlet />
           <CopilotWidget />
           <CopilotDrawer />
         </div>

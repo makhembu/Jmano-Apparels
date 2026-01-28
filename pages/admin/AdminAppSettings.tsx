@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { IdentitySection } from '../../components/admin/settings/IdentitySection';
@@ -11,16 +12,18 @@ import { useToast } from '../../context/ToastContext';
 import { NotificationSection } from '../../components/admin/settings/NotificationSection';
 import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemplatesSection';
 import { PaymentSection } from '../../components/admin/settings/PaymentSection';
-import { SeoSection } from '../../components/admin/settings/SeoSection'; // New import
+import { SeoSection } from '../../components/admin/settings/SeoSection';
 
 type SettingsTab = 'brand' | 'seo' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
 
 export const AdminAppSettings: React.FC = () => {
   const { settings, updateSettings } = useApp();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [formData, setFormData] = useState(settings);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('brand');
+  
+  const currentTab = (searchParams.get('tab') as SettingsTab) || 'brand';
 
   useEffect(() => {
     setFormData(settings);
@@ -34,6 +37,10 @@ export const AdminAppSettings: React.FC = () => {
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleTabChange = (id: SettingsTab) => {
+    setSearchParams({ tab: id });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,9 +60,9 @@ export const AdminAppSettings: React.FC = () => {
   const TabButton = ({ id, label }: { id: SettingsTab; label: string }) => (
     <button
       type="button"
-      onClick={() => setActiveTab(id)}
+      onClick={() => handleTabChange(id)}
       className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-        activeTab === id 
+        currentTab === id 
           ? 'border-brand-green text-brand-green' 
           : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-200'
       }`}
@@ -85,28 +92,28 @@ export const AdminAppSettings: React.FC = () => {
       <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
         
         {/* TAB: Brand */}
-        {activeTab === 'brand' && (
+        {currentTab === 'brand' && (
           <div className="animate-fade-in">
             <IdentitySection settings={formData} onChange={handleChange} />
           </div>
         )}
 
-        {/* TAB: SEO (New) */}
-        {activeTab === 'seo' && (
+        {/* TAB: SEO */}
+        {currentTab === 'seo' && (
           <div className="animate-fade-in">
             <SeoSection settings={formData} onChange={handleChange} />
           </div>
         )}
 
         {/* TAB: Payments */}
-        {activeTab === 'payments' && (
+        {currentTab === 'payments' && (
           <div className="animate-fade-in">
             <PaymentSection settings={formData} onChange={handleChange} />
           </div>
         )}
         
         {/* TAB: Notifications */}
-        {activeTab === 'emails' && (
+        {currentTab === 'emails' && (
           <div className="space-y-8 animate-fade-in">
              <NotificationSection settings={formData} onChange={handleChange} />
              <div className="border-t border-gray-100 pt-8">
@@ -117,7 +124,7 @@ export const AdminAppSettings: React.FC = () => {
         )}
 
         {/* TAB: Contact & Social */}
-        {activeTab === 'contact' && (
+        {currentTab === 'contact' && (
           <div className="space-y-6 animate-fade-in">
             <ContactSection 
               settings={formData} 
@@ -132,14 +139,14 @@ export const AdminAppSettings: React.FC = () => {
         )}
 
         {/* TAB: Content & Legal */}
-        {activeTab === 'content' && (
+        {currentTab === 'content' && (
           <div className="space-y-8 animate-fade-in">
              <PolicySection settings={formData} onChange={handleChange} />
           </div>
         )}
 
         {/* TAB: System */}
-        {activeTab === 'system' && (
+        {currentTab === 'system' && (
           <div className="animate-fade-in">
             <SystemSection 
               settings={formData} 

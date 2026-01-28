@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light" style="color-scheme: light;">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://i.imgur.com/pkaScEv.png" />
@@ -34,6 +34,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class', // Effectively disabled as we force 'light' class on html
         theme: {
           extend: {
             colors: {
@@ -43,7 +44,7 @@
                 dark: '#1B5E20',
                 hope: '#F1C40F',
                 testament: '#B96AD9',
-                triumph: '#E67E22', /* Changed from duplicate yellow to distinct Deep Orange */
+                triumph: '#E67E22',
                 humility: '#2DC26B',
                 patience: '#E03E2D',
                 sainty: '#C0392B',
@@ -86,7 +87,7 @@
 </script>
   </head>
 
-  <body class="bg-slate-50 text-slate-800 font-sans">
+  <body class="bg-slate-50 text-slate-800 font-sans light">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

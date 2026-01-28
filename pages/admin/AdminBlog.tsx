@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { BlogPost, BlogCategory } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -8,12 +8,16 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../context/ToastContext';
 import { BlogCategoriesSection } from '../../components/admin/settings/BlogCategoriesSection';
 
+type Tab = 'posts' | 'categories';
+
 export const AdminBlog: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'posts' | 'categories'>('posts');
   const { showToast } = useToast();
+  
+  const activeTab = (searchParams.get('tab') as Tab) || 'posts';
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,7 +38,11 @@ export const AdminBlog: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [activeTab]); // Refresh when tab changes to ensure categories sync if added
+  }, [activeTab]);
+
+  const handleTabChange = (tab: Tab) => {
+    setSearchParams({ tab });
+  };
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Delete this post?")) {
@@ -65,13 +73,13 @@ export const AdminBlog: React.FC = () => {
       <div className="flex border-b border-gray-200 mb-6">
         <button
           className={`py-3 px-6 text-sm font-bold border-b-2 transition-colors ${activeTab === 'posts' ? 'border-brand-green text-brand-green' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('posts')}
+          onClick={() => handleTabChange('posts')}
         >
           Journal Entries
         </button>
         <button
           className={`py-3 px-6 text-sm font-bold border-b-2 transition-colors ${activeTab === 'categories' ? 'border-brand-green text-brand-green' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('categories')}
+          onClick={() => handleTabChange('categories')}
         >
           Categories
         </button>

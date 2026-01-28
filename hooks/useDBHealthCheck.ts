@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -38,7 +39,7 @@ export const useDBHealthCheck = () => {
     setError(null);
     setResults([]);
 
-    const TABLE_TIMEOUT = 10000; // 10 seconds per table
+    const TABLE_TIMEOUT = 30000; // Increased to 30 seconds to allow for project wake-up
 
     try {
         console.log('[HealthCheck] Starting database integrity checks...');
@@ -52,24 +53,17 @@ export const useDBHealthCheck = () => {
           { table: 'shipping_zones', columns: ['id', 'countries', 'base_rate'] }
         ];
 
-        console.log('[HealthCheck] Beginning schema verification for all tables.');
-
         const checks = await Promise.all(schemaRequirements.map(async (req) => {
-          console.log(`[HealthCheck] Verifying table: ${req.table}...`);
-          
           const timeoutPromise = new Promise<CheckResult>(resolve => 
              setTimeout(() => resolve({
                 table: req.table,
                 status: 'timeout',
-                details: `Connection to table timed out after ${TABLE_TIMEOUT / 1000}s.`
+                details: `Connection to table timed out after ${TABLE_TIMEOUT / 1000}s. Project may be paused in Supabase.`
              }), TABLE_TIMEOUT)
           );
           
           const verifyPromise = verifyTable(req.table, req.columns);
-
-          const result = await Promise.race([verifyPromise, timeoutPromise]);
-          console.log(`[HealthCheck] Table '${req.table}' check finished with status: ${result.status}.`);
-          return result;
+          return await Promise.race([verifyPromise, timeoutPromise]);
         }));
 
         setResults(checks);
@@ -81,26 +75,10 @@ export const useDBHealthCheck = () => {
             throw new Error(`Database integrity check failed on table '${firstError?.table}'. Status: ${firstError?.status}. Details: ${firstError?.details || 'N/A'}`);
         }
         
-        console.log('[HealthCheck] All tables OK. Verifying initial data presence...');
-        const { count, error: countError } = await supabase.from('products').select('*', { count: 'exact', head: true });
-        
-        if (countError) {
-            console.error('[HealthCheck] Failed to count products:', countError);
-            throw new Error(`Could not verify data presence: ${countError.message}`);
-        }
-
-        if (count === 0) {
-           console.warn("[HealthCheck] Database schema is correct but no products found. The app will work but show empty state. Please run `seed.sql` to populate data.");
-        } else {
-           console.log(`[HealthCheck] Found ${count} products. Data is present.`);
-        }
-        
         setStatus('healthy');
-        console.log('[HealthCheck] Status set to: healthy. Application will now load.');
     } catch (e: any) {
         setStatus('error');
         setError(e.message);
-        console.error(`[HealthCheck] Failed: ${e.message}`);
     }
   };
 

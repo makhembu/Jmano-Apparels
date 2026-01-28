@@ -61,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
     .slice(0, 5);
 
   const StatCard = ({ id, title, value, subtext, icon, colorClass }: any) => (
-    <div id={id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between transition-all">
+    <div id={id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between">
       <div>
         <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
         <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
