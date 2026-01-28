@@ -29,9 +29,10 @@ export default async function handler(req, res) {
 
   try {
     // Parallel fetch using Supabase REST API (No SDK required here to keep it lightweight)
+    // FIX: Changed 'created_at' to 'date' for blog_posts as per DB schema
     const [productsRes, postsRes, catsRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/products?select=id,created_at,is_published&is_published=eq.true`, fetchOpts),
-      fetch(`${supabaseUrl}/rest/v1/blog_posts?select=slug,created_at,status&status=eq.published`, fetchOpts),
+      fetch(`${supabaseUrl}/rest/v1/blog_posts?select=slug,date,status&status=eq.published`, fetchOpts),
       fetch(`${supabaseUrl}/rest/v1/categories?select=key`, fetchOpts)
     ]);
 
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
     const categories = await catsRes.json();
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
     // Static Routes
@@ -73,7 +75,8 @@ export default async function handler(req, res) {
     // Dynamic Blog Posts
     if(Array.isArray(posts)) {
         posts.forEach(p => {
-            const date = p.created_at ? p.created_at.split('T')[0] : currentDate;
+            // FIX: Use 'date' property instead of 'created_at'
+            const date = p.date ? p.date.split('T')[0] : currentDate;
             xml += `
   <url>
     <loc>${BASE_URL}/#/blog/${p.slug}</loc>
@@ -82,6 +85,8 @@ export default async function handler(req, res) {
     <priority>0.7</priority>
   </url>`;
         });
+    } else {
+        console.error("Failed to fetch blog posts for sitemap:", posts);
     }
 
     // Categories
