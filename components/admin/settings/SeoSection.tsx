@@ -97,23 +97,39 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
         <div className="border-b border-gray-100 pb-4">
             <h3 className="text-lg font-medium text-brand-green">Sitemap & Crawlers</h3>
-            <p className="text-xs text-gray-500 mt-1">Generate files for Google Search Console.</p>
+            <p className="text-xs text-gray-500 mt-1">Configure automated discovery for Google Search Console.</p>
         </div>
 
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-6 items-start">
-           <div className="flex-1">
-              <h4 className="font-bold text-slate-800 text-sm mb-2">Sitemap.xml</h4>
-              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                 Generates a comprehensive XML map of all your Products, Blog Posts, and Categories. Upload this file to your website's root directory or submit to Search Console.
+           <div className="flex-1 space-y-3">
+              <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                 <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded uppercase">Auto-Generated</span>
+                 Sitemap Endpoint
+              </h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                 Your sitemap is automatically generated at <code>/sitemap.xml</code>. This endpoint fetches live product and blog data directly from the database.
               </p>
-              <Button 
-                type="button" 
-                onClick={handleDownloadSitemap} 
-                isLoading={generating}
-                className="text-xs"
-              >
-                Generate & Download XML
-              </Button>
+              <div className="flex gap-2">
+                 <a 
+                   href="/sitemap.xml" 
+                   target="_blank" 
+                   className="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-xs font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-green"
+                 >
+                   View Live Sitemap
+                 </a>
+                 <Button 
+                   type="button" 
+                   variant="outline"
+                   onClick={handleDownloadSitemap} 
+                   isLoading={generating}
+                   className="text-xs"
+                 >
+                   Download Manual Backup
+                 </Button>
+              </div>
+              <p className="text-[10px] text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 mt-2">
+                 <strong>Note:</strong> Ensure your hosting provider (e.g. Vercel) is configured to rewrite <code>/sitemap.xml</code> to your Supabase Edge Function URL.
+              </p>
            </div>
            
            <div className="w-px bg-slate-200 self-stretch hidden md:block"></div>
