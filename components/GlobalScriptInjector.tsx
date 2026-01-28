@@ -11,19 +11,27 @@ declare global {
 }
 
 export const GlobalScriptInjector: React.FC = () => {
-  const { settings } = useApp();
+  const { settings, loading } = useApp();
   const location = useLocation();
   const gaInjected = useRef(false);
   const customInjected = useRef(false);
 
+  // Hardcoded default ID provided by requirements
+  const DEFAULT_GA_ID = 'G-26S55GN10D';
+
   // Helper to ensure ID always has G- prefix
   const getMeasurementId = (rawId: string | undefined) => {
-    if (!rawId) return null;
-    const cleanId = rawId.trim();
+    // Use DB setting if available and not empty, otherwise fallback to default
+    const idToUse = (rawId && rawId.trim()) ? rawId : DEFAULT_GA_ID;
+    
+    const cleanId = idToUse.trim();
     return cleanId.startsWith('G-') ? cleanId : `G-${cleanId}`;
   };
 
-  const gaId = getMeasurementId(settings.googleAnalyticsId);
+  // Wait for app initialization (loading=false) to ensure we don't inject default
+  // before checking if a custom one exists in the DB.
+  const shouldInject = !loading;
+  const gaId = shouldInject ? getMeasurementId(settings.googleAnalyticsId) : null;
 
   // 1. Google Analytics Initialization
   useEffect(() => {
@@ -73,7 +81,7 @@ export const GlobalScriptInjector: React.FC = () => {
 
   // 3. Custom Head Scripts (e.g. Pixel, Chat widgets)
   useEffect(() => {
-    if (settings.customHeadScripts && !customInjected.current) {
+    if (shouldInject && settings.customHeadScripts && !customInjected.current) {
       try {
         const range = document.createRange();
         // Use body as context to ensure scripts execute properly when appended to head
@@ -86,7 +94,7 @@ export const GlobalScriptInjector: React.FC = () => {
         console.error("Failed to inject custom scripts", e);
       }
     }
-  }, [settings.customHeadScripts]);
+  }, [settings.customHeadScripts, shouldInject]);
 
   return null;
 };
