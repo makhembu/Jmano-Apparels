@@ -20,8 +20,9 @@ serve(async (req) => {
     const BASE_URL = 'https://jamboapparels.com';
 
     // 2. Fetch Data Parallel
+    // FIX: Include slug in select
     const [products, posts, categories] = await Promise.all([
-        supabaseClient.from('products').select('id, created_at, is_published').eq('is_published', true),
+        supabaseClient.from('products').select('id, slug, created_at, is_published').eq('is_published', true),
         supabaseClient.from('blog_posts').select('slug, created_at, status').eq('status', 'published'),
         supabaseClient.from('categories').select('key')
     ]);
@@ -48,9 +49,11 @@ serve(async (req) => {
     // Dynamic Products
     products.data?.forEach((p: any) => {
        const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : currentDate;
+       // FIX: Use slug if available
+       const identifier = p.slug || p.id;
        xml += `
   <url>
-    <loc>${BASE_URL}/#/product/${p.id}</loc>
+    <loc>${BASE_URL}/#/product/${identifier}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>

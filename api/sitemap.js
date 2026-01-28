@@ -28,10 +28,10 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Parallel fetch using Supabase REST API (No SDK required here to keep it lightweight)
-    // FIX: Changed 'created_at' to 'date' for blog_posts as per DB schema
+    // Parallel fetch using Supabase REST API
+    // FIX: Included 'slug' in selection to generate SEO friendly URLs
     const [productsRes, postsRes, catsRes] = await Promise.all([
-      fetch(`${supabaseUrl}/rest/v1/products?select=id,created_at,is_published&is_published=eq.true`, fetchOpts),
+      fetch(`${supabaseUrl}/rest/v1/products?select=id,slug,created_at,is_published&is_published=eq.true`, fetchOpts),
       fetch(`${supabaseUrl}/rest/v1/blog_posts?select=slug,date,status&status=eq.published`, fetchOpts),
       fetch(`${supabaseUrl}/rest/v1/categories?select=key`, fetchOpts)
     ]);
@@ -61,9 +61,11 @@ export default async function handler(req, res) {
     if(Array.isArray(products)) {
         products.forEach(p => {
             const date = p.created_at ? p.created_at.split('T')[0] : currentDate;
+            // FIX: Use slug if available, fallback to id for legacy
+            const identifier = p.slug || p.id;
             xml += `
   <url>
-    <loc>${BASE_URL}/#/product/${p.id}</loc>
+    <loc>${BASE_URL}/#/product/${identifier}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -74,7 +76,6 @@ export default async function handler(req, res) {
     // Dynamic Blog Posts
     if(Array.isArray(posts)) {
         posts.forEach(p => {
-            // FIX: Use 'date' property instead of 'created_at'
             const date = p.date ? p.date.split('T')[0] : currentDate;
             xml += `
   <url>

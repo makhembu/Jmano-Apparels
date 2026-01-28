@@ -28,7 +28,8 @@ export const ProductDetails: React.FC = () => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   
-  const product = products.find(p => p.id === id);
+  // FIX: Lookup product by ID OR Slug to support SEO-friendly URLs
+  const product = products.find(p => p.id === id || p.slug === id);
   const category = categories.find(c => c.key === product?.categoryKey);
 
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -47,10 +48,10 @@ export const ProductDetails: React.FC = () => {
   const reviewsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-     if (id && user) {
-        api.getWishlist(user.id).then(ids => setIsWishlisted(ids.includes(id))).catch(console.error);
+     if (product && user) {
+        api.getWishlist(user.id).then(ids => setIsWishlisted(ids.includes(product.id))).catch(console.error);
      }
-  }, [id, user]);
+  }, [product, user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -138,7 +139,7 @@ export const ProductDetails: React.FC = () => {
           "brand": { "@type": "Brand", "name": "Jambo Apparels" },
           "offers": {
             "@type": "Offer",
-            "url": `https://jamboapparels.com/#/product/${product.id}`,
+            "url": `https://jamboapparels.com/#/product/${product.slug || product.id}`,
             "priceCurrency": settings.currency || "GBP",
             "price": product.isOnSale ? product.salePrice : product.price,
             "availability": (product.stockQuantity || 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
