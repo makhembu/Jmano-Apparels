@@ -72,8 +72,8 @@ const App: React.FC = () => {
           <CartProvider>
             {/* AppProvider wraps specific providers to bridge legacy useApp hooks */}
             <AppProvider>
-              <GlobalScriptInjector />
               <Router>
+                <GlobalScriptInjector />
                 <ScrollToTop />
                 <AuthEventHandler />
                 <Routes>
