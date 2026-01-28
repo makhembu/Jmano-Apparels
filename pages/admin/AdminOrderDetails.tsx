@@ -117,7 +117,6 @@ export const AdminOrderDetails: React.FC = () => {
                 className="h-20 w-auto object-contain mb-6" 
              />
              <div className="text-sm text-gray-500 leading-relaxed font-medium pl-1">
-                <p className="font-bold text-brand-green text-base mb-1 uppercase tracking-wider">Jambo Apparels</p>
                 <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
                 <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
                 <p>{settings.contactPhone}</p>
@@ -128,7 +127,7 @@ export const AdminOrderDetails: React.FC = () => {
           <div className="w-1/2 text-right">
              <h1 className="text-4xl font-light text-gray-300 uppercase tracking-[0.2em] mb-4">Invoice</h1>
              
-             <div className="space-y-1 mb-6">
+             <div className="space-y-1">
                 <p className="text-sm font-bold text-gray-900">
                    <span className="text-gray-400 font-normal mr-2">Order ID:</span>
                    #{order.orderNumber}
@@ -137,15 +136,6 @@ export const AdminOrderDetails: React.FC = () => {
                    <span className="text-gray-400 font-normal mr-2">Date:</span>
                    {invoiceDate}
                 </p>
-             </div>
-             
-             {/* Barcode (Must be Uppercase for Code 39 Font) */}
-             <div className="flex justify-end">
-                <div className="text-center">
-                   <div className="font-barcode text-5xl text-black" style={{ fontFamily: '"Libre Barcode 39 Text", cursive' }}>
-                      *{order.orderNumber?.toUpperCase() || ''}*
-                   </div>
-                </div>
              </div>
           </div>
         </div>
