@@ -1,3 +1,4 @@
+
 /* Custom Animations */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
@@ -63,87 +64,44 @@ body {
   scrollbar-width: none;
 }
 
-/* PRINT STYLES FOR INVOICES */
+/* --- PRINT STYLES FOR PROFESSIONAL INVOICE --- */
 @media print {
-  /* Hide UI elements that aren't the invoice */
-  nav, 
-  footer, 
-  aside, 
-  .admin-sidebar, 
-  .no-print,
-  button,
-  .lg\:sticky,
-  .logistics-control-panel,
-  .event-log-sidebar,
-  .back-button-container {
-    display: none !important;
+  @page { 
+    margin: 0; 
+    size: auto;
   }
 
-  /* Reset main layout for print */
   body {
-    background: white !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-  }
-
-  .max-w-6xl {
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Expand the invoice area to full width */
-  .grid {
-    display: block !important;
-  }
-
-  .lg\:col-span-2 {
-    width: 100% !important;
-  }
-
-  /* Ensure text is readable and black */
-  .text-slate-900, .text-slate-700, .text-slate-600 {
-    color: #000 !important;
-  }
-
-  .bg-white {
-    background: #fff !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  .bg-slate-50, .bg-slate-50\/50, .bg-slate-50\/30 {
-    background: #f9fafb !important;
+    background-color: white !important;
+    print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  .rounded-3xl, .rounded-2xl, .rounded-xl {
-    border-radius: 0 !important;
-    border: 1px solid #eee !important;
+  /* Hide EVERYTHING by default */
+  body * {
+    visibility: hidden;
   }
 
-  /* Force display of essential invoice elements */
-  .itemized-receipt-container {
-    page-break-inside: avoid;
+  /* Only show the invoice container and its children */
+  #invoice-container, #invoice-container * {
+    visibility: visible;
   }
 
-  /* Add a print header if missing */
-  .print-header {
-    display: block !important;
-    margin-bottom: 2rem;
-    border-bottom: 2px solid #000;
-    padding-bottom: 1rem;
+  /* Position the invoice container at the top left of the page */
+  #invoice-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 40px; /* Standard invoice padding */
+    background: white;
+    z-index: 9999;
   }
-}
 
-@media screen {
-  .print-header {
-    display: none;
-  }
+  /* Helper to ensure background colors print */
+  .bg-brand-green { background-color: #2E7D32 !important; }
+  .text-brand-green { color: #2E7D32 !important; }
+  .border-brand-green { border-color: #2E7D32 !important; }
+  .bg-gray-50 { background-color: #f9fafb !important; }
 }

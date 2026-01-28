@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -12,7 +13,7 @@ export const AdminOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { refreshOrders } = useApp();
+  const { refreshOrders, settings } = useApp();
   const { refreshData } = useShop();
   
   const [order, setOrder] = useState<Order | null>(null);
@@ -98,20 +99,131 @@ export const AdminOrderDetails: React.FC = () => {
   const isGuest = !customer && !order.userId;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
-      {/* Print-Only Header */}
-      <div className="print-header hidden">
-         <div className="flex justify-between items-end mb-8">
-            <div>
-               <h1 className="text-4xl font-serif font-black text-slate-900">JAMBO APPARELS</h1>
-               <p className="text-sm text-slate-500 italic">Divinely threaded scriptures.</p>
-            </div>
-            <div className="text-right">
-               <h2 className="text-2xl font-bold text-slate-900">OFFICIAL INVOICE</h2>
-               <p className="text-sm text-slate-500 uppercase tracking-widest">Order Registry #{order.orderNumber}</p>
-            </div>
-         </div>
+    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in relative">
+      
+      {/* --- INVOICE PRINT VIEW (Hidden on Screen) --- */}
+      <div id="invoice-container" className="hidden print:block bg-white text-black p-8 font-sans max-w-[210mm] mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-start border-b-2 border-brand-green pb-6 mb-8">
+          <div className="flex items-start gap-4">
+             <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} alt="Jambo Apparels" className="h-16 w-auto object-contain" />
+             <div className="pt-1">
+                <h1 className="text-2xl font-bold text-brand-green uppercase tracking-wide">Jambo Apparels</h1>
+                <p className="text-xs text-gray-500 font-medium">Divinely Threaded Scriptures</p>
+                <div className="mt-2 text-xs text-gray-600 leading-relaxed">
+                   <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
+                   <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
+                   <p>{settings.contactPhone}</p>
+                </div>
+             </div>
+          </div>
+          <div className="text-right">
+             <h2 className="text-4xl font-light text-gray-300 uppercase tracking-widest mb-2">Invoice</h2>
+             <p className="text-sm font-bold text-gray-800">#{order.orderNumber}</p>
+             <p className="text-xs text-gray-500 mb-2">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
+             
+             {/* Barcode representation using Font */}
+             <div className="font-barcode text-4xl text-black mt-2">
+                *{order.orderNumber}*
+             </div>
+          </div>
+        </div>
+
+        {/* Bill To / Ship To */}
+        <div className="flex justify-between mb-10 gap-8">
+           <div className="flex-1">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Billed To</h3>
+              <p className="font-bold text-gray-900 text-sm">{displayName}</p>
+              <p className="text-sm text-gray-600">{displayEmail}</p>
+              <p className="text-sm text-gray-600">{order.paymentIntentId ? 'Paid via PayPal' : 'Manual Payment'}</p>
+           </div>
+           <div className="flex-1">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Shipped To</h3>
+              {order.shippingAddress ? (
+                 <div className="text-sm text-gray-600 leading-relaxed">
+                    <p className="font-bold text-gray-900">{displayName}</p>
+                    <p>{order.shippingAddress.address1}</p>
+                    {order.shippingAddress.address2 && <p>{order.shippingAddress.address2}</p>}
+                    <p>{order.shippingAddress.city}, {order.shippingAddress.postcode}</p>
+                    <p>{order.shippingAddress.country}</p>
+                    {order.shippingAddress.phone && <p>Tel: {order.shippingAddress.phone}</p>}
+                 </div>
+              ) : (
+                 <p className="text-sm text-gray-400 italic">No shipping address provided.</p>
+              )}
+           </div>
+        </div>
+
+        {/* Line Items */}
+        <div className="mb-8">
+           <table className="w-full text-sm">
+              <thead>
+                 <tr className="border-b-2 border-brand-green">
+                    <th className="text-left py-2 font-bold text-gray-600 uppercase text-xs">Description</th>
+                    <th className="text-center py-2 font-bold text-gray-600 uppercase text-xs w-24">Size/Color</th>
+                    <th className="text-center py-2 font-bold text-gray-600 uppercase text-xs w-16">Qty</th>
+                    <th className="text-right py-2 font-bold text-gray-600 uppercase text-xs w-24">Unit</th>
+                    <th className="text-right py-2 font-bold text-gray-600 uppercase text-xs w-24">Amount</th>
+                 </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                 {order.products.map((item, i) => (
+                    <tr key={i}>
+                       <td className="py-3 text-gray-800">
+                          <p className="font-bold">{item.title}</p>
+                          <p className="text-xs text-gray-500">ID: {item.productId?.slice(0,8)}</p>
+                       </td>
+                       <td className="py-3 text-center text-gray-600">
+                          {item.size} {item.selectedColor ? `/ ${item.selectedColor}` : ''}
+                       </td>
+                       <td className="py-3 text-center text-gray-800 font-medium">{item.quantity}</td>
+                       <td className="py-3 text-right text-gray-600">£{item.price.toFixed(2)}</td>
+                       <td className="py-3 text-right text-gray-900 font-bold">£{(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                 ))}
+              </tbody>
+           </table>
+        </div>
+
+        {/* Totals */}
+        <div className="flex justify-end mb-12">
+           <div className="w-64 space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                 <span>Subtotal</span>
+                 <span>£{(order.subtotal || (order.total - (order.shippingCost || 0))).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                 <span>Shipping</span>
+                 <span>{order.shippingCost === 0 ? 'FREE' : `£${(order.shippingCost || 0).toFixed(2)}`}</span>
+              </div>
+              {order.discountAmount && order.discountAmount > 0 && (
+                 <div className="flex justify-between text-sm text-green-600">
+                    <span>Discount {order.discountCode ? `(${order.discountCode})` : ''}</span>
+                    <span>-£{order.discountAmount.toFixed(2)}</span>
+                 </div>
+              )}
+              <div className="flex justify-between text-sm text-gray-500 text-xs border-b border-gray-200 pb-2">
+                 <span>Tax (VAT Included)</span>
+                 <span>£{(order.taxAmount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xl font-bold text-brand-dark pt-2">
+                 <span>Total</span>
+                 <span>£{order.total.toFixed(2)}</span>
+              </div>
+           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 pt-6 text-center">
+           <p className="text-brand-green font-bold text-sm mb-1">Thank you for your business!</p>
+           <p className="text-gray-500 text-xs italic">"Let all that you do be done in love." - 1 Corinthians 16:14</p>
+           <div className="mt-4 text-[10px] text-gray-400">
+              <p>Jambo Apparels • {settings.contactEmail} • jamboapparels.com</p>
+           </div>
+        </div>
       </div>
+      {/* --- END INVOICE PRINT VIEW --- */}
+
 
       {/* Header with Navigation - Screen Only */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4 no-print">
@@ -131,14 +243,14 @@ export const AdminOrderDetails: React.FC = () => {
           <p className="text-slate-400 text-sm mt-1">Logged on {new Date(order.createdAt).toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })}</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => window.print()} className="rounded-xl px-6 h-11 no-print">
+          <Button variant="outline" onClick={() => window.print()} className="rounded-xl px-6 h-11 no-print bg-white border-slate-200 hover:border-brand-green text-slate-700 hover:text-brand-green">
             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
             Print Invoice
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start no-print">
         {/* Main Details Area */}
         <div className="lg:col-span-2 space-y-8">
           
@@ -401,7 +513,7 @@ export const AdminOrderDetails: React.FC = () => {
                  )}
               </div>
               <p className="mt-10 text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-t border-slate-800 pt-6">
-                 Transaction via Stripe Secure Gate
+                 Transaction via {order.paymentIntentId ? 'PayPal' : 'Jambo Secure Gate'}
               </p>
            </div>
         </div>
