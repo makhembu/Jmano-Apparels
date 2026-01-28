@@ -195,20 +195,17 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
         </div>
         
         <div>
-           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Google Analytics ID</label>
-           <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">G-</span>
-                <input 
-                    type="text" 
-                    name="googleAnalyticsId" 
-                    value={settings.googleAnalyticsId?.replace('G-', '') || ''} 
-                    onChange={(e) => onChange({...e, target: {...e.target, name: 'googleAnalyticsId', value: 'G-' + e.target.value.replace('G-', '')}})} 
-                    placeholder="26S55GN10D"
-                    className="w-full border border-gray-300 rounded-lg pl-8 p-2.5 bg-white text-sm font-mono focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all shadow-sm"
-                />
-           </div>
+           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Google Analytics Measurement ID</label>
+           <input 
+                type="text" 
+                name="googleAnalyticsId" 
+                value={settings.googleAnalyticsId || ''} 
+                onChange={onChange} 
+                placeholder="G-26S55GN10D"
+                className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm font-mono focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all shadow-sm"
+            />
            <p className="text-[10px] text-gray-400 mt-1 italic">
-             <strong>Note:</strong> Enter only the Measurement ID (e.g., G-26S55GN10D). Do not paste the full script tag here. We inject the script automatically.
+             <strong>Note:</strong> Enter the full Measurement ID (e.g., G-26S55GN10D).
            </p>
         </div>
 

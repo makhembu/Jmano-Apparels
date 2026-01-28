@@ -16,16 +16,30 @@ export const GlobalScriptInjector: React.FC = () => {
   const gaInjected = useRef(false);
   const customInjected = useRef(false);
 
+  // Helper to ensure ID always has G- prefix
+  const getMeasurementId = (rawId: string | undefined) => {
+    if (!rawId) return null;
+    const cleanId = rawId.trim();
+    return cleanId.startsWith('G-') ? cleanId : `G-${cleanId}`;
+  };
+
+  const gaId = getMeasurementId(settings.googleAnalyticsId);
+
   // 1. Google Analytics Initialization
   useEffect(() => {
     // Only inject if ID exists and hasn't been injected yet
-    if (settings.googleAnalyticsId && !gaInjected.current) {
+    if (gaId && !gaInjected.current) {
       
       // Create the script tag for GTM
-      const scriptUrl = `https://www.googletagmanager.com/gtag/js?id=${settings.googleAnalyticsId}`;
+      const scriptUrl = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
       const script = document.createElement('script');
       script.async = true;
       script.src = scriptUrl;
+      
+      script.onload = () => {
+        console.log(`[Analytics] GA Script Loaded for: ${gaId}`);
+      };
+
       document.head.appendChild(script);
 
       // Initialize dataLayer and gtag function
@@ -38,22 +52,24 @@ export const GlobalScriptInjector: React.FC = () => {
 
       // Config call
       window.gtag('js', new Date());
-      window.gtag('config', settings.googleAnalyticsId);
+      window.gtag('config', gaId, {
+        send_page_view: false // We handle page views manually in the effect below
+      });
 
       gaInjected.current = true;
-      console.log(`[Analytics] GA Initialized with ID: ${settings.googleAnalyticsId}`);
     }
-  }, [settings.googleAnalyticsId]);
+  }, [gaId]);
 
   // 2. Track Page Views on Route Change (SPA Support)
   useEffect(() => {
-    if (settings.googleAnalyticsId && window.gtag) {
+    if (gaId && window.gtag && gaInjected.current) {
       // Send page_view event to GA
-      window.gtag('config', settings.googleAnalyticsId, {
+      window.gtag('event', 'page_view', {
         page_path: location.pathname + location.search,
+        send_to: gaId
       });
     }
-  }, [location, settings.googleAnalyticsId]);
+  }, [location, gaId]);
 
   // 3. Custom Head Scripts (e.g. Pixel, Chat widgets)
   useEffect(() => {
