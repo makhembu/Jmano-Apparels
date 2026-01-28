@@ -1,7 +1,7 @@
 
 import { Tables, Json } from './database.types';
 
-// ... (Existing types unchanged)
+// ... (Keep existing types)
 
 export type UserRole = 'admin' | 'user';
 
@@ -284,9 +284,12 @@ export interface SeoConfig {
 }
 
 export interface AnalyticsEvent {
-  eventType: 'page_view' | 'add_to_cart' | 'purchase' | 'view_item' | 'purchase_item';
+  eventType: 'page_view' | 'add_to_cart' | 'purchase' | 'view_item' | 'purchase_item' | 'page_leave';
   path?: string;
   metadata?: Record<string, any>;
+  duration?: number;
+  geo_country?: string;
+  geo_city?: string;
 }
 
 export interface AnalyticsOverview {
@@ -317,6 +320,19 @@ export interface TrafficSource {
   visitors: number;
   orders: number;
   revenue: number;
+}
+
+export interface GeoStat {
+  country: string;
+  visitors: number;
+  revenue: number;
+}
+
+export interface PageStat {
+  path: string;
+  views: number;
+  avg_time: number;
+  unique_visitors: number;
 }
 
 // Database Row Types (for mappers)

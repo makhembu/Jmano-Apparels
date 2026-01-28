@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -162,8 +162,8 @@ export const api = {
     return data as DailyAnalytics[];
   },
 
-  getProductAnalytics: async (): Promise<ProductPerformance[]> => {
-    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8 });
+  getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
+    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8, days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
         return [];
@@ -178,5 +178,17 @@ export const api = {
       return [];
     }
     return data as TrafficSource[];
+  },
+
+  getGeoStats: async (days: number): Promise<GeoStat[]> => {
+    const { data, error } = await supabase.rpc('get_geo_stats', { days_lookback: days });
+    if (error) { console.error("Analytics Error", error); return []; }
+    return data as GeoStat[];
+  },
+
+  getPagePerformance: async (days: number): Promise<PageStat[]> => {
+    const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
+    if (error) { console.error("Analytics Error", error); return []; }
+    return data as PageStat[];
   }
 };
