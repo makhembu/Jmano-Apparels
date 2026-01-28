@@ -124,7 +124,7 @@ export const Mappers = {
     enableEmailContactAdmin: s.enable_email_contact_admin ?? false,
     
     // Features
-    enableNewsletterSignup: s.enable_newsletter_signup ?? true,
+    enableNewsletterSignup: s.enable_newsletter_signup ?? false,
     enableContactForm: s.enable_contact_form ?? true,
     enableReviews: s.enable_reviews ?? true,
     

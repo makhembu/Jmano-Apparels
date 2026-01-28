@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
@@ -152,17 +153,19 @@ export const Blog: React.FC = () => {
         )}
       </div>
 
-      {/* Unified CTA Section */}
-      <section className="bg-brand-dark py-24 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-           <h2 className="text-3xl md:text-6xl font-serif font-bold text-white mb-8">Stay <span className="text-brand-hope">Connected</span></h2>
-           <p className="text-brand-light/70 text-lg mb-12 font-light">Join our list for weekly testimonies and styling secrets.</p>
-           <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
-              <input type="email" placeholder="Your email address" className="flex-1 px-8 h-16 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 outline-none transition-all" />
-              <button className="h-16 px-10 rounded-xl bg-brand-hope text-brand-dark font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">Join Family</button>
-           </form>
-        </div>
-      </section>
+      {/* Unified CTA Section - Conditionally rendered based on settings */}
+      {settings.enableNewsletterSignup && (
+        <section className="bg-brand-dark py-24 relative overflow-hidden">
+          <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+             <h2 className="text-3xl md:text-6xl font-serif font-bold text-white mb-8">Stay <span className="text-brand-hope">Connected</span></h2>
+             <p className="text-brand-light/70 text-lg mb-12 font-light">Join our list for weekly testimonies and styling secrets.</p>
+             <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
+                <input type="email" placeholder="Your email address" className="flex-1 px-8 h-16 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 outline-none transition-all" />
+                <button className="h-16 px-10 rounded-xl bg-brand-hope text-brand-dark font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">Join Family</button>
+             </form>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
