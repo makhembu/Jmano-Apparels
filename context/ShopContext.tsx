@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
 import { api } from '../lib/db';
@@ -11,7 +12,9 @@ interface ShopContextType {
   blogPosts: BlogPost[];
   latestReviews: ProductReview[];
   settings: AppSettings;
-  loading: boolean;
+  
+  loading: boolean; // GLOBAL INITIAL LOAD ONLY
+  productsLoading: boolean; // SHOP FILTERING LOAD ONLY
   
   // Pagination Props
   hasMore: boolean;
@@ -37,7 +40,10 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
+  
+  // Split Loading States
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(false);
   
   // Data
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +62,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Initial Data Load (Settings, Cats, Blogs - Small payloads)
   const refreshData = useCallback(async () => {
     try {
+      // Note: We don't set initialLoading to true here if it's already false (re-fetching)
+      // to avoid full screen blockers on background refreshes.
+      
       const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
         api.getAppSettings(),
         api.getCategories(),
@@ -79,9 +88,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Data fetch error:", error);
       showToast("Connection issue. Some content may be missing.", 'error');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
-  }, [showToast, filters]); // Note: Adding filters to dep array of refreshData might loop, handle carefully
+  }, [showToast, filters]); // Note: filters dependency is okay here as it's part of initial grid load
 
   // Specialized fetcher for the shop grid
   const fetchPaginated = async (p: number, currentFilters: ProductFilters, reset: boolean = false) => {
@@ -103,8 +112,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateFilters = useCallback((newFilters: Partial<ProductFilters>) => {
       const updated = { ...filters, ...newFilters };
       setFilters(updated);
-      setLoading(true); // Show loading state on grid
-      fetchPaginated(1, updated, true).finally(() => setLoading(false));
+      setProductsLoading(true); // Only show local loading
+      fetchPaginated(1, updated, true).finally(() => setProductsLoading(false));
   }, [filters]);
 
   // Called when user clicks "Load More"
@@ -138,7 +147,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       blogPosts, 
       latestReviews, 
       settings, 
-      loading, 
+      loading: initialLoading, // Only expose initial loading as the main 'loading' blocker
+      productsLoading,         // Specific to shop grid
       refreshData, 
       updateSettings,
       hasMore,
@@ -146,7 +156,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loadMore,
       filters,
       updateFilters
-  }), [products, allProducts, categories, blogPosts, latestReviews, settings, loading, refreshData, updateSettings, hasMore, isLoadingMore, loadMore, filters, updateFilters]);
+  }), [products, allProducts, categories, blogPosts, latestReviews, settings, initialLoading, productsLoading, refreshData, updateSettings, hasMore, isLoadingMore, loadMore, filters, updateFilters]);
 
   return (
     <ShopContext.Provider value={value}>

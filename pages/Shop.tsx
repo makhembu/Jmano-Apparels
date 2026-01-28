@@ -13,7 +13,8 @@ export const Shop: React.FC = () => {
     products, 
     categories, 
     settings, 
-    loading, 
+    loading, // Global app loading
+    productsLoading, // Shop filter loading
     loadMore, 
     hasMore, 
     isLoadingMore, 
@@ -34,6 +35,7 @@ export const Shop: React.FC = () => {
          sortBy: filters.sortBy 
      };
      
+     // Only update if actually different to prevent loops
      if (newFilters.categoryKey !== filters.categoryKey || newFilters.search !== filters.search) {
          updateFilters(newFilters);
      }
@@ -69,7 +71,8 @@ export const Shop: React.FC = () => {
   const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
   const seoDesc = activeCategory?.seoDescription || settings.shopSeoDescription;
 
-  if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
+  // Show full screen spinner ONLY on initial application load, not on filtering
+  if (loading) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -202,25 +205,36 @@ export const Shop: React.FC = () => {
             </aside>
           </div>
 
-          <div className="flex-grow min-w-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+          <div className="flex-grow min-w-0 relative">
+            
+            {/* Local Loading Overlay for Filtering */}
+            {productsLoading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center pt-20 rounded-3xl transition-opacity">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div>
+                    <p className="mt-4 text-xs font-bold text-brand-dark uppercase tracking-widest animate-pulse">Updating Collection...</p>
+                </div>
+            )}
+
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 transition-opacity duration-300 ${productsLoading ? 'opacity-20' : 'opacity-100'}`}>
               {products.length > 0 ? (
                 products.map((product, idx) => (
                   <ProductCard key={product.id} product={product} index={idx} />
                 ))
               ) : (
-                <div className="col-span-full pt-10">
-                  <EmptyState 
-                    title="No pieces found" 
-                    description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
-                    actionLabel="Reset Gallery"
-                    actionLink="/shop"
-                  />
-                </div>
+                !productsLoading && (
+                    <div className="col-span-full pt-10">
+                      <EmptyState 
+                        title="No pieces found" 
+                        description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
+                        actionLabel="Reset Gallery"
+                        actionLink="/shop"
+                      />
+                    </div>
+                )
               )}
             </div>
             
-            {hasMore && (
+            {hasMore && !productsLoading && (
                 <div className="mt-16 text-center">
                     <Button 
                         onClick={loadMore} 
