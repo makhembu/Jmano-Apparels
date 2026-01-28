@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../database.types';
 
@@ -18,7 +19,8 @@ const FALLBACK_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
 
 const supabaseUrl = getEnv('VITE_SUPABASE_URL') || FALLBACK_URL;
-const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || FALLBACK_KEY;
+// Check standard key, then user's specific key, then fallback
+const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || FALLBACK_KEY;
 
 // Log to console if we are using fallbacks to help with debugging
 if (!getEnv('VITE_SUPABASE_URL')) {

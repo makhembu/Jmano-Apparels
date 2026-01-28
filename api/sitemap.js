@@ -1,12 +1,23 @@
 
 export default async function handler(req, res) {
-  // Try standard or Vite-prefixed variables
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  // Try standard, Vite-prefixed, or the specific custom variable from the user's Vercel settings
+  let url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  
+  // Ensure protocol is present
+  if (url && !url.startsWith('http')) {
+      url = `https://${url}`;
+  }
+  
+  const supabaseUrl = url;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
   const BASE_URL = 'https://jamboapparels.com';
 
   if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Supabase environment variables missing in Vercel project.' });
+    console.error('Supabase Environment Variables Missing. Available keys:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
+    return res.status(500).json({ 
+      error: 'Supabase environment variables missing in Vercel project.',
+      debug: 'Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or VITE_SUPABASE_ANON_KEY) are set in Vercel.'
+    });
   }
 
   const fetchOpts = {
