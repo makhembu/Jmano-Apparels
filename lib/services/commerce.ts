@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -148,6 +149,20 @@ export class ShippingService {
     if (error) throw error;
   }
 
+  async updateZone(id: string, zone: Partial<ShippingZone>): Promise<void> {
+    log('UPDATE', 'shipping_zones', id);
+    const { error } = await supabase.from('shipping_zones').update({
+      name: zone.name,
+      countries: zone.countries,
+      base_rate: zone.baseRate,
+      per_kg_rate: zone.perKgRate,
+      free_shipping_threshold: zone.freeShippingThreshold,
+      estimated_days: zone.estimatedDays,
+      is_active: zone.isActive
+    }).eq('id', id);
+    if (error) throw error;
+  }
+
   async deleteZone(id: string): Promise<void> {
     log('DELETE', 'shipping_zones', id);
     const { error } = await supabase.from('shipping_zones').delete().eq('id', id);
@@ -202,6 +217,26 @@ export class DiscountService {
       max_uses: code.maxUses,
       is_active: true
     });
+    if (error) throw error;
+  }
+
+  async update(id: string, code: Partial<DiscountCode>): Promise<void> {
+    log('UPDATE', 'discount_codes', id);
+    const payload: any = {
+      code: code.code,
+      discount_type: code.discountType,
+      discount_value: code.discountValue,
+      description: code.description,
+      minimum_purchase: code.minimumPurchase,
+      valid_until: code.validUntil,
+      max_uses: code.maxUses,
+      is_active: code.isActive
+    };
+    
+    // Clean payload
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+    const { error } = await supabase.from('discount_codes').update(payload).eq('id', id);
     if (error) throw error;
   }
 

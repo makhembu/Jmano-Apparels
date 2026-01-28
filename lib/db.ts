@@ -123,11 +123,13 @@ export const api = {
   // SHIPPING & DISCOUNTS
   getShippingZones: () => shippingService.getZones(),
   createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
+  updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
   deleteShippingZone: (id: string) => shippingService.deleteZone(id),
   
   validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
   getDiscountCodes: () => discountService.getAll(),
   createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
+  updateDiscountCode: (id: string, d: Partial<DiscountCode>) => discountService.update(id, d),
   deleteDiscountCode: (id: string) => discountService.delete(id),
   
   // SUPPORT
