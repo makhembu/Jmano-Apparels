@@ -1,6 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AppSettings } from '../../../types';
+import { generateSitemap, generateRobotsTxt } from '../../../lib/seo/sitemap';
+import { useToast } from '../../../context/ToastContext';
+import { Button } from '../../ui/Button';
 
 interface SeoSectionProps {
   settings: AppSettings;
@@ -8,6 +11,41 @@ interface SeoSectionProps {
 }
 
 export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) => {
+  const { showToast } = useToast();
+  const [generating, setGenerating] = useState(false);
+
+  const downloadFile = (filename: string, content: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSitemap = async () => {
+    setGenerating(true);
+    try {
+      const xml = await generateSitemap();
+      downloadFile('sitemap.xml', xml, 'text/xml');
+      showToast('Sitemap generated and downloaded', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to generate sitemap', 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownloadRobots = () => {
+    const txt = generateRobotsTxt();
+    downloadFile('robots.txt', txt, 'text/plain');
+    showToast('robots.txt downloaded', 'success');
+  };
+
   return (
     <div className="space-y-8">
       
@@ -52,6 +90,48 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
               className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all shadow-sm"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Sitemap & Crawlers */}
+      <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
+        <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-lg font-medium text-brand-green">Sitemap & Crawlers</h3>
+            <p className="text-xs text-gray-500 mt-1">Generate files for Google Search Console.</p>
+        </div>
+
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-6 items-start">
+           <div className="flex-1">
+              <h4 className="font-bold text-slate-800 text-sm mb-2">Sitemap.xml</h4>
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                 Generates a comprehensive XML map of all your Products, Blog Posts, and Categories. Upload this file to your website's root directory or submit to Search Console.
+              </p>
+              <Button 
+                type="button" 
+                onClick={handleDownloadSitemap} 
+                isLoading={generating}
+                className="text-xs"
+              >
+                Generate & Download XML
+              </Button>
+           </div>
+           
+           <div className="w-px bg-slate-200 self-stretch hidden md:block"></div>
+           
+           <div className="flex-1">
+              <h4 className="font-bold text-slate-800 text-sm mb-2">Robots.txt</h4>
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                 Instructions for search engine crawlers. Blocks admin areas and checkout pages while allowing full access to your shop and blog.
+              </p>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={handleDownloadRobots}
+                className="text-xs"
+              >
+                Download Robots.txt
+              </Button>
+           </div>
         </div>
       </div>
 

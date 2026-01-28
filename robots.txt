@@ -1,0 +1,15 @@
+
+User-agent: *
+Allow: /
+
+# Prevent crawling of admin and sensitive user areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /login/
+Disallow: /forgot-password/
+Disallow: /update-password/
+
+# Sitemap location (Update this URL if your domain changes)
+Sitemap: https://jamboapparels.com/sitemap.xml
