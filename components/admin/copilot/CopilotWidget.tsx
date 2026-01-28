@@ -11,12 +11,15 @@ export const CopilotWidget: React.FC = () => {
     <button
       id="copilot-widget"
       onClick={toggleDrawer}
-      className="fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 z-[9995] bg-brand-testament text-white group border-2 border-white/20"
+      className="fixed bottom-8 right-8 w-16 h-16 rounded-2xl shadow-[0_20px_50px_rgba(185,106,217,0.35)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 z-[9995] bg-gradient-to-br from-brand-testament via-[#9D50BB] to-[#6E48AA] text-white group border border-white/20 overflow-hidden"
       aria-label="Open Jambo Copilot"
     >
+      {/* Glossy overlay effect */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
       <div className="relative">
         <svg 
-          className="w-8 h-8 transition-transform group-hover:rotate-12" 
+          className="w-8 h-8 transition-transform duration-500 group-hover:rotate-[15deg] drop-shadow-md" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke="currentColor" 
@@ -24,14 +27,17 @@ export const CopilotWidget: React.FC = () => {
           strokeLinecap="round" 
           strokeLinejoin="round"
         >
-          <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1-8.313-12.454z" />
-          <path d="M15 5.5l.5.5.5-.5-.5-.5z" fill="currentColor" />
-          <path d="M19 9.5l.5.5.5-.5-.5-.5z" fill="currentColor" />
-          <path d="M12 12l.5.5.5-.5-.5-.5z" fill="currentColor" />
+          {/* Main AI Sparkle */}
+          <path d="M12 3l1.5 4.5 4.5 1.5-4.5 1.5L12 15l-1.5-4.5-4.5-1.5 4.5-1.5L12 3z" fill="currentColor" />
+          {/* Decorative Sparkles */}
+          <path d="M19 8l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z" fill="currentColor" />
+          <path d="M5 15l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z" fill="currentColor" />
         </svg>
-        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+        
+        {/* Notification indicator */}
+        <span className="absolute -top-2 -right-2 flex h-4 w-4">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-hope opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-hope"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-brand-hope border-2 border-[#9D50BB]"></span>
         </span>
       </div>
     </button>

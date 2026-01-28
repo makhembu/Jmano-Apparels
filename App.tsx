@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+// FIX: Grouping react-router-dom imports and ensuring they are clean to resolve "no exported member" errors
+import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { ShopProvider } from './context/ShopContext';
@@ -40,6 +41,8 @@ import { SystemHealth } from './components/SystemHealth';
 import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
 import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
+
+const Router = HashRouter;
 
 // Component to handle global auth events like Password Recovery redirection
 const AuthEventHandler = () => {

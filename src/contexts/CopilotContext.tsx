@@ -1,11 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+// FIX: Ensuring useLocation and useNavigate are correctly imported from react-router-dom
 import { useLocation, useNavigate } from 'react-router-dom';
 import { geminiClient } from '../lib/ai/gemini-client';
 import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
-import { Chat, GenerateContentResponse } from '@google/genai';
+import { Chat } from '@google/genai';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -54,8 +55,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (geminiClient.isAvailable()) {
         const prompt = generateSystemPrompt(pageContext);
         // Re-create chat when context fundamentally changes or on init
-        // For simple preservation, we might want to keep the session but update instructions if the SDK supported it easily.
-        // For this prototype, we'll start fresh if null, but ideally maintain history.
         if (!chatSession.current) {
             chatSession.current = geminiClient.createChat(prompt);
         }
@@ -93,16 +92,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         result = { error: `Function ${call.name} not found` };
                     }
                     
-                    // Log function call for UI
-                    setMessages(prev => {
-                        const last = prev[prev.length - 1];
-                        // If the assistant hasn't replied yet, we might want to show an intermediate state
-                        // or just wait. Here we won't show explicit "function call messages" in the list 
-                        // unless we want detailed debugging.
-                        return prev; 
-                    });
-
-                    // FIX: Wrap the result in a functionResponse part object to comply with GenerateContentParameters types
                     return {
                         functionResponse: {
                             name: call.name,
@@ -140,7 +129,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext]); // Dependencies
+  }, [pageContext]); 
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   const clearHistory = () => {

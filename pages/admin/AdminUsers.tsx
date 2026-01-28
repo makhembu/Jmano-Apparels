@@ -19,6 +19,7 @@ export const AdminUsers: React.FC = () => {
   const { settings } = useApp();
 
   const activeTab = (searchParams.get('tab') as ViewTab) || 'all';
+  const targetUserId = searchParams.get('userId');
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +45,20 @@ export const AdminUsers: React.FC = () => {
     fetchUsers();
     api.getEmailTemplates().then(setEmailTemplates).catch(console.error);
   }, []);
+
+  // Handle Deep Linking via userId param
+  useEffect(() => {
+    if (targetUserId && users.length > 0) {
+        const user = users.find(u => u.id === targetUserId);
+        if (user) {
+            handleOpenEdit(user);
+            // Clear param to prevent re-opening if modal closed
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('userId');
+            setSearchParams(newParams);
+        }
+    }
+  }, [targetUserId, users]);
 
   const fetchUsers = async () => {
     setLoading(true);

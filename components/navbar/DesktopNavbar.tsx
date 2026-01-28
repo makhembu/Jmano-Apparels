@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+// FIX: Ensuring Link, useLocation, and useNavigate are correctly imported from react-router-dom
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useClickOutside, getVisibleProducts, searchProducts } from '../../lib/utils';

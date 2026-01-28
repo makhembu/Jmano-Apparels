@@ -4,33 +4,33 @@ import { FunctionDeclaration, Type } from '@google/genai';
 export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: 'navigate',
-    description: 'Navigate to any page in the admin dashboard. Supports dynamic paths with IDs and specific tabs.',
+    description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
     parameters: {
       type: Type.OBJECT,
       properties: {
         path: {
           type: Type.STRING,
-          description: 'The exact destination route (e.g., "/admin/orders", "/admin/users")',
+          description: 'The full destination route starting with /admin.',
         },
         tab: {
           type: Type.STRING,
-          description: 'The specific tab to open on that page (e.g., "emails", "shipping", "categories")',
+          description: 'The specific tab ID to open on that page (if applicable).',
         }
       },
       required: ['path']
     }
   },
   {
-    name: 'getLatestOrder',
-    description: 'Get the most recent order details. Use this for questions about the "last sale" or "latest invoice".',
+    name: 'getDetailedInventoryReport',
+    description: 'Get a full breakdown of products, stock levels, and historical sales performance for trend analysis.',
     parameters: {
       type: Type.OBJECT,
       properties: {}
     }
   },
   {
-    name: 'getLatestUser',
-    description: 'Get the most recently registered user name and email.',
+    name: 'getLatestOrder',
+    description: 'Fetches the most recent order record.',
     parameters: {
       type: Type.OBJECT,
       properties: {}
@@ -38,7 +38,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   },
   {
     name: 'getDashboardStats',
-    description: 'Retrieve a summary of store performance including total revenue and order count.',
+    description: 'Retrieve store performance KPIs.',
     parameters: {
       type: Type.OBJECT,
       properties: {}
@@ -46,13 +46,13 @@ export const functionDeclarations: FunctionDeclaration[] = [
   },
   {
     name: 'highlightElement',
-    description: 'Visually highlight a UI element with a pulsing gold ring.',
+    description: 'Visually pulse a gold ring around a specific UI element to guide the user.',
     parameters: {
       type: Type.OBJECT,
       properties: {
         elementId: {
           type: Type.STRING,
-          description: 'The DOM id of the element to highlight',
+          description: 'The DOM ID of the target element.',
           enum: [
             'btn-create-order',
             'btn-refresh-data',
@@ -61,7 +61,16 @@ export const functionDeclarations: FunctionDeclaration[] = [
             'input-tracking-number',
             'select-order-status',
             'card-kpi-revenue',
-            'user-list-top-row'
+            'user-list-top-row',
+            'section-change-password',
+            'input-new-password',
+            'tab-brand',
+            'tab-seo',
+            'tab-payments',
+            'tab-emails',
+            'tab-contact',
+            'tab-content',
+            'tab-system'
           ]
         }
       },
@@ -71,12 +80,11 @@ export const functionDeclarations: FunctionDeclaration[] = [
 ];
 
 export const ELEMENT_ID_MAP = {
-  'Create Order': 'btn-create-order',
-  'Refresh Data': 'btn-refresh-data',
-  'Print Invoice': 'btn-print-invoice',
-  'Save Settings': 'btn-save-settings',
-  'Tracking Input': 'input-tracking-number',
-  'Status Select': 'select-order-status',
+  'Password Section': 'section-change-password',
+  'New Password Input': 'input-new-password',
+  'Save Button': 'btn-save-settings',
   'Revenue Card': 'card-kpi-revenue',
-  'Latest User Row': 'user-list-top-row'
+  'Brand Tab': 'tab-brand',
+  'SEO Tab': 'tab-seo',
+  'Payments Tab': 'tab-payments'
 } as const;

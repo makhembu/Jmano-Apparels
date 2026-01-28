@@ -32,12 +32,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Utility to handle safe areas on modern mobile devices */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Custom Scrollbar for better aesthetics */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -55,7 +53,6 @@ body {
   background: #1b5e20;
 }
 
-/* Hide scrollbar for clean horizontal nav on mobile */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -64,30 +61,39 @@ body {
   scrollbar-width: none;
 }
 
-/* --- PRINT STYLES FOR PROFESSIONAL INVOICE --- */
+/* --- COPILOT HIGHLIGHTING ENGINE --- */
+@keyframes copilot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+.copilot-highlight-active {
+  position: relative !important;
+  z-index: 9990 !important;
+  animation: copilot-pulse 2s infinite !important;
+  border: 2px solid #eab308 !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* --- PRINT STYLES --- */
 @media print {
   @page { 
     margin: 0; 
     size: auto;
   }
-
   body {
     background-color: white !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
-
-  /* Hide EVERYTHING by default */
   body * {
     visibility: hidden;
   }
-
-  /* Only show the invoice container and its children */
   #invoice-container, #invoice-container * {
     visibility: visible;
   }
-
-  /* Position the invoice container at the top left of the page */
   #invoice-container {
     position: absolute;
     left: 0;
@@ -98,8 +104,6 @@ body {
     background: white;
     z-index: 9999;
   }
-
-  /* Helper to ensure background colors print */
   .bg-brand-green { background-color: #2E7D32 !important; }
   .text-brand-green { color: #2E7D32 !important; }
   .border-brand-green { border-color: #2E7D32 !important; }

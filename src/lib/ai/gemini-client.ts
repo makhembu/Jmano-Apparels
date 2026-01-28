@@ -2,19 +2,11 @@
 import { GoogleGenAI, Chat } from "@google/genai";
 import { functionDeclarations } from './tools';
 
-// Using gemini-3-pro-preview for higher reasoning quality and nuance handling
+// Using gemini-3-pro-preview for higher reasoning quality and nuance handling in admin tasks
 const MODEL_NAME = 'gemini-3-pro-preview';
 
 export class GeminiClient {
-  private ai: GoogleGenAI | null = null;
-
-  constructor() {
-    if (process.env.API_KEY) {
-        this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.warn('Gemini API Key missing. Copilot disabled.');
-    }
-  }
+  constructor() {}
 
   isAvailable(): boolean {
     return !!process.env.API_KEY;
@@ -24,14 +16,15 @@ export class GeminiClient {
     const apiKey = process.env.API_KEY;
     if (!apiKey) return null;
 
-    this.ai = new GoogleGenAI({ apiKey });
+    // FIX: Instantiate GoogleGenAI right before making an API call to ensure it always uses the most up-to-date API key
+    const ai = new GoogleGenAI({ apiKey });
     
-    return this.ai.chats.create({
+    return ai.chats.create({
       model: MODEL_NAME,
       config: {
         systemInstruction: systemInstruction,
         tools: [{ functionDeclarations }],
-        // Thinking budget added for gemini-3 series to improve planning
+        // Thinking budget added for gemini-3 series to improve planning and reasoning
         thinkingConfig: { thinkingBudget: 4000 }
       }
     });

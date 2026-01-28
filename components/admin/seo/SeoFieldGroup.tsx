@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SeoConfig } from '../../../types';
 import { GoogleGenAI } from "@google/genai";
@@ -55,7 +54,7 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
     setGenerating(field);
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const modelName = 'gemini-3-flash-preview'; // Fast model for simple text
+        const modelName = 'gemini-2.5-flash'; // Updated from gemini-3-flash-preview to resolve quota issues
         
         let prompt = "";
         if (field === 'title') {
@@ -76,7 +75,7 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
             const name = field === 'title' ? 'seoTitle' : 'seoDescription';
             const event = {
                 target: { name, value: text }
-            } as React.ChangeEvent<HTMLInputElement>;
+            } as unknown as React.ChangeEvent<HTMLInputElement>;
             onChange(event);
             showToast('SEO content generated!', 'success');
         }

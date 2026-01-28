@@ -59,6 +59,8 @@ export const AdminAppSettings: React.FC = () => {
 
   const TabButton = ({ id, label }: { id: SettingsTab; label: string }) => (
     <button
+      id={`tab-${id}`}
+      data-copilot-id={`tab-${id}`}
       type="button"
       onClick={() => handleTabChange(id)}
       className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
@@ -75,10 +77,9 @@ export const AdminAppSettings: React.FC = () => {
     <div className="max-w-6xl pb-20 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
          <h1 className="text-2xl font-bold font-serif text-brand-dark">App Configuration</h1>
-         <Button type="submit" form="app-settings-form" isLoading={saving} variant="primary">Save Configuration</Button>
+         <Button id="btn-save-settings" data-copilot-id="btn-save-settings" type="submit" form="app-settings-form" isLoading={saving} variant="primary">Save Configuration</Button>
       </div>
       
-      {/* Tabs Header */}
       <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
         <TabButton id="brand" label="Brand" />
         <TabButton id="seo" label="Global SEO" />
@@ -90,29 +91,9 @@ export const AdminAppSettings: React.FC = () => {
       </div>
       
       <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
-        
-        {/* TAB: Brand */}
-        {currentTab === 'brand' && (
-          <div className="animate-fade-in">
-            <IdentitySection settings={formData} onChange={handleChange} />
-          </div>
-        )}
-
-        {/* TAB: SEO */}
-        {currentTab === 'seo' && (
-          <div className="animate-fade-in">
-            <SeoSection settings={formData} onChange={handleChange} />
-          </div>
-        )}
-
-        {/* TAB: Payments */}
-        {currentTab === 'payments' && (
-          <div className="animate-fade-in">
-            <PaymentSection settings={formData} onChange={handleChange} />
-          </div>
-        )}
-        
-        {/* TAB: Notifications */}
+        {currentTab === 'brand' && <IdentitySection settings={formData} onChange={handleChange} />}
+        {currentTab === 'seo' && <SeoSection settings={formData} onChange={handleChange} />}
+        {currentTab === 'payments' && <PaymentSection settings={formData} onChange={handleChange} />}
         {currentTab === 'emails' && (
           <div className="space-y-8 animate-fade-in">
              <NotificationSection settings={formData} onChange={handleChange} />
@@ -122,40 +103,14 @@ export const AdminAppSettings: React.FC = () => {
              </div>
           </div>
         )}
-
-        {/* TAB: Contact & Social */}
         {currentTab === 'contact' && (
           <div className="space-y-6 animate-fade-in">
-            <ContactSection 
-              settings={formData} 
-              onChange={handleChange} 
-              onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} 
-            />
-            <SocialSection 
-              settings={formData} 
-              onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} 
-            />
+            <ContactSection settings={formData} onChange={handleChange} onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} />
+            <SocialSection settings={formData} onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} />
           </div>
         )}
-
-        {/* TAB: Content & Legal */}
-        {currentTab === 'content' && (
-          <div className="space-y-8 animate-fade-in">
-             <PolicySection settings={formData} onChange={handleChange} />
-          </div>
-        )}
-
-        {/* TAB: System */}
-        {currentTab === 'system' && (
-          <div className="animate-fade-in">
-            <SystemSection 
-              settings={formData} 
-              onChange={handleChange} 
-              onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} 
-            />
-          </div>
-        )}
-
+        {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
+        {currentTab === 'system' && <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />}
       </form>
     </div>
   );

@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+// FIX: Ensuring useLocation and useNavigate are correctly imported from react-router-dom
 import { useLocation, useNavigate } from 'react-router-dom';
 import { geminiClient } from '../lib/ai/gemini-client';
 import { buildSystemPrompt } from '../lib/ai/system-prompt';
@@ -28,6 +29,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPageContext(prev => ({ ...prev, pageData: data }));
   }, []);
 
+  // Update context on route change
   useEffect(() => {
     const path = location.pathname;
     let name = 'Dashboard';
@@ -40,10 +42,12 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ...prev,
         route: path,
         pageName: name,
+        // Reset page data if we've moved to a new route, otherwise keep it
         pageData: prev.route === path ? prev.pageData : undefined 
     }));
   }, [location.pathname]);
 
+  // Handle Session Initialization
   useEffect(() => {
     if (geminiClient.isAvailable()) {
         const prompt = buildSystemPrompt(pageContext);
@@ -61,36 +65,60 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     if (!chatSession.current || !content.trim()) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content, timestamp: new Date() };
+    const userMsg: Message = { 
+        id: Date.now().toString(), 
+        role: 'user', 
+        content, 
+        timestamp: new Date() 
+    };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
     try {
         let response = await chatSession.current.sendMessage({ message: content });
         
+        // Loop for tool calling (handling multiple sequential tool calls)
         while (response.functionCalls && response.functionCalls.length > 0) {
             const functionResponses = await Promise.all(
                 response.functionCalls.map(async (call) => {
                     const executor = (executors as any)[call.name];
                     const result = executor ? await executor(call.args) : { error: `Function ${call.name} not found` };
-                    return { functionResponse: { name: call.name, id: call.id, response: { result } } };
+                    return { 
+                        functionResponse: { 
+                            name: call.name, 
+                            id: call.id, 
+                            response: { result } 
+                        } 
+                    };
                 })
             );
             response = await chatSession.current.sendMessage({ message: functionResponses });
         }
 
         const text = response.text || "I've handled that request for you.";
-        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', content: text, timestamp: new Date() }]);
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'model', 
+            content: text, 
+            timestamp: new Date() 
+        }]);
 
     } catch (e: any) {
         console.error("Jambo Copilot Error:", e);
-        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', content: "I'm having trouble processing that right now.", timestamp: new Date(), isError: true }]);
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'model', 
+            content: "I'm having trouble processing that right now. Please try again.", 
+            timestamp: new Date(), 
+            isError: true 
+        }]);
     } finally {
         setIsLoading(false);
     }
   }, [pageContext, executors]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
+  
   const clearHistory = () => {
       setMessages([]);
       if (geminiClient.isAvailable()) {

@@ -27,7 +27,7 @@ export const AdminProfile: React.FC = () => {
     setLoading(true);
     try {
       await api.updateUserProfile(user.id, { name: form.name, email: form.email });
-      await refreshProfile(); // Refresh auth context
+      await refreshProfile(); 
       showToast('Profile details updated successfully', 'success');
     } catch (e: any) {
       showToast(e.message || 'Failed to update profile', 'error');
@@ -66,8 +66,6 @@ export const AdminProfile: React.FC = () => {
       <h1 className="text-2xl font-bold font-serif text-brand-dark mb-6">My Admin Profile</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Profile Details Card */}
         <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
           <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-4">
              <div className="h-12 w-12 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xl">
@@ -98,7 +96,6 @@ export const AdminProfile: React.FC = () => {
                 value={form.email}
                 className="mt-1 block w-full border border-gray-200 bg-gray-50 rounded-md p-2 text-gray-500 cursor-not-allowed"
               />
-              <p className="text-[10px] text-gray-400 mt-1">Email changes require re-verification.</p>
             </div>
             <div className="pt-2">
                <Button type="submit" isLoading={loading} className="w-full">Update Profile</Button>
@@ -106,8 +103,7 @@ export const AdminProfile: React.FC = () => {
           </form>
         </div>
 
-        {/* Security Card */}
-        <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
+        <div id="section-change-password" className="bg-white shadow rounded-lg p-6 border border-gray-200 transition-all">
           <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-4">
              <div className="h-12 w-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -122,6 +118,7 @@ export const AdminProfile: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">New Password</label>
               <input 
+                id="input-new-password"
                 type="password" 
                 required 
                 value={passForm.newPassword} 
@@ -146,7 +143,6 @@ export const AdminProfile: React.FC = () => {
             </div>
           </form>
         </div>
-
       </div>
     </div>
   );

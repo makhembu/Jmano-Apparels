@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+// FIX: Ensuring standard v6 components/hooks are correctly imported from react-router-dom
 import { Link, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from './ui/LoadingSpinner';
