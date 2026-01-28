@@ -203,11 +203,13 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ settings, onChange }) =>
                     name="googleAnalyticsId" 
                     value={settings.googleAnalyticsId?.replace('G-', '') || ''} 
                     onChange={(e) => onChange({...e, target: {...e.target, name: 'googleAnalyticsId', value: 'G-' + e.target.value.replace('G-', '')}})} 
-                    placeholder="XXXXXXXXXX"
+                    placeholder="26S55GN10D"
                     className="w-full border border-gray-300 rounded-lg pl-8 p-2.5 bg-white text-sm font-mono focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all shadow-sm"
                 />
            </div>
-           <p className="text-[10px] text-gray-400 mt-1 italic">We handle the tag script automatically.</p>
+           <p className="text-[10px] text-gray-400 mt-1 italic">
+             <strong>Note:</strong> Enter only the Measurement ID (e.g., G-26S55GN10D). Do not paste the full script tag here. We inject the script automatically.
+           </p>
         </div>
 
         <div>
