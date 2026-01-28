@@ -102,51 +102,63 @@ export const AdminOrderDetails: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in relative">
       
       {/* --- INVOICE PRINT VIEW (Hidden on Screen) --- */}
-      <div id="invoice-container" className="hidden print:block bg-white text-black p-8 font-sans max-w-[210mm] mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-brand-green pb-6 mb-8">
-          <div className="flex items-start gap-4">
-             <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} alt="Jambo Apparels" className="h-16 w-auto object-contain" />
-             <div className="pt-1">
-                <h1 className="text-2xl font-bold text-brand-green uppercase tracking-wide">Jambo Apparels</h1>
-                <p className="text-xs text-gray-500 font-medium">Divinely Threaded Scriptures</p>
-                <div className="mt-2 text-xs text-gray-600 leading-relaxed">
-                   <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
-                   <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
-                   <p>{settings.contactPhone}</p>
-                </div>
+      <div id="invoice-container" className="hidden print:block bg-white text-slate-900 p-10 font-sans max-w-[210mm] mx-auto h-full">
+        {/* Header: Logo and Invoice Info */}
+        <div className="flex justify-between items-start mb-12">
+          <div className="w-1/2 pr-8">
+             <img 
+                src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
+                alt="Jambo Apparels" 
+                className="h-24 w-auto object-contain mb-6" 
+             />
+             <div className="text-sm text-gray-600 leading-relaxed font-medium">
+                <p className="font-bold text-gray-900 text-base mb-1">Jambo Apparels</p>
+                <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
+                <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
+                <p>{settings.contactPhone}</p>
              </div>
           </div>
-          <div className="text-right">
-             <h2 className="text-4xl font-light text-gray-300 uppercase tracking-widest mb-2">Invoice</h2>
-             <p className="text-sm font-bold text-gray-800">#{order.orderNumber}</p>
-             <p className="text-xs text-gray-500 mb-2">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
+          
+          <div className="w-1/2 text-right">
+             <h1 className="text-5xl font-light text-gray-200 uppercase tracking-widest mb-4">Invoice</h1>
+             <div className="space-y-1">
+                <p className="text-lg font-bold text-gray-900">#{order.orderNumber}</p>
+                <p className="text-sm text-gray-500 font-medium">Date: {new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+             </div>
              
-             {/* Barcode representation using Font */}
-             <div className="font-barcode text-4xl text-black mt-2">
-                *{order.orderNumber}*
+             {/* Barcode */}
+             <div className="mt-6 flex justify-end">
+                <div className="font-barcode text-6xl text-black" style={{ fontFamily: '"Libre Barcode 39 Text", cursive' }}>
+                   *{order.orderNumber}*
+                </div>
              </div>
           </div>
         </div>
 
-        {/* Bill To / Ship To */}
-        <div className="flex justify-between mb-10 gap-8">
+        <div className="w-full h-px bg-gray-200 mb-10"></div>
+
+        {/* Addresses */}
+        <div className="flex gap-16 mb-12">
            <div className="flex-1">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Billed To</h3>
-              <p className="font-bold text-gray-900 text-sm">{displayName}</p>
-              <p className="text-sm text-gray-600">{displayEmail}</p>
-              <p className="text-sm text-gray-600">{order.paymentIntentId ? 'Paid via PayPal' : 'Manual Payment'}</p>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Billed To</h3>
+              <div className="text-sm text-gray-800 leading-relaxed">
+                 <p className="font-bold text-base text-gray-900 mb-1">{displayName}</p>
+                 <p>{displayEmail}</p>
+                 <p className="mt-2 text-gray-500 text-xs uppercase font-bold tracking-wide">
+                    Method: {order.paymentIntentId ? 'PayPal' : 'Manual / Card'}
+                 </p>
+              </div>
            </div>
            <div className="flex-1">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Shipped To</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Shipped To</h3>
               {order.shippingAddress ? (
-                 <div className="text-sm text-gray-600 leading-relaxed">
-                    <p className="font-bold text-gray-900">{displayName}</p>
+                 <div className="text-sm text-gray-800 leading-relaxed">
+                    <p className="font-bold text-base text-gray-900 mb-1">{displayName}</p>
                     <p>{order.shippingAddress.address1}</p>
                     {order.shippingAddress.address2 && <p>{order.shippingAddress.address2}</p>}
                     <p>{order.shippingAddress.city}, {order.shippingAddress.postcode}</p>
                     <p>{order.shippingAddress.country}</p>
-                    {order.shippingAddress.phone && <p>Tel: {order.shippingAddress.phone}</p>}
+                    {order.shippingAddress.phone && <p className="mt-1">Tel: {order.shippingAddress.phone}</p>}
                  </div>
               ) : (
                  <p className="text-sm text-gray-400 italic">No shipping address provided.</p>
@@ -154,31 +166,31 @@ export const AdminOrderDetails: React.FC = () => {
            </div>
         </div>
 
-        {/* Line Items */}
-        <div className="mb-8">
+        {/* Table */}
+        <div className="mb-10">
            <table className="w-full text-sm">
               <thead>
-                 <tr className="border-b-2 border-brand-green">
-                    <th className="text-left py-2 font-bold text-gray-600 uppercase text-xs">Description</th>
-                    <th className="text-center py-2 font-bold text-gray-600 uppercase text-xs w-24">Size/Color</th>
-                    <th className="text-center py-2 font-bold text-gray-600 uppercase text-xs w-16">Qty</th>
-                    <th className="text-right py-2 font-bold text-gray-600 uppercase text-xs w-24">Unit</th>
-                    <th className="text-right py-2 font-bold text-gray-600 uppercase text-xs w-24">Amount</th>
+                 <tr className="border-b-2 border-gray-800">
+                    <th className="text-left py-3 font-bold text-gray-900 uppercase text-xs tracking-wider">Description</th>
+                    <th className="text-center py-3 font-bold text-gray-900 uppercase text-xs tracking-wider w-24">Size</th>
+                    <th className="text-center py-3 font-bold text-gray-900 uppercase text-xs tracking-wider w-16">Qty</th>
+                    <th className="text-right py-3 font-bold text-gray-900 uppercase text-xs tracking-wider w-24">Price</th>
+                    <th className="text-right py-3 font-bold text-gray-900 uppercase text-xs tracking-wider w-24">Total</th>
                  </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                  {order.products.map((item, i) => (
                     <tr key={i}>
-                       <td className="py-3 text-gray-800">
-                          <p className="font-bold">{item.title}</p>
-                          <p className="text-xs text-gray-500">ID: {item.productId?.slice(0,8)}</p>
+                       <td className="py-4">
+                          <p className="font-bold text-gray-900">{item.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">SKU: {item.productId?.slice(0,8).toUpperCase()}</p>
                        </td>
-                       <td className="py-3 text-center text-gray-600">
-                          {item.size} {item.selectedColor ? `/ ${item.selectedColor}` : ''}
+                       <td className="py-4 text-center text-gray-600 font-medium">
+                          {item.size}{item.selectedColor ? ` / ${item.selectedColor}` : ''}
                        </td>
-                       <td className="py-3 text-center text-gray-800 font-medium">{item.quantity}</td>
-                       <td className="py-3 text-right text-gray-600">£{item.price.toFixed(2)}</td>
-                       <td className="py-3 text-right text-gray-900 font-bold">£{(item.price * item.quantity).toFixed(2)}</td>
+                       <td className="py-4 text-center font-bold text-gray-900">{item.quantity}</td>
+                       <td className="py-4 text-right text-gray-600">£{item.price.toFixed(2)}</td>
+                       <td className="py-4 text-right font-bold text-gray-900">£{(item.price * item.quantity).toFixed(2)}</td>
                     </tr>
                  ))}
               </tbody>
@@ -186,27 +198,27 @@ export const AdminOrderDetails: React.FC = () => {
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-12">
-           <div className="w-64 space-y-2">
+        <div className="flex justify-end mb-16">
+           <div className="w-72 space-y-3 text-right">
               <div className="flex justify-between text-sm text-gray-600">
                  <span>Subtotal</span>
-                 <span>£{(order.subtotal || (order.total - (order.shippingCost || 0))).toFixed(2)}</span>
+                 <span className="font-medium">£{(order.subtotal || (order.total - (order.shippingCost || 0))).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                  <span>Shipping</span>
-                 <span>{order.shippingCost === 0 ? 'FREE' : `£${(order.shippingCost || 0).toFixed(2)}`}</span>
+                 <span className="font-medium">{order.shippingCost === 0 ? 'Free' : `£${(order.shippingCost || 0).toFixed(2)}`}</span>
               </div>
               {order.discountAmount && order.discountAmount > 0 && (
-                 <div className="flex justify-between text-sm text-green-600">
+                 <div className="flex justify-between text-sm text-green-700 font-medium">
                     <span>Discount {order.discountCode ? `(${order.discountCode})` : ''}</span>
                     <span>-£{order.discountAmount.toFixed(2)}</span>
                  </div>
               )}
-              <div className="flex justify-between text-sm text-gray-500 text-xs border-b border-gray-200 pb-2">
-                 <span>Tax (VAT Included)</span>
+              <div className="flex justify-between text-xs text-gray-400 pb-3 border-b border-gray-200">
+                 <span>VAT Included</span>
                  <span>£{(order.taxAmount || 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-xl font-bold text-brand-dark pt-2">
+              <div className="flex justify-between text-2xl font-bold text-gray-900 pt-2">
                  <span>Total</span>
                  <span>£{order.total.toFixed(2)}</span>
               </div>
@@ -214,12 +226,10 @@ export const AdminOrderDetails: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 pt-6 text-center">
-           <p className="text-brand-green font-bold text-sm mb-1">Thank you for your business!</p>
-           <p className="text-gray-500 text-xs italic">"Let all that you do be done in love." - 1 Corinthians 16:14</p>
-           <div className="mt-4 text-[10px] text-gray-400">
-              <p>Jambo Apparels • {settings.contactEmail} • jamboapparels.com</p>
-           </div>
+        <div className="border-t-2 border-gray-100 pt-8 text-center text-sm text-gray-500">
+           <p className="font-serif italic text-gray-600 mb-3 text-base">"Let all that you do be done in love." - 1 Corinthians 16:14</p>
+           <p className="font-medium">Thank you for your business!</p>
+           <p className="text-xs mt-2 text-gray-400">Jambo Apparels • {settings.contactEmail} • jamboapparels.com</p>
         </div>
       </div>
       {/* --- END INVOICE PRINT VIEW --- */}
