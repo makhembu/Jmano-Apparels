@@ -111,6 +111,9 @@ export const Mappers = {
     // Email Settings
     emailProvider: s.email_provider || 'smtp',
     smtpSettings: (s.smtp_settings as Record<string, any>) || undefined,
+
+    // AI Configuration
+    geminiApiKey: s.gemini_api_key || undefined,
     
     // Notifications
     enableEmailNotifications: s.enable_email_notifications ?? false,
@@ -166,7 +169,6 @@ export const Mappers = {
   }),
 
   toOrder: (o: DbOrder): Order => {
-    // The products column is JSONB.
     const rawData = o.products as any;
     let products: OrderItem[] = [];
     let shippingAddress: ShippingAddress | undefined = undefined;
@@ -201,7 +203,7 @@ export const Mappers = {
 
     return {
       id: o.id,
-      userId: o.user_id || null, // Allow null for guests
+      userId: o.user_id || null, 
       customerName: (o as any).customer_name,
       customerEmail: (o as any).customer_email,
       orderNumber: o.order_number || o.id.slice(0, 8),

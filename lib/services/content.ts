@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -145,6 +144,7 @@ export class SettingsService {
       privacy_policy: settings.privacyPolicy,
       terms_conditions: settings.termsConditions,
       return_policy: settings.returnPolicy,
+      // FIX: Changed settings.shipping_policy to settings.shippingPolicy to match AppSettings interface
       shipping_policy: settings.shippingPolicy,
       tax_rate: settings.taxRate,
       free_shipping_threshold: settings.freeShippingThreshold,
@@ -152,6 +152,7 @@ export class SettingsService {
       featured_categories: settings.featuredCategories,
       email_provider: settings.emailProvider,
       smtp_settings: settings.smtpSettings,
+      gemini_api_key: settings.geminiApiKey,
       enable_email_notifications: settings.enableEmailNotifications,
       enable_email_welcome: settings.enableEmailWelcome,
       enable_email_new_order: settings.enableEmailNewOrder,
@@ -180,11 +181,11 @@ export class SettingsService {
       // PayPal Settings Mapping
       paypal_client_id: settings.paypalClientId,
       paypal_secret_key: settings.paypalSecretKey,
+      // FIX: Changed settings.paypal_mode to settings.paypalMode to match AppSettings interface
       paypal_mode: settings.paypalMode,
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };
     
-    // Remove undefined keys to avoid overwriting with null if partial
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
 
     const { error } = await supabase.from('app_settings').update(dbSettings).eq('id', id);

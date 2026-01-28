@@ -191,9 +191,9 @@ export interface AppSettings {
   // SEO Global
   seoTitle?: string;
   seoDescription?: string;
-  defaultOgImage?: string; // New
-  googleAnalyticsId?: string; // New
-  customHeadScripts?: string; // New
+  defaultOgImage?: string; 
+  googleAnalyticsId?: string; 
+  customHeadScripts?: string; 
   
   shopSeoTitle?: string;
   shopSeoDescription?: string;
@@ -228,6 +228,9 @@ export interface AppSettings {
   emailProvider?: 'smtp' | 'resend';
   smtpSettings?: Record<string, any>;
   
+  // AI Settings
+  geminiApiKey?: string;
+
   // Notification Settings
   enableEmailNotifications?: boolean;
   enableEmailWelcome?: boolean;

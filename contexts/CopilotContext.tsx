@@ -1,12 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-// FIX: Ensuring useLocation and useNavigate are correctly imported from react-router-dom
 import { useLocation, useNavigate } from 'react-router-dom';
 import { geminiClient } from '../lib/ai/gemini-client';
 import { buildSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { Chat } from '@google/genai';
+import { useShop } from '../context/ShopContext';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -16,6 +16,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings, loading: settingsLoading } = useShop();
   
   const [pageContext, setPageContext] = useState<PageContext>({
     route: location.pathname,
@@ -42,25 +43,29 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ...prev,
         route: path,
         pageName: name,
-        // Reset page data if we've moved to a new route, otherwise keep it
         pageData: prev.route === path ? prev.pageData : undefined 
     }));
   }, [location.pathname]);
 
-  // Handle Session Initialization
+  // Handle Session Initialization - Prioritizing DB Key
   useEffect(() => {
-    if (geminiClient.isAvailable()) {
+    if (settingsLoading) return;
+
+    const apiKey = settings.geminiApiKey;
+    if (geminiClient.isAvailable(apiKey)) {
         const prompt = buildSystemPrompt(pageContext);
-        chatSession.current = geminiClient.createChat(prompt);
+        chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
-  }, [pageContext.pageName, pageContext.pageData]); 
+  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading]); 
 
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
+    const apiKey = settings.geminiApiKey;
+    
     if (!chatSession.current) {
       const prompt = buildSystemPrompt(pageContext);
-      chatSession.current = geminiClient.createChat(prompt);
+      chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
     
     if (!chatSession.current || !content.trim()) return;
@@ -77,7 +82,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
         let response = await chatSession.current.sendMessage({ message: content });
         
-        // Loop for tool calling (handling multiple sequential tool calls)
         while (response.functionCalls && response.functionCalls.length > 0) {
             const functionResponses = await Promise.all(
                 response.functionCalls.map(async (call) => {
@@ -115,14 +119,15 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors]);
+  }, [pageContext, executors, settings.geminiApiKey]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
   const clearHistory = () => {
       setMessages([]);
-      if (geminiClient.isAvailable()) {
-        chatSession.current = geminiClient.createChat(buildSystemPrompt(pageContext));
+      const apiKey = settings.geminiApiKey;
+      if (geminiClient.isAvailable(apiKey)) {
+        chatSession.current = geminiClient.createChat(buildSystemPrompt(pageContext), apiKey);
       }
   };
 

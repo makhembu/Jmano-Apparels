@@ -7,16 +7,12 @@ const MODEL_NAME = 'gemini-3-pro-preview';
 
 /**
  * Safely retrieves environment variables in both browser and node contexts.
- * This adheres to the requirement of using process.env.API_KEY while
- * preventing ReferenceErrors in production browser environments.
  */
-const getSafeApiKey = (): string | undefined => {
+const getSafeEnvApiKey = (): string | undefined => {
   try {
-    // 1. Check for process.env (mapped by bundlers like Vite/Webpack at build time)
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
       return process.env.API_KEY;
     }
-    // 2. Fallback to Vite-specific env if available (common in Vercel/Vite setups)
     if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_KEY) {
       return (import.meta as any).env.VITE_API_KEY;
     }
@@ -29,18 +25,26 @@ const getSafeApiKey = (): string | undefined => {
 export class GeminiClient {
   constructor() {}
 
-  isAvailable(): boolean {
-    return !!getSafeApiKey();
+  /**
+   * Checks if an API key is available either from settings or env
+   */
+  isAvailable(settingsKey?: string): boolean {
+    return !!(settingsKey || getSafeEnvApiKey());
   }
 
-  createChat(systemInstruction: string): Chat | null {
-    const apiKey = getSafeApiKey();
+  /**
+   * Creates a new chat session using the provided API key.
+   * If no key is provided, it falls back to environment variables.
+   */
+  createChat(systemInstruction: string, customApiKey?: string): Chat | null {
+    const apiKey = customApiKey || getSafeEnvApiKey();
+    
     if (!apiKey) {
-      console.warn("Gemini API Key is missing. Please configure API_KEY in your environment.");
+      console.warn("Gemini API Key is missing. Please configure it in App Settings or environment.");
       return null;
     }
 
-    // Instantiate GoogleGenAI right before making an API call to ensure it always uses the most up-to-date API key
+    // Instantiate GoogleGenAI with the provided key
     const ai = new GoogleGenAI({ apiKey });
     
     return ai.chats.create({
