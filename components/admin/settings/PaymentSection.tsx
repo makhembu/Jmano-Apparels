@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
+import { Switch } from '../../ui/Switch';
 
 interface PaymentSectionProps {
   settings: AppSettings;
@@ -39,6 +40,19 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
       default:
         return <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border border-slate-200">Disabled</span>;
     }
+  };
+
+  const handleSwitchChange = (val: boolean) => {
+    // Create synthetic event
+    const syntheticEvent = {
+        target: {
+            name: 'paymentGatewayEnabled',
+            value: val,
+            type: 'checkbox',
+            checked: val
+        }
+    } as any;
+    onChange(syntheticEvent);
   };
 
   return (
@@ -80,22 +94,13 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
 
       {/* 2. Configuration Form */}
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div>
-            <label htmlFor="paymentGatewayEnabled" className="block text-sm font-bold text-gray-900">Enable PayPal Checkout</label>
-            <p className="text-xs text-gray-500">Show the "Pay with PayPal" button on the checkout page.</p>
-          </div>
-          <div className="flex items-center h-6">
-            <input 
-              id="paymentGatewayEnabled"
-              name="paymentGatewayEnabled"
-              type="checkbox"
-              checked={!!settings.paymentGatewayEnabled}
-              onChange={onChange}
-              className="h-5 w-5 rounded border-gray-300 text-brand-green focus:ring-brand-green cursor-pointer"
-            />
-          </div>
-        </div>
+        
+        <Switch 
+            label="Enable PayPal Checkout"
+            description="Show the 'Pay with PayPal' button on the checkout page."
+            checked={!!settings.paymentGatewayEnabled}
+            onChange={handleSwitchChange}
+        />
 
         <div className={`space-y-6 transition-all duration-300 ${!settings.paymentGatewayEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

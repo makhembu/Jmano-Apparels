@@ -9,6 +9,7 @@ import { Product } from '../../types';
 import { ProductPreview } from '../../components/admin/products/ProductPreview';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 import { useCopilot } from '../../contexts/CopilotContext';
+import { Switch } from '../../components/ui/Switch';
 
 interface ExtendedProduct extends Product {
     isFreeShipping?: boolean;
@@ -67,6 +68,10 @@ export const AdminProductEditor: React.FC = () => {
     } else {
        setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleSwitchChange = (name: string, val: boolean) => {
+      setFormData(prev => ({ ...prev, [name]: val }));
   };
 
   // Sync array inputs to formData on blur or specific actions
@@ -245,12 +250,14 @@ export const AdminProductEditor: React.FC = () => {
                                 <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 font-bold" />
                             </div>
                             <div className="p-4 bg-brand-light/10 rounded-xl border border-brand-green/10">
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="text-xs font-bold text-brand-dark uppercase tracking-widest">Sale Options</label>
-                                    <input type="checkbox" name="isOnSale" checked={!!formData.isOnSale} onChange={handleChange} className="h-4 w-4 text-brand-green rounded focus:ring-brand-green" />
-                                </div>
+                                <Switch 
+                                    label="On Sale"
+                                    checked={!!formData.isOnSale}
+                                    onChange={(val) => handleSwitchChange('isOnSale', val)}
+                                    className="mb-2 border-0 bg-transparent p-0 hover:shadow-none"
+                                />
                                 {formData.isOnSale && (
-                                    <input type="number" step="0.01" name="salePrice" value={formData.salePrice || ''} onChange={handleChange} placeholder="Sale Price £" className="w-full border border-slate-200 rounded-lg p-2 bg-white text-sm" />
+                                    <input type="number" step="0.01" name="salePrice" value={formData.salePrice || ''} onChange={handleChange} placeholder="Sale Price £" className="w-full border border-slate-200 rounded-lg p-2 bg-white text-sm mt-2" />
                                 )}
                             </div>
                         </div>
@@ -330,20 +337,21 @@ export const AdminProductEditor: React.FC = () => {
                 </div>
                 
                 {/* 6. Visibility Control */}
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div>
-                        <h3 className="font-bold text-slate-800">Publishing Status</h3>
-                        <p className="text-xs text-slate-500">Hidden products are only visible to admins.</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="isPublished" checked={!!formData.isPublished} onChange={handleChange} className="w-5 h-5 text-brand-green rounded focus:ring-brand-green" />
-                            <span className="text-sm font-bold text-slate-700">Visible in Shop</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="isFeatured" checked={!!formData.isFeatured} onChange={handleChange} className="w-5 h-5 text-brand-hope rounded focus:ring-brand-hope" />
-                            <span className="text-sm font-bold text-slate-700">Featured Item</span>
-                        </label>
+                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-4">Publishing Status</h3>
+                    <div className="space-y-3">
+                        <Switch 
+                            label="Visible in Shop"
+                            description="Hidden products are only visible to admins."
+                            checked={!!formData.isPublished}
+                            onChange={(val) => handleSwitchChange('isPublished', val)}
+                        />
+                        <Switch 
+                            label="Featured Item"
+                            description="Pin this item to the homepage featured collection."
+                            checked={!!formData.isFeatured}
+                            onChange={(val) => handleSwitchChange('isFeatured', val)}
+                        />
                     </div>
                 </div>
 

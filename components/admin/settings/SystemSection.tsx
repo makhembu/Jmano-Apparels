@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { AppSettings } from '../../../types';
+import { Switch } from '../../ui/Switch';
 
 interface SystemSectionProps {
   settings: AppSettings;
@@ -9,24 +10,34 @@ interface SystemSectionProps {
 }
 
 export const SystemSection: React.FC<SystemSectionProps> = ({ settings, onChange }) => {
+  const handleSwitchChange = (val: boolean) => {
+    // Create synthetic event
+    const syntheticEvent = {
+        target: {
+            name: 'maintenanceMode',
+            value: val,
+            type: 'checkbox',
+            checked: val
+        }
+    } as any;
+    onChange(syntheticEvent);
+  };
+
   return (
     <div className="space-y-6">
       {/* Maintenance Mode */}
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
         <h3 className="text-lg font-medium border-b pb-2 text-brand-green">System Status</h3>
-        <div className="flex items-center">
-          <input 
-            type="checkbox" 
-            id="maintenanceMode"
-            name="maintenanceMode" 
-            checked={!!settings.maintenanceMode} 
-            onChange={onChange} 
-            className="h-4 w-4 text-brand-green border-gray-300 rounded focus:ring-brand-green" 
-          />
-          <label htmlFor="maintenanceMode" className="ml-2 block text-sm text-gray-900 font-bold">Enable Maintenance Mode</label>
-        </div>
+        
+        <Switch 
+          label="Enable Maintenance Mode"
+          description="Prevent customers from accessing the shop while you make updates."
+          checked={!!settings.maintenanceMode}
+          onChange={handleSwitchChange}
+        />
+
         {settings.maintenanceMode && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in pl-4 border-l-2 border-brand-green">
             <label className="block text-sm font-medium text-gray-700">Maintenance Message</label>
             <textarea name="maintenanceMessage" value={settings.maintenanceMessage || ''} onChange={onChange} rows={2} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900" />
           </div>

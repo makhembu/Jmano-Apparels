@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
 import { SettingsService } from '../../../lib/services/content';
 import { useToast } from '../../../context/ToastContext';
+import { Switch } from '../../ui/Switch';
 
 interface NotificationSectionProps {
   settings: AppSettings;
@@ -101,25 +103,16 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   const masterSwitchEnabled = settings.enableEmailNotifications ?? false;
   const isCustomMode = smtpConfig.mode === 'custom';
 
-  const Toggle = ({ name, label, description, disabled = false }: { name: keyof AppSettings, label: string, description: string, disabled?: boolean }) => (
-    <div className={`flex items-start justify-between p-4 rounded-lg transition-colors ${!disabled ? 'bg-white' : 'bg-gray-50 opacity-60'}`}>
-      <div>
-        <label htmlFor={name} className={`font-bold text-sm ${!disabled ? 'text-gray-900' : 'text-gray-500'}`}>{label}</label>
-        <p className="text-xs text-gray-500">{description}</p>
-      </div>
-      <div className="flex items-center h-6">
-        <input 
-          id={name}
-          name={name}
-          type="checkbox"
-          checked={!!settings[name]}
-          onChange={onChange}
-          disabled={disabled}
-          className="h-4 w-4 rounded border-gray-300 text-brand-green focus:ring-brand-green disabled:opacity-50"
-        />
-      </div>
-    </div>
-  );
+  const handleSwitchChange = (name: keyof AppSettings, checked: boolean) => {
+      onChange({
+          target: {
+              name,
+              value: checked,
+              type: 'checkbox',
+              checked
+          }
+      } as any);
+  };
 
   return (
     <div className="space-y-6">
@@ -282,40 +275,46 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
           <p className="text-sm text-gray-500 mt-1">Manage when emails are sent.</p>
         </div>
 
-        <Toggle 
-          name="enableEmailNotifications"
+        <Switch 
           label="Master Switch"
           description="Turn all automated customer emails on or off."
+          checked={!!settings.enableEmailNotifications}
+          onChange={(val) => handleSwitchChange('enableEmailNotifications', val)}
         />
         
-        <div className={`space-y-2 pl-4 border-l-2 border-gray-100 transition-opacity ${!masterSwitchEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4">Customer Emails</h4>
-          <Toggle 
-            name="enableEmailWelcome"
+        <div className={`space-y-3 pl-4 border-l-2 border-gray-100 transition-opacity ${!masterSwitchEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4 mb-2">Customer Emails</h4>
+          <Switch 
             label="Welcome Email"
             description="Send to new users upon successful sign-up."
+            checked={!!settings.enableEmailWelcome}
+            onChange={(val) => handleSwitchChange('enableEmailWelcome', val)}
           />
-          <Toggle 
-            name="enableEmailNewOrder"
+          <Switch 
             label="New Order Confirmation"
             description="Send to customers after they complete a purchase."
+            checked={!!settings.enableEmailNewOrder}
+            onChange={(val) => handleSwitchChange('enableEmailNewOrder', val)}
           />
-          <Toggle 
-            name="enableEmailOrderShipped"
+          <Switch 
             label="Order Shipped Notification"
             description="Send when an order's status is updated to 'Shipped'."
+            checked={!!settings.enableEmailOrderShipped}
+            onChange={(val) => handleSwitchChange('enableEmailOrderShipped', val)}
           />
           
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-6">Admin Alerts</h4>
-          <Toggle 
-            name="enableEmailAdminNewOrder"
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-6 mb-2">Admin Alerts</h4>
+          <Switch 
             label="New Sale Alert"
             description="Notify admin via email when a new order is placed."
+            checked={!!settings.enableEmailAdminNewOrder}
+            onChange={(val) => handleSwitchChange('enableEmailAdminNewOrder', val)}
           />
-          <Toggle 
-            name="enableEmailContactAdmin"
+          <Switch 
             label="Contact Form Alert"
             description="Notify admin when a new contact form message is received."
+            checked={!!settings.enableEmailContactAdmin}
+            onChange={(val) => handleSwitchChange('enableEmailContactAdmin', val)}
           />
         </div>
       </div>
@@ -325,10 +324,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
         <div className="border-b pb-4">
           <h3 className="text-lg font-medium text-brand-green">Marketing Features</h3>
         </div>
-        <Toggle 
-          name="enableNewsletterSignup"
+        <Switch 
           label="Show Newsletter Signup in Footer"
           description="Display the email subscription form in the website footer."
+          checked={!!settings.enableNewsletterSignup}
+          onChange={(val) => handleSwitchChange('enableNewsletterSignup', val)}
         />
       </div>
     </div>

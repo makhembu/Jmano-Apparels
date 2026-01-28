@@ -4,6 +4,7 @@ import { AppSettings, Category } from '../../../types';
 import { useApp } from '../../../context/AppContext';
 import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
+import { Switch } from '../../ui/Switch';
 
 export const GeneralSettingsTab: React.FC = () => {
   const { settings, updateSettings } = useApp();
@@ -28,6 +29,10 @@ export const GeneralSettingsTab: React.FC = () => {
     } else {
         setGeneralForm(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleSwitchChange = (name: string, checked: boolean) => {
+      setGeneralForm(prev => ({ ...prev, [name]: checked }));
   };
 
   const toggleFeaturedCat = (key: string) => {
@@ -90,36 +95,34 @@ export const GeneralSettingsTab: React.FC = () => {
         </div>
         
         <div className="pt-6 border-t border-gray-100 space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div>
-                <label className="text-sm font-bold text-gray-900">Require Account for Checkout</label>
-                <p className="text-xs text-gray-500">If enabled, guest checkout is disabled.</p>
-            </div>
-            <input type="checkbox" name="requireLoginForCheckout" checked={!!generalForm.requireLoginForCheckout} onChange={handleGeneralChange} className="h-5 w-5 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
-            </div>
+            
+            <Switch 
+                label="Require Account for Checkout"
+                description="If enabled, guest checkout will be disabled."
+                checked={!!generalForm.requireLoginForCheckout}
+                onChange={(val) => handleSwitchChange('requireLoginForCheckout', val)}
+            />
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div>
-                <label className="text-sm font-bold text-gray-900">Enable Announcement Bar</label>
-                <p className="text-xs text-gray-500">Show a top banner for sales/news.</p>
-            </div>
-            <input type="checkbox" name="isAnnouncementEnabled" checked={!!generalForm.isAnnouncementEnabled} onChange={handleGeneralChange} className="h-5 w-5 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
-            </div>
+            <Switch 
+                label="Enable Announcement Bar"
+                description="Show a top banner for sales, news, or scripture of the day."
+                checked={!!generalForm.isAnnouncementEnabled}
+                onChange={(val) => handleSwitchChange('isAnnouncementEnabled', val)}
+            />
             
             {generalForm.isAnnouncementEnabled && (
-            <div className="animate-fade-in">
+            <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Announcement Text</label>
                 <input type="text" name="announcementText" value={generalForm.announcementText || ''} onChange={handleGeneralChange} className="w-full border border-gray-200 rounded-xl p-3 bg-white text-sm text-gray-900 focus:ring-2 focus:ring-brand-green/20 outline-none" placeholder="e.g. 20% Off Spring Collection!" />
             </div>
             )}
             
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div>
-                <label className="text-sm font-bold text-gray-900">Enable Reviews</label>
-                <p className="text-xs text-gray-500">Allow customers to leave testimonies.</p>
-            </div>
-            <input type="checkbox" name="enableReviews" checked={!!generalForm.enableReviews} onChange={handleGeneralChange} className="h-5 w-5 text-brand-green focus:ring-brand-green border-gray-300 rounded" />
-            </div>
+            <Switch 
+                label="Enable Reviews"
+                description="Allow customers to leave testimonies on products."
+                checked={!!generalForm.enableReviews}
+                onChange={(val) => handleSwitchChange('enableReviews', val)}
+            />
         </div>
 
         <div className="pt-4">

@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
+import { Switch } from '../../ui/Switch';
 
 interface ContactSectionProps {
   settings: AppSettings;
@@ -24,27 +26,30 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ settings, onChan
     onHoursChange(newHours);
   };
 
+  const handleSwitchChange = (val: boolean) => {
+    // Create synthetic event for compatibility with parent handler
+    const syntheticEvent = {
+        target: {
+            name: 'enableContactForm',
+            value: val,
+            type: 'checkbox',
+            checked: val
+        }
+    } as any;
+    onChange(syntheticEvent);
+  };
+
   return (
     <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
       <h3 className="text-lg font-medium border-b pb-2 text-brand-green">Contact & Hours</h3>
       
       {/* Contact Form Toggle */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div>
-          <label htmlFor="enableContactForm" className="block text-sm font-bold text-gray-900">Show Contact Form on About Page</label>
-          <p className="text-xs text-gray-500">Allow customers to send messages directly from the About Us page.</p>
-        </div>
-        <div className="flex items-center h-6">
-          <input 
-            id="enableContactForm"
-            name="enableContactForm"
-            type="checkbox"
-            checked={!!settings.enableContactForm}
-            onChange={onChange}
-            className="h-4 w-4 rounded border-gray-300 text-brand-green focus:ring-brand-green"
-          />
-        </div>
-      </div>
+      <Switch 
+        label="Show Contact Form on About Page"
+        description="Allow customers to send messages directly from the About Us page."
+        checked={!!settings.enableContactForm}
+        onChange={handleSwitchChange}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
