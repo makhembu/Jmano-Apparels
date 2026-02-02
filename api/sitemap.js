@@ -29,7 +29,6 @@ export default async function handler(req, res) {
 
   try {
     // Parallel fetch using Supabase REST API
-    // FIX: Included 'slug' in selection to generate SEO friendly URLs
     const [productsRes, postsRes, catsRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/products?select=id,slug,created_at,is_published&is_published=eq.true`, fetchOpts),
       fetch(`${supabaseUrl}/rest/v1/blog_posts?select=slug,date,status&status=eq.published`, fetchOpts),
@@ -50,7 +49,7 @@ export default async function handler(req, res) {
     staticRoutes.forEach(route => {
        xml += `
   <url>
-    <loc>${BASE_URL}/#${route}</loc>
+    <loc>${BASE_URL}${route}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>${route === '' ? '1.0' : '0.8'}</priority>
@@ -61,11 +60,10 @@ export default async function handler(req, res) {
     if(Array.isArray(products)) {
         products.forEach(p => {
             const date = p.created_at ? p.created_at.split('T')[0] : currentDate;
-            // FIX: Use slug if available, fallback to id for legacy
             const identifier = p.slug || p.id;
             xml += `
   <url>
-    <loc>${BASE_URL}/#/product/${identifier}</loc>
+    <loc>${BASE_URL}/product/${identifier}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -79,14 +77,12 @@ export default async function handler(req, res) {
             const date = p.date ? p.date.split('T')[0] : currentDate;
             xml += `
   <url>
-    <loc>${BASE_URL}/#/blog/${p.slug}</loc>
+    <loc>${BASE_URL}/blog/${p.slug}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`;
         });
-    } else {
-        console.error("Failed to fetch blog posts for sitemap:", posts);
     }
 
     // Categories
@@ -94,7 +90,7 @@ export default async function handler(req, res) {
         categories.forEach(c => {
             xml += `
   <url>
-    <loc>${BASE_URL}/#/shop?cat=${c.key}</loc>
+    <loc>${BASE_URL}/shop?cat=${c.key}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -105,7 +101,6 @@ export default async function handler(req, res) {
 </urlset>`;
 
     res.setHeader('Content-Type', 'application/xml');
-    // Cache for 1 hour (3600s) on CDN, staled response allowed while revalidating
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
     res.status(200).send(xml);
 

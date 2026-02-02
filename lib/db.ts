@@ -27,6 +27,13 @@ const userService = new UserService();
 const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
+// Helper for hybrid routing redirect
+const getRedirectUrl = () => {
+  const isProd = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
+  // If Prod, clean URL. If Dev/Preview, use Hash.
+  return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
+};
+
 export const api = {
   // Catalog
   getProducts: () => productService.getAll(),
@@ -115,7 +122,7 @@ export const api = {
     if (error) throw error;
   },
   requestPasswordReset: async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/#/update-password' });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: getRedirectUrl() });
     if (error) throw error;
   },
   adminDeleteUser: (id: string) => userService.deleteUser(id),

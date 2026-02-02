@@ -29,10 +29,9 @@ export const generateSitemap = async () => {
 
   // 1. Static Routes
   staticRoutes.forEach(route => {
-    // Note: Using HashRouter format (/#/) as per App.tsx configuration
     xml += `
   <url>
-    <loc>${BASE_URL}/#${route}</loc>
+    <loc>${BASE_URL}${route}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>${route === '' ? '1.0' : '0.8'}</priority>
@@ -43,7 +42,7 @@ export const generateSitemap = async () => {
   products.filter(p => p.isPublished !== false).forEach(p => {
     xml += `
   <url>
-    <loc>${BASE_URL}/#/product/${p.id}</loc>
+    <loc>${BASE_URL}/product/${p.id}</loc>
     <lastmod>${new Date(p.createdAt || Date.now()).toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -54,7 +53,7 @@ export const generateSitemap = async () => {
   posts.filter(p => p.status === 'published').forEach(p => {
     xml += `
   <url>
-    <loc>${BASE_URL}/#/blog/${p.slug}</loc>
+    <loc>${BASE_URL}/blog/${p.slug}</loc>
     <lastmod>${new Date(p.createdAt).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -65,7 +64,7 @@ export const generateSitemap = async () => {
   categories.forEach(c => {
     xml += `
   <url>
-    <loc>${BASE_URL}/#/shop?cat=${c.key}</loc>
+    <loc>${BASE_URL}/shop?cat=${c.key}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;

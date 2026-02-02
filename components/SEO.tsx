@@ -38,8 +38,15 @@ export const SEO: React.FC<SEOProps> = ({
   const finalTitle = title ? `${title} | ${siteName}` : defaultTitle;
   const finalDesc = description || defaultDescription;
   const finalImage = image || defaultImage;
-  const currentUrl = `https://jamboapparels.com/#${location.pathname}`;
-  const finalCanonical = canonical || currentUrl;
+  
+  // Smart Canonical:
+  // React Router's useLocation().pathname returns the path *inside* the router context.
+  // - In Browser Mode: URL is /shop -> pathname is /shop
+  // - In Hash Mode: URL is /#/shop -> pathname is /shop
+  // We prepend the production domain to ensure Google indexes the CLEAN version, 
+  // even if we are viewing the Hash version in dev.
+  const path = location.pathname === '/' ? '' : location.pathname;
+  const finalCanonical = canonical || `https://jamboapparels.com${path}`;
 
   const robotsContent = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
 
@@ -120,9 +127,8 @@ export const SEO: React.FC<SEOProps> = ({
 
     schemaScript.textContent = JSON.stringify(baseSchema);
 
-    // Cleanup not strictly necessary for SPAs if we overwrite, but good practice
     return () => {
-      // Optional cleanup logic
+      // Optional cleanup
     };
   }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, keywords, schema, settings]);
 

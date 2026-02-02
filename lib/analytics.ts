@@ -15,7 +15,7 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
-// Simple Client-Side Geo Approximation (Timezone/Locale based) to avoid blocking external API calls
+// Simple Client-Side Geo Approximation (Timezone/Locale based)
 const getApproxGeo = () => {
   try {
     const stored = sessionStorage.getItem(GEO_KEY);
@@ -39,7 +39,11 @@ const getSource = (): string => {
   if (!referrer || referrer.includes(window.location.hostname)) return 'direct';
   if (referrer.includes('google')) return 'google';
   if (referrer.includes('facebook') || referrer.includes('instagram')) return 'social';
-  return new URL(referrer).hostname;
+  try {
+    return new URL(referrer).hostname;
+  } catch {
+    return 'unknown';
+  }
 };
 
 export const analytics = {
@@ -48,26 +52,34 @@ export const analytics = {
       const { data: { session } } = await supabase.auth.getSession();
       const geo = getApproxGeo();
 
+      // Ensure integer for database compatibility
+      const safeDuration = Math.round(duration || 0);
+
       const payload = {
         session_id: getSessionId(),
         user_id: session?.user?.id || null,
         event_type: eventType,
         path: window.location.pathname,
-        referrer: document.referrer,
+        referrer: document.referrer || null,
         source: getSource(),
         metadata: metadata,
         geo_country: geo.country,
         geo_city: geo.city,
-        duration: duration
+        duration: safeDuration
       };
 
       // Fire and forget
       supabase.from('analytics_events').insert(payload).then(({ error }) => {
-        if (error) console.error("Analytics Error:", error);
+        if (error) {
+            // Suppress logs for common schema mismatch if migration hasn't run yet
+            if (error.code !== 'PGRST204') {
+                console.warn("[Analytics] Tracking error:", error.message);
+            }
+        }
       });
 
     } catch (e) {
-      console.warn("Tracking failed", e);
+      console.warn("[Analytics] Exception:", e);
     }
   },
 
@@ -76,8 +88,6 @@ export const analytics = {
   },
 
   trackPageLeave: (path: string, durationSeconds: number) => {
-    // We send a specific 'page_leave' event or we could update the previous 'page_view'
-    // For this prototype, we'll log a separate event with duration which aggregation can sum/avg
     if (durationSeconds > 0) {
         analytics.track('page_view', { is_exit: true, path_exited: path }, durationSeconds);
     }

@@ -6,7 +6,11 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!api/|_next/|static/|favicon.ico|sitemap.xml).*)",
       "destination": "/index.html"
     }
   ]

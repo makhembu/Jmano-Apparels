@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
-// FIX: Grouping react-router-dom imports and ensuring they are clean to resolve "no exported member" errors
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { HashRouter, BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { ShopProvider } from './context/ShopContext';
@@ -37,6 +36,7 @@ import { AdminNewsletter } from './pages/admin/AdminNewsletter';
 import { AdminContact } from './pages/admin/AdminContact';
 import { AdminProfile } from './pages/admin/AdminProfile';
 import { Terms, Privacy, Cookies, Returns } from './pages/Legal';
+import { NotFound } from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
 import { UserOrderDetails } from './pages/dashboard/UserOrderDetails';
@@ -44,16 +44,18 @@ import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 
-const Router = HashRouter;
+// 1. Hybrid Router Selection
+// If we are on the main domain, use clean URLs (Browser). Otherwise (previews/localhost), use Hash.
+const isProduction = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
+const Router = isProduction ? BrowserRouter : HashRouter;
 
-// Component to handle global auth events like Password Recovery redirection
+// Auth Event Handler
 const AuthEventHandler = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // Redirect to the verifier/update password page when recovery link is clicked
         navigate('/update-password');
       }
     });
@@ -72,7 +74,6 @@ const App: React.FC = () => {
       <AuthProvider>
         <ShopProvider>
           <CartProvider>
-            {/* AppProvider wraps specific providers to bridge legacy useApp hooks */}
             <AppProvider>
               <Router>
                 <GlobalScriptInjector />
@@ -126,6 +127,9 @@ const App: React.FC = () => {
                     <Route path="contact" element={<AdminContact />} />
                     <Route path="profile" element={<AdminProfile />} />
                   </Route>
+
+                  {/* 404 Catch-All */}
+                  <Route path="*" element={<Layout><NotFound /></Layout>} />
                 </Routes>
               </Router>
             </AppProvider>

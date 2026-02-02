@@ -20,7 +20,6 @@ serve(async (req) => {
     const BASE_URL = 'https://jamboapparels.com';
 
     // 2. Fetch Data Parallel
-    // FIX: Include slug in select
     const [products, posts, categories] = await Promise.all([
         supabaseClient.from('products').select('id, slug, created_at, is_published').eq('is_published', true),
         supabaseClient.from('blog_posts').select('slug, created_at, status').eq('status', 'published'),
@@ -36,10 +35,9 @@ serve(async (req) => {
     const currentDate = new Date().toISOString().split('T')[0];
 
     staticRoutes.forEach(route => {
-       // Note: Using HashRouter paths as per app configuration
        xml += `
   <url>
-    <loc>${BASE_URL}/#${route}</loc>
+    <loc>${BASE_URL}${route}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>${route === '' ? '1.0' : '0.8'}</priority>
@@ -49,11 +47,10 @@ serve(async (req) => {
     // Dynamic Products
     products.data?.forEach((p: any) => {
        const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : currentDate;
-       // FIX: Use slug if available
        const identifier = p.slug || p.id;
        xml += `
   <url>
-    <loc>${BASE_URL}/#/product/${identifier}</loc>
+    <loc>${BASE_URL}/product/${identifier}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -65,7 +62,7 @@ serve(async (req) => {
        const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : currentDate;
        xml += `
   <url>
-    <loc>${BASE_URL}/#/blog/${p.slug}</loc>
+    <loc>${BASE_URL}/blog/${p.slug}</loc>
     <lastmod>${date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -76,7 +73,7 @@ serve(async (req) => {
     categories.data?.forEach((c: any) => {
        xml += `
   <url>
-    <loc>${BASE_URL}/#/shop?cat=${c.key}</loc>
+    <loc>${BASE_URL}/shop?cat=${c.key}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
