@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="preconnect" href="https://irsurnyfjgjmlhlrkbeh.supabase.co" />
     
+    <!-- Performance: Preload Critical Hero Image (LCP) -->
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop" fetchpriority="high" />
+
     <!-- Cache Control: Force browser to re-fetch index.html on every visit -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
@@ -34,14 +37,13 @@
     <meta property="twitter:description" content="Wear your scriptures in Humility and Boldness. Explore our curated collections of faith-inspired clothing." />
     <meta property="twitter:image" content="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1200&h=630&fit=crop" />
 
-    <!-- Fonts -->
+    <!-- Fonts (Optimized with display=swap) -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Merriweather:wght@300;400;700&display=swap"
       rel="stylesheet"
     />
 
     <!-- Tailwind CSS (Pinned Version 3.4.1) -->
-    <!-- NOTE: For Production, replace this CDN with a build step for significant performance gains -->
     <script src="https://cdn.tailwindcss.com/3.4.1?plugins=typography"></script>
     <script>
       tailwind.config = {

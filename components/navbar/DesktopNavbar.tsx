@@ -42,7 +42,9 @@ export const DesktopNavbar: React.FC = () => {
               <img 
                 src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
                 alt="Jambo Apparels" 
-                className="h-12 w-auto object-contain brightness-0 invert" 
+                className="h-12 w-auto object-contain brightness-0 invert"
+                width="48"
+                height="48"
               />
             </Link>
           </div>
@@ -77,7 +79,7 @@ export const DesktopNavbar: React.FC = () => {
                       <>
                         {filteredResults.map(product => (
                           <button key={product.id} onClick={() => { navigate(`/product/${product.id}`); setShowResults(false); setSearchQuery(''); }} className="w-full flex items-center p-3 hover:bg-gray-50 transition-colors text-left group">
-                            <img src={product.images[0]} alt="" className="h-10 w-10 rounded-md object-cover border border-gray-100" />
+                            <img src={product.images[0]} alt="" width="40" height="40" className="h-10 w-10 rounded-md object-cover border border-gray-100" />
                             <div className="ml-3 overflow-hidden">
                               <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-brand-green">{product.title}</p>
                               <p className="text-[10px] font-bold text-brand-green">£{product.price.toFixed(2)}</p>

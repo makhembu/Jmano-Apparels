@@ -45,6 +45,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   const optimizedSrc = error ? src : getOptimizedUrl(src);
 
+  // Default height to width if not provided to maintain aspect ratio and prevent CLS
+  const renderHeight = height || width;
+
   return (
     <div className={`relative overflow-hidden bg-gray-100 ${className}`} style={{ width: '100%', height: '100%' }}>
       {/* Blur Placeholder (CSS effect) - Only show if not loaded and no error */}
@@ -56,7 +59,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         src={optimizedSrc}
         alt={alt}
         width={width}
-        height={height || width} // Default to square if height missing to prevent CLS
+        height={renderHeight}
         className={`w-full h-full object-${fit} transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         onLoad={() => setIsLoaded(true)}
         onError={() => setError(true)}

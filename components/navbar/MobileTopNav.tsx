@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -15,7 +16,9 @@ export const MobileTopNav: React.FC<MobileTopNavProps> = ({ onSearchClick }) => 
         <img 
           src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} 
           alt="Jambo" 
-          className="h-10 w-auto object-contain brightness-0 invert" 
+          className="h-10 w-auto object-contain brightness-0 invert"
+          width="40"
+          height="40"
         />
       </Link>
       <div className="flex items-center gap-2">

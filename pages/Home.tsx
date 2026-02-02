@@ -90,7 +90,7 @@ export const Home: React.FC = () => {
              alt="Jambo Apparels Faith Based Clothing"
              className="h-full w-full object-cover object-center opacity-90 lg:opacity-100"
              width={1920}
-             height={1080}
+             height={600} 
              priority={true} // Critical for LCP
              fit="cover"
            />
@@ -240,7 +240,7 @@ export const Home: React.FC = () => {
                        
                        {product && (
                          <Link to={`/product/${product.id}`} className="group flex items-center gap-2 max-w-[120px]">
-                            <img src={product.images[0]} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-110" />
+                            <img src={product.images[0]} alt="" width="40" height="40" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-110" />
                          </Link>
                        )}
                     </div>
