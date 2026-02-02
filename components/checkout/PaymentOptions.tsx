@@ -14,12 +14,13 @@ interface PaymentOptionsProps {
   onPayPalCreateOrder: (data: any, actions: any) => Promise<string>;
   onPayPalApprove: (data: any, actions: any) => Promise<void>;
   onManualOrder: () => void;
+  onValidate: () => boolean;
 }
 
 export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   discountCode, setDiscountCode, applyDiscount,
   paypalConfig, currency, isProcessing,
-  onPayPalCreateOrder, onPayPalApprove, onManualOrder
+  onPayPalCreateOrder, onPayPalApprove, onManualOrder, onValidate
 }) => {
   const { showToast } = useToast();
   const [paypalError, setPaypalError] = useState(false);
@@ -32,6 +33,10 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   }), [paypalConfig?.clientId, currency]);
 
   const handlePayPalError = (err: any) => {
+    // Ignore validation errors thrown intentionally
+    if (err?.message?.includes("Invalid order data") || err?.toString().includes("Invalid order data")) {
+        return;
+    }
     console.error("PayPal Button Error:", err);
     setPaypalError(true);
     showToast("PayPal services unavailable.", "error");
@@ -72,7 +77,14 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
           ) : (
              <PayPalScriptProvider options={initialOptions}>
                 <PayPalButtons 
-                  style={{ layout: "vertical", shape: "rect", height: 48 }}
+                  style={{ layout: "vertical", shape: "rect", height: 48 } as any}
+                  onClick={(data, actions) => {
+                    const isValid = onValidate();
+                    if (!isValid) {
+                      return actions.reject();
+                    }
+                    return actions.resolve();
+                  }}
                   createOrder={onPayPalCreateOrder}
                   onApprove={onPayPalApprove}
                   disabled={isProcessing}

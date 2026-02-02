@@ -240,6 +240,7 @@ export const Checkout: React.FC = () => {
               onPayPalCreateOrder={(data, actions) => handlePayPalCreateOrder(data, actions, prepareOrderPayload, finalTotal)}
               onPayPalApprove={handlePayPalApprove}
               onManualOrder={() => handleManualOrder(prepareOrderPayload)}
+              onValidate={validateOrder}
             />
           </div>
 
