@@ -95,7 +95,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
         
         <Switch 
             label="Enable PayPal Checkout"
-            description="Enabling PayPal will make it the exclusive payment method and disable manual checkout."
+            description="Enabling this REMOVES the manual payment option. Customers must use PayPal."
             checked={!!settings.paymentGatewayEnabled}
             onChange={handleSwitchChange}
         />
