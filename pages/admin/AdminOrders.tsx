@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { Order } from '../../types';

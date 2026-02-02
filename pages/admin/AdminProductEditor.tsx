@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+// @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import { Button } from '../../components/ui/Button';

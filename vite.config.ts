@@ -9,6 +9,7 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
     cssCodeSplit: true,
+    emptyOutDir: true, // Clean the output directory before building
     rollupOptions: {
       output: {
         // Force new filenames on each build to break cache

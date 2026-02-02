@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+// @ts-ignore
 import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';

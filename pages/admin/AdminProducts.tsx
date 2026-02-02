@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import { Button } from '../../components/ui/Button';

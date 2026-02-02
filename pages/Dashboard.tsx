@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';

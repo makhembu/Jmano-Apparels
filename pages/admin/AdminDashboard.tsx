@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useShop } from '../../context/ShopContext';

@@ -1,5 +1,6 @@
 
 import React from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';

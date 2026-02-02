@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../lib/db';

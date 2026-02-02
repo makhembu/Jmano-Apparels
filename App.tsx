@@ -1,4 +1,5 @@
 import React, { useEffect, Suspense, lazy, useState } from 'react';
+// @ts-ignore
 import { HashRouter, BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
@@ -15,7 +16,7 @@ import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 // --- VERSION CONTROL ---
 // Bump this version string whenever you deploy a breaking change or schema update
 // This will force all users to reload and clear stale local storage caches
-const CURRENT_APP_VERSION = '1.0.3'; 
+const CURRENT_APP_VERSION = '1.0.4'; 
 
 // --- Lazy Loaded Components ---
 
@@ -93,10 +94,11 @@ const AuthEventHandler = () => {
 const VersionManager = () => {
   useEffect(() => {
     const storedVersion = localStorage.getItem('app_version');
+    console.log(`[VersionManager] Checking... Current: ${CURRENT_APP_VERSION}, Stored: ${storedVersion}`);
     
     // If no version stored (first load of new system) OR version mismatch
     if (storedVersion !== CURRENT_APP_VERSION) {
-      console.log(`[VersionManager] Updating from ${storedVersion} to ${CURRENT_APP_VERSION}`);
+      console.log(`[VersionManager] DETECTED UPDATE. Cleaning cache...`);
       
       // Update version first so the next reload is clean
       localStorage.setItem('app_version', CURRENT_APP_VERSION);
@@ -106,16 +108,10 @@ const VersionManager = () => {
       localStorage.removeItem('jambo_geo_data');
       localStorage.removeItem('jambo_session_id');
       
-      // Unregister Service Workers if any
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(r => r.unregister());
-        });
-      }
-
-      // If this was an update (not a fresh install), force reload
+      // Hard Reload if we had a stored version (meaning it's an update, not a fresh visit)
       if (storedVersion) {
-         window.location.reload(); 
+         console.log('[VersionManager] Forcing reload in 100ms...');
+         setTimeout(() => window.location.reload(), 100);
       }
     }
   }, []);

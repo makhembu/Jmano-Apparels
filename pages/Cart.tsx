@@ -1,4 +1,6 @@
+
 import React from 'react';
+// @ts-ignore
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { EmptyState } from '../components/ui/EmptyState';

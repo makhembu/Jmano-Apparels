@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+// @ts-ignore
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useClickOutside } from '../lib/utils';

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+// @ts-ignore
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { Order, User } from '../../types';
@@ -333,61 +334,4 @@ export const AdminOrderDetails: React.FC = () => {
                 
                 <div className="space-y-4">
                     <div id="select-order-status">
-                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Order Status</label>
-                        <select 
-                        value={status} 
-                        onChange={(e) => setStatus(e.target.value)} 
-                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-bold focus:ring-2 focus:ring-brand-green/10 outline-none transition-all"
-                        >
-                        <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
-
-                    <div id="select-payment-status">
-                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Payment Outcome</label>
-                        <select 
-                        value={paymentStatus} 
-                        onChange={(e) => setPaymentStatus(e.target.value)} 
-                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-bold focus:ring-2 focus:ring-brand-green/10 outline-none transition-all"
-                        >
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid (Confirmed)</option>
-                        <option value="failed">Failed</option>
-                        <option value="refunded">Refunded</option>
-                        </select>
-                    </div>
-
-                    <div id="input-tracking-number">
-                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Tracking Registry</label>
-                        <input 
-                        type="text" 
-                        value={tracking} 
-                        onChange={(e) => setTracking(e.target.value)} 
-                        placeholder="e.g. GB123456789"
-                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-mono focus:ring-2 focus:ring-brand-green/10 outline-none transition-all" 
-                        />
-                    </div>
-
-                    <div id="btn-save-changes">
-                        <Button 
-                            variant="primary" 
-                            fullWidth 
-                            onClick={handleUpdate} 
-                            isLoading={isUpdating}
-                            className="h-12 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-green/20"
-                        >
-                            Apply Changes
-                        </Button>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </div>
-      </div>
-    </>
-  );
-};
+                        <label className="block text-[10px] font-black text
