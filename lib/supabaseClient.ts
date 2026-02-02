@@ -14,20 +14,30 @@ const getEnv = (key: string) => {
 };
 
 // Fallback keys for testing/development when env vars are not set
-// Using the credentials provided in your configuration
 const FALLBACK_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
 
-const supabaseUrl = getEnv('VITE_SUPABASE_URL') || FALLBACK_URL;
-// Check standard key, then user's specific key, then fallback
-const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || FALLBACK_KEY;
+// Sanitize URL: Remove trailing slash, ensure https
+const formatUrl = (url?: string) => {
+  if (!url) return '';
+  let clean = url.trim();
+  if (!clean.startsWith('http')) clean = `https://${clean}`;
+  if (clean.endsWith('/')) clean = clean.slice(0, -1);
+  return clean;
+};
 
-// Log to console if we are using fallbacks to help with debugging
-if (!getEnv('VITE_SUPABASE_URL')) {
-  console.log('Environment variables not found. Using fallback Supabase credentials for testing.');
-  if (supabaseKey === FALLBACK_KEY) {
-      console.warn('NOTE: Using a placeholder Supabase Key. Database connections might fail or be restricted.');
-  }
+const rawUrl = getEnv('VITE_SUPABASE_URL');
+const rawKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY');
+
+// Logic: If VITE_ vars exist, use them (Production/Vercel). Otherwise fallback (Sandbox).
+const supabaseUrl = rawUrl ? formatUrl(rawUrl) : FALLBACK_URL;
+const supabaseKey = rawKey || FALLBACK_KEY;
+
+// Debugging logs for Vercel
+if (!rawUrl) {
+  console.log('[Supabase] Using fallback credentials (Demo Mode).');
+} else {
+  console.log('[Supabase] Using environment variables.');
 }
 
 if (!supabaseUrl || !supabaseKey) {
