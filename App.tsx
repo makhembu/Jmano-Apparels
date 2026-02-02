@@ -15,7 +15,7 @@ import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 // --- VERSION CONTROL ---
 // Bump this version string whenever you deploy a breaking change or schema update
 // This will force all users to reload and clear stale local storage caches
-const CURRENT_APP_VERSION = '1.0.2'; 
+const CURRENT_APP_VERSION = '1.0.3'; 
 
 // --- Lazy Loaded Components ---
 
@@ -94,22 +94,27 @@ const VersionManager = () => {
   useEffect(() => {
     const storedVersion = localStorage.getItem('app_version');
     
+    // If no version stored (first load of new system) OR version mismatch
     if (storedVersion !== CURRENT_APP_VERSION) {
       console.log(`[VersionManager] Updating from ${storedVersion} to ${CURRENT_APP_VERSION}`);
       
+      // Update version first so the next reload is clean
+      localStorage.setItem('app_version', CURRENT_APP_VERSION);
+      
       // Clear specific application state that might be stale
       // We DO NOT clear Auth tokens to keep user logged in
-      localStorage.removeItem('dt_cart'); // Clear cart as schema might have changed
       localStorage.removeItem('jambo_geo_data');
       localStorage.removeItem('jambo_session_id');
       
-      // Update version
-      localStorage.setItem('app_version', CURRENT_APP_VERSION);
-      
-      // Force hard reload to bust script cache
-      // Use window.location.href to ensure a fresh request
+      // Unregister Service Workers if any
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(r => r.unregister());
+        });
+      }
+
+      // If this was an update (not a fresh install), force reload
       if (storedVersion) {
-         // Only force reload if there was a previous version (not a fresh visit)
          window.location.reload(); 
       }
     }
