@@ -100,8 +100,9 @@ export const AdminOrderDetails: React.FC = () => {
   const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
-    <>
-      {/* --- INVOICE PRINT CONTAINER (Visible only in Print) --- */}
+    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in relative">
+      
+      {/* --- INVOICE PRINT VIEW (Hidden on Screen) --- */}
       <div id="invoice-container" className="hidden print:block bg-white text-slate-900 font-sans max-w-[210mm] mx-auto h-full relative">
         {/* Header */}
         <div className="flex justify-between items-start mb-12 border-b-2 border-slate-900 pb-8">
@@ -334,4 +335,61 @@ export const AdminOrderDetails: React.FC = () => {
                 
                 <div className="space-y-4">
                     <div id="select-order-status">
-                        <label className="block text-[10px] font-black text
+                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Order Status</label>
+                        <select 
+                        value={status} 
+                        onChange={(e) => setStatus(e.target.value)} 
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-bold focus:ring-2 focus:ring-brand-green/10 outline-none transition-all"
+                        >
+                        <option value="Pending">Pending</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div id="select-payment-status">
+                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Payment Outcome</label>
+                        <select 
+                        value={paymentStatus} 
+                        onChange={(e) => setPaymentStatus(e.target.value)} 
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-bold focus:ring-2 focus:ring-brand-green/10 outline-none transition-all"
+                        >
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid (Confirmed)</option>
+                        <option value="failed">Failed</option>
+                        <option value="refunded">Refunded</option>
+                        </select>
+                    </div>
+
+                    <div id="input-tracking-number">
+                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Tracking Registry</label>
+                        <input 
+                        type="text" 
+                        value={tracking} 
+                        onChange={(e) => setTracking(e.target.value)} 
+                        placeholder="e.g. GB123456789"
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-mono focus:ring-2 focus:ring-brand-green/10 outline-none transition-all" 
+                        />
+                    </div>
+
+                    <div id="btn-save-changes">
+                        <Button 
+                            variant="primary" 
+                            fullWidth 
+                            onClick={handleUpdate} 
+                            isLoading={isUpdating}
+                            className="h-12 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-green/20"
+                        >
+                            Apply Changes
+                        </Button>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  );
+};
