@@ -49,15 +49,21 @@ const getSource = (): string => {
 export const analytics = {
   track: async (eventType: string, metadata: Record<string, any> = {}, duration: number = 0) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const geo = getApproxGeo();
+      // Wrap session retrieval to catch auth errors/aborts
+      let userId = null;
+      try {
+        const { data } = await supabase.auth.getSession();
+        userId = data.session?.user?.id || null;
+      } catch (authError) {
+        // Ignore auth errors during tracking, proceed as guest
+      }
 
-      // Ensure integer for database compatibility
+      const geo = getApproxGeo();
       const safeDuration = Math.round(duration || 0);
 
       const payload = {
         session_id: getSessionId(),
-        user_id: session?.user?.id || null,
+        user_id: userId,
         event_type: eventType,
         path: window.location.pathname,
         referrer: document.referrer || null,
@@ -68,17 +74,23 @@ export const analytics = {
         duration: safeDuration
       };
 
-      // Fire and forget
+      // Fire and forget, but catch promise rejections
       supabase.from('analytics_events').insert(payload).then(({ error }) => {
         if (error) {
             // Suppress logs for common schema mismatch if migration hasn't run yet
-            if (error.code !== 'PGRST204') {
-                console.warn("[Analytics] Tracking error:", error.message);
+            // Also suppress AbortError which happens on navigation/unmount
+            if (error.code !== 'PGRST204' && !error.message?.includes('AbortError')) {
+                console.warn("[Analytics] Tracking warning:", error.message);
             }
         }
+      }).catch(err => {
+         // Silently ignore network aborts
+         if (err.name === 'AbortError' || err.message?.includes('aborted')) return;
+         console.warn("[Analytics] Network error:", err);
       });
 
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError' || e.message?.includes('aborted')) return;
       console.warn("[Analytics] Exception:", e);
     }
   },

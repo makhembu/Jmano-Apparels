@@ -25,6 +25,9 @@ const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PU
 // Log to console if we are using fallbacks to help with debugging
 if (!getEnv('VITE_SUPABASE_URL')) {
   console.log('Environment variables not found. Using fallback Supabase credentials for testing.');
+  if (supabaseKey === FALLBACK_KEY) {
+      console.warn('NOTE: Using a placeholder Supabase Key. Database connections might fail or be restricted.');
+  }
 }
 
 if (!supabaseUrl || !supabaseKey) {

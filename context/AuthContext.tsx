@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -77,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(profile);
       }
     } catch (error: any) {
+      if (error.name === 'AbortError') return;
       console.error("User sync critical failure:", error);
     }
   }, [showToast]);
@@ -86,11 +88,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && mounted) {
-          await syncUser(session.user);
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (data.session?.user && mounted) {
+          await syncUser(data.session.user);
         }
-      } catch (e) {
+      } catch (e: any) {
+        // Ignore abort errors during init (likely double-mount in dev)
+        if (e.name === 'AbortError' || e.message?.includes('aborted')) {
+            return;
+        }
         console.error("Auth init failed", e);
       } finally {
         if (mounted) {

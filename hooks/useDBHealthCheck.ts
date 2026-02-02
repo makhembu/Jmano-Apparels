@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -5,7 +6,7 @@ export type HealthStatus = 'idle' | 'checking' | 'healthy' | 'error';
 
 interface CheckResult {
   table: string;
-  status: 'ok' | 'missing' | 'schema_mismatch' | 'timeout';
+  status: 'ok' | 'missing' | 'schema_mismatch' | 'timeout' | 'aborted';
   details?: string;
 }
 
@@ -22,13 +23,20 @@ export const useDBHealthCheck = () => {
         .limit(1);
 
       if (error) {
-        console.error(`[HealthCheck] Error on table '${table}':`, error);
+        // If error looks like an abort/network issue, classify as timeout/aborted
+        if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
+             return { table, status: 'aborted', details: 'Request cancelled' };
+        }
+        console.warn(`[HealthCheck] Issue on table '${table}':`, error.message);
         return { table, status: 'schema_mismatch', details: error.message };
       }
       
       return { table, status: 'ok' };
     } catch (e: any) {
-      console.error(`[HealthCheck] Catastrophic error checking table '${table}':`, e);
+      if (e.name === 'AbortError' || e.message?.includes('aborted')) {
+          return { table, status: 'aborted', details: 'Request cancelled' };
+      }
+      console.error(`[HealthCheck] Error checking table '${table}':`, e);
       return { table, status: 'missing', details: e.message };
     }
   };
@@ -51,6 +59,12 @@ export const useDBHealthCheck = () => {
     if (lightCheck.status === 'ok') {
         setStatus('healthy');
         return;
+    }
+    
+    // If aborted, don't show error, just stay in checking or idle
+    if (lightCheck.status === 'aborted') {
+        // Likely page navigation or strict mode re-mount
+        return; 
     }
 
     // If light check failed, run FULL diagnostic
@@ -84,6 +98,9 @@ export const useDBHealthCheck = () => {
       
         if (hasErrors) {
             const firstError = checks.find(c => c.status !== 'ok');
+            // Don't flag 'aborted' as a system error
+            if (firstError?.status === 'aborted') return;
+            
             throw new Error(`DB Integrity: ${firstError?.table} is ${firstError?.status}`);
         }
         
