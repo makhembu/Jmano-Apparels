@@ -84,6 +84,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           alt={product.title}
           width={500}
           height={500}
+          quality={80}
           className="group-hover:scale-105 transition-transform duration-500"
         />
         {category && index === undefined && (

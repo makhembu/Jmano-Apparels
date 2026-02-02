@@ -8,6 +8,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   quality?: number;
   className?: string;
   fit?: 'cover' | 'contain' | 'fill';
+  priority?: boolean;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
@@ -18,6 +19,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   quality = 80,
   className,
   fit = 'cover',
+  priority = false,
   ...props 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -44,7 +46,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   return (
     <div className={`relative overflow-hidden bg-gray-100 ${className}`} style={{ width: '100%', height: '100%' }}>
-      {/* Blur Placeholder (CSS effect) */}
+      {/* Blur Placeholder (CSS effect) - Only show if not loaded and no error */}
       {!isLoaded && !error && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse z-10" />
       )}
@@ -52,10 +54,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       <img
         src={optimizedSrc}
         alt={alt}
+        width={width}
+        height={height || width} // Default to square if height missing to prevent CLS
         className={`w-full h-full object-${fit} transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         onLoad={() => setIsLoaded(true)}
         onError={() => setError(true)}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        // @ts-ignore - fetchPriority is standard but React types might lag
+        fetchpriority={priority ? "high" : "auto"}
         {...props}
       />
     </div>

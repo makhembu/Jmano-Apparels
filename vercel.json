@@ -1,4 +1,3 @@
-
 {
   "rewrites": [
     {
@@ -10,7 +9,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/|_next/|static/|favicon.ico|sitemap.xml).*)",
+      "source": "/((?!api/|_next/|static/|favicon.ico|sitemap.xml|robots.txt).*)",
       "destination": "/index.html"
     }
   ]

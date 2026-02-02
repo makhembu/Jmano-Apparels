@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SEO } from '../components/SEO';
+import { OptimizedImage } from '../components/ui/OptimizedImage';
 
 export const Home: React.FC = () => {
   const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
@@ -79,10 +80,14 @@ export const Home: React.FC = () => {
         </div>
         
         <div className="relative h-64 sm:h-72 md:h-96 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 lg:h-full bg-slate-900">
-           <img 
-             className="h-full w-full object-cover object-center lg:h-full lg:w-full opacity-90 lg:opacity-100" 
-             src={settings.heroBannerImage || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop"} 
-             alt="Jambo Apparels Faith Based Clothing" 
+           {/* LCP Optimization: Use OptimizedImage with priority and explicit dimensions */}
+           <OptimizedImage
+             src={settings.heroBannerImage || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop"}
+             alt="Jambo Apparels Faith Based Clothing"
+             className="h-full w-full object-cover object-center opacity-90 lg:opacity-100"
+             width={1920}
+             height={1080}
+             priority={true}
            />
            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/20 to-transparent lg:hidden"></div>
         </div>
@@ -144,10 +149,12 @@ export const Home: React.FC = () => {
                     className={`${colors.bg} rounded-2xl shadow-lg overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-white/10`}
                   >
                     <Link to={`/blog/${post.slug}`} className="block relative aspect-[16/10] overflow-hidden">
-                      <img 
-                        src={post.thumbnail || post.featuredImage} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      <OptimizedImage
+                        src={post.thumbnail || post.featuredImage || ''}
+                        alt={post.title}
+                        width={600}
+                        height={375}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </Link>
                     <div className="p-6 flex flex-col flex-1">
