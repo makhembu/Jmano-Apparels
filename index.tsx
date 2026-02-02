@@ -13,20 +13,13 @@ const unregisterServiceWorkers = async () => {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (const registration of registrations) {
-        console.log('[System] Unregistering Service Worker:', registration);
+        // console.log('[System] Unregistering Service Worker:', registration);
         await registration.unregister();
       }
     } catch (error: any) {
       // Silently ignore specific errors related to invalid document states or restricted contexts
       // These often happen in sandboxed environments (like StackBlitz/Replit) or if called too early
-      if (
-        error?.message?.includes('invalid state') || 
-        error?.message?.includes('browsing context') || 
-        error?.name === 'SecurityError'
-      ) {
-        return;
-      }
-      console.warn('[System] SW cleanup skipped:', error);
+      return;
     }
   }
 };
