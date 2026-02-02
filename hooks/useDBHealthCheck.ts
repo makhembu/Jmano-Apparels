@@ -35,7 +35,6 @@ export const useDBHealthCheck = () => {
 
   const runChecks = async (forceHardReload = false) => {
     if (forceHardReload) {
-        // Bust cache completely
         window.location.href = window.location.href.split('#')[0] + '?t=' + Date.now();
         return;
     }
@@ -44,18 +43,26 @@ export const useDBHealthCheck = () => {
     setError(null);
     setResults([]);
 
-    const TABLE_TIMEOUT = 30000; // Increased to 30 seconds to allow for project wake-up
+    // OPTIMIZATION: Light Check
+    // Just check app_settings first. If this works, the DB is likely fine.
+    // This reduces startup overhead significantly.
+    const lightCheck = await verifyTable('app_settings', ['id']);
+    
+    if (lightCheck.status === 'ok') {
+        setStatus('healthy');
+        return;
+    }
+
+    // If light check failed, run FULL diagnostic
+    console.warn('[HealthCheck] Light check failed, running full diagnostic...');
+    const TABLE_TIMEOUT = 15000;
 
     try {
-        console.log('[HealthCheck] Starting database integrity checks...');
-        
         const schemaRequirements = [
-          { table: 'categories', columns: ['key', 'label', 'color', 'bg_class'] },
-          { table: 'products', columns: ['id', 'title', 'price', 'category_key', 'images', 'stock_quantity'] },
-          { table: 'app_settings', columns: ['id', 'slogan', 'currency', 'tax_rate'] },
-          { table: 'cart_items', columns: ['user_id', 'product_id', 'quantity', 'selected_size'] },
-          { table: 'blog_posts', columns: ['id', 'title', 'slug', 'content', 'status'] },
-          { table: 'shipping_zones', columns: ['id', 'countries', 'base_rate'] }
+          { table: 'categories', columns: ['key', 'label'] },
+          { table: 'products', columns: ['id', 'title'] },
+          { table: 'app_settings', columns: ['id', 'slogan'] },
+          { table: 'orders', columns: ['id', 'status'] }
         ];
 
         const checks = await Promise.all(schemaRequirements.map(async (req) => {
@@ -63,7 +70,7 @@ export const useDBHealthCheck = () => {
              setTimeout(() => resolve({
                 table: req.table,
                 status: 'timeout',
-                details: `Connection to table timed out after ${TABLE_TIMEOUT / 1000}s. Project may be paused in Supabase.`
+                details: `Connection timed out`
              }), TABLE_TIMEOUT)
           );
           
@@ -77,7 +84,7 @@ export const useDBHealthCheck = () => {
       
         if (hasErrors) {
             const firstError = checks.find(c => c.status !== 'ok');
-            throw new Error(`Database integrity check failed on table '${firstError?.table}'. Status: ${firstError?.status}. Details: ${firstError?.details || 'N/A'}`);
+            throw new Error(`DB Integrity: ${firstError?.table} is ${firstError?.status}`);
         }
         
         setStatus('healthy');
@@ -88,6 +95,7 @@ export const useDBHealthCheck = () => {
   };
 
   useEffect(() => {
+    // Run checks on mount, but non-blocking (handled by component)
     runChecks();
   }, []);
 

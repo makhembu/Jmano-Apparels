@@ -1,64 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDBHealthCheck } from '../hooks/useDBHealthCheck';
-import { LoadingSpinner } from './ui/LoadingSpinner';
 import { Button } from './ui/Button';
 
 export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { status, results, error, retry } = useDBHealthCheck();
+  const [isDismissed, setIsDismissed] = useState(false);
 
-  if (status === 'checking' || status === 'idle') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <LoadingSpinner />
-        <p className="mt-4 text-gray-500">Ensuring a Firm Foundation...</p>
-      </div>
-    );
-  }
+  // Non-blocking: We render children immediately regardless of checking status.
+  // We only intervene if there is a confirmed critical error.
 
-  if (status === 'error') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl border-t-4 border-red-600 p-8">
-          <h1 className="text-2xl font-bold text-red-700 mb-2">System Check Failed</h1>
-          <p className="text-gray-600 mb-6">
-            {typeof error === 'string' ? error : (error ? JSON.stringify(error) : 'Unknown error occurred')}
-          </p>
-          
-          <div className="bg-gray-100 rounded-lg p-4 mb-6 max-h-60 overflow-y-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left font-medium text-gray-500 pb-2">Table</th>
-                  <th className="text-left font-medium text-gray-500 pb-2">Status</th>
-                  <th className="text-left font-medium text-gray-500 pb-2">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(results || []).map((r) => (
-                  <tr key={r.table} className="border-t border-gray-200">
-                    <td className="py-2 font-mono">{r.table}</td>
-                    <td className="py-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${r.status === 'ok' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {r.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="py-2 text-gray-500 truncate max-w-xs">{r.details || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+  return (
+    <>
+      {children}
 
-          <div className="flex gap-4">
-            <Button onClick={retry} variant="primary">Retry Connection</Button>
-            <div className="text-xs text-gray-400 flex items-center">
-               Please ensure Supabase is connected and seed.sql has been run.
+      {/* Persistent Error Banner (Only shows if there's an error and not dismissed) */}
+      {status === 'error' && !isDismissed && (
+        <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-[100] animate-slide-in">
+          <div className="bg-white rounded-lg shadow-2xl border-l-4 border-red-500 p-4 ring-1 ring-black/5">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  System Connection Issue
+                </h3>
+                <p className="text-xs text-gray-600 mt-1 mb-3">
+                  {typeof error === 'string' ? error : 'Database connection unstable. Some features may be unavailable.'}
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={retry} 
+                    className="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded font-bold transition-colors"
+                  >
+                    Retry
+                  </button>
+                  <button 
+                    onClick={() => setIsDismissed(true)} 
+                    className="text-xs text-gray-500 hover:text-gray-800 px-2 py-1.5 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
             </div>
+            
+            {/* Detailed Debug Info (Collapsed by default, maybe visible on hover or extended click? keeping simple for user) */}
+            {(results || []).some(r => r.status !== 'ok') && (
+               <div className="mt-3 pt-2 border-t border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Diagnostics</p>
+                  <ul className="mt-1 space-y-1">
+                    {results.filter(r => r.status !== 'ok').slice(0, 3).map(r => (
+                      <li key={r.table} className="text-[10px] text-red-600 flex justify-between">
+                        <span>{r.table}</span>
+                        <span className="font-mono">{r.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+               </div>
+            )}
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+    </>
+  );
 };
