@@ -1,7 +1,8 @@
 
 export default async function handler(req, res) {
-  // Try standard, Vite-prefixed, or the specific custom variable from the user's Vercel settings
-  let url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  // Prioritize standard backend env vars (SUPABASE_URL), fallback to VITE_ prefixed ones for dev
+  let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
   
   // Ensure protocol is present
   if (url && !url.startsWith('http')) {
@@ -9,14 +10,16 @@ export default async function handler(req, res) {
   }
   
   const supabaseUrl = url;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  const supabaseKey = key;
   const BASE_URL = 'https://jamboapparels.com';
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('Supabase Environment Variables Missing. Available keys:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
+    console.error('[Sitemap API] Supabase Credentials Missing.');
+    console.error('Available Env Keys:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
+    
     return res.status(500).json({ 
-      error: 'Supabase environment variables missing in Vercel project.',
-      debug: 'Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or VITE_SUPABASE_ANON_KEY) are set in Vercel.'
+      error: 'Configuration Error: Supabase credentials missing.',
+      message: 'Please set SUPABASE_URL and SUPABASE_ANON_KEY in your Vercel Project Settings.'
     });
   }
 
@@ -34,6 +37,10 @@ export default async function handler(req, res) {
       fetch(`${supabaseUrl}/rest/v1/blog_posts?select=slug,date,status&status=eq.published`, fetchOpts),
       fetch(`${supabaseUrl}/rest/v1/categories?select=key`, fetchOpts)
     ]);
+
+    if (!productsRes.ok) throw new Error(`Failed to fetch products: ${productsRes.statusText}`);
+    if (!postsRes.ok) throw new Error(`Failed to fetch posts: ${postsRes.statusText}`);
+    if (!catsRes.ok) throw new Error(`Failed to fetch categories: ${catsRes.statusText}`);
 
     const products = await productsRes.json();
     const posts = await postsRes.json();
@@ -105,7 +112,7 @@ export default async function handler(req, res) {
     res.status(200).send(xml);
 
   } catch (e) {
-    console.error("Sitemap Error:", e);
+    console.error("[Sitemap API] Generation Error:", e);
     res.status(500).json({ error: e.message });
   }
 }
