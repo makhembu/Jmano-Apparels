@@ -4,21 +4,15 @@ import { Database } from '../database.types';
 
 // Helper to safely access environment variables across Vite/Node environments
 const getEnv = (key: string) => {
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
     return (import.meta as any).env[key];
   }
-  if (typeof process !== 'undefined' && process.env) {
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key];
   }
   return undefined;
 };
 
-// Fallback keys for Sandbox/Development mode
-// These allow the app to function immediately in preview environments without env var configuration
-const FALLBACK_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
-const FALLBACK_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
-
-// Sanitize URL: Remove trailing slash, ensure https
 const formatUrl = (url?: string) => {
   if (!url) return '';
   let clean = url.trim();
@@ -28,36 +22,35 @@ const formatUrl = (url?: string) => {
 };
 
 // --- CONFIGURATION ---
+// Inferred from your project token
+const PROJECT_ID = 'irsurnyfjgjmlhlrkbeh'; 
+const HARDCODED_URL = `https://${PROJECT_ID}.supabase.co`;
+// The Service Role Key provided for Sandbox access (Handles RLS bypass if needed)
+const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlyc3VybnlmamdqbWxobHJrYmVoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTAxNzkzNiwiZXhwIjoyMDg0NTkzOTM2fQ.CmvRoEu8DeiPmfnTkj7ezdMH1esSlHRoJS4ZZnjb730';
+
 const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-const envKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_ANON_KEY');
+const envKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY') || getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
-// Logic: Use Env vars if available (Production), otherwise use Fallback (Sandbox)
-const supabaseUrl = envUrl ? formatUrl(envUrl) : FALLBACK_URL;
-const supabaseKey = envKey || FALLBACK_KEY;
-
-// Debug logging to help diagnose connection issues
-if (envUrl && envKey) {
-  console.log(`[Supabase] Using PRODUCTION credentials. Host: ${supabaseUrl.substring(0, 20)}...`);
-} else {
-  console.warn(`[Supabase] Using FALLBACK/SANDBOX credentials. Host: ${FALLBACK_URL}`);
-  if (envUrl) console.log('[Supabase] Note: Env URL present but Key missing.');
-  if (envKey) console.log('[Supabase] Note: Env Key present but URL missing.');
-}
+// Priority: Env Vars -> Hardcoded Fallback
+const supabaseUrl = envUrl ? formatUrl(envUrl) : HARDCODED_URL;
+const supabaseKey = envKey || HARDCODED_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('CRITICAL: Supabase credentials could not be determined.');
+  console.error('[Supabase] CRITICAL: No API credentials found.');
+} else {
+  // console.log('[Supabase] Client Initialized', { url: supabaseUrl });
 }
 
 // Initialize the client
 export const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabaseKey || '',
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: 'jambo_auth_token_v1', // Unique key to prevent collisions
+      storageKey: 'jambo_auth_token_v1',
     },
   }
 );

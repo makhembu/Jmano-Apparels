@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { User, Product, CartItem, Order, BlogPost, AppSettings, Category, ShippingAddress, ProductReview } from '../types';
 import { useAuth } from './AuthContext';
@@ -20,7 +21,6 @@ interface AppContextType {
   
   cart: CartItem[];
   cartCount: number;
-  // FIX: Add 'cartTotal' to the type, as it's provided by the context but was missing from the interface.
   cartTotal: number;
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
   removeFromCart: (productId: string, size: string, color?: string) => void;
@@ -46,7 +46,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // This is the manual refresh function passed to consumers.
+  // Manual refresh function
   const refreshOrders = useCallback(async () => {
     if (auth.user) {
         try {
@@ -55,32 +55,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               : await api.getOrders(auth.user.id);
           setOrders(data);
         } catch (e) {
-          console.error("Failed to refresh orders", e);
+          console.error("Failed to refresh orders (DB might be unreachable):", e);
+          // Don't throw, just log. UI will show empty orders.
         }
     } else {
         setOrders([]);
     }
   }, [auth.user]);
 
-  // This useEffect handles the AUTOMATIC fetching of orders when the user logs in or out.
-  // It contains the fetching logic directly and depends only on `auth.user`.
-  // This breaks the render loop caused by the previous implementation.
+  // Automatic fetch on user change
   useEffect(() => {
+    let mounted = true;
     const fetchUserOrders = async () => {
         if (auth.user) {
             try {
+                // If user just logged in, small delay to ensure DB token is ready
+                await new Promise(r => setTimeout(r, 200));
+                
                 const data = (auth.user.role === 'admin')
                     ? await api.getAllOrders()
                     : await api.getOrders(auth.user.id);
-                setOrders(data);
+                
+                if (mounted) setOrders(data);
             } catch (e) {
-                console.error("Failed to automatically fetch orders", e);
+                console.error("Failed to fetch orders:", e);
+                // Silent fail - don't spam toasts on auto-fetch
+                if (mounted) setOrders([]);
             }
         } else {
-            setOrders([]);
+            if (mounted) setOrders([]);
         }
     };
     fetchUserOrders();
+    return () => { mounted = false; };
   }, [auth.user]);
 
   const placeOrder = useCallback(async (shippingAddress: ShippingAddress) => {
@@ -92,7 +99,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         size: c.selectedSize,
         title: c.title,
         price: c.price,
-        // FIX: The 'CartItem' type has an 'images' array. Use the first image for the order item snapshot.
+        selectedColor: c.selectedColor,
         image: c.images[0]
       }));
 
@@ -104,8 +111,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       
       cart.clearCart();
-      await refreshOrders(); // Manual refresh after placing order
-      await shop.refreshData(); // Update product stock/sales
+      await refreshOrders();
+      await shop.refreshData(); 
   }, [auth.user, cart, shop, refreshOrders]);
 
   const loading = auth.loading || shop.loading;
