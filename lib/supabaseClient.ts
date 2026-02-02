@@ -27,20 +27,21 @@ const formatUrl = (url?: string) => {
 };
 
 // --- CONFIGURATION ---
-// To switch back to Production/Vercel DB, uncomment the 'rawUrl' lines below.
-// Currently forced to FALLBACK_URL for client demo purposes so data appears immediately.
+// Priority: 1. Vercel/Vite Env Vars, 2. Fallback Demo Keys
 
-// const rawUrl = getEnv('VITE_SUPABASE_URL');
-// const rawKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY');
+const rawUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
+const rawKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_ANON_KEY');
 
-// const supabaseUrl = rawUrl ? formatUrl(rawUrl) : FALLBACK_URL;
-// const supabaseKey = rawKey || FALLBACK_KEY;
+// Determine if we are using real credentials or fallback
+const isRealEnv = !!rawUrl && !!rawKey;
+const supabaseUrl = isRealEnv ? formatUrl(rawUrl) : FALLBACK_URL;
+const supabaseKey = isRealEnv ? rawKey : FALLBACK_KEY;
 
-// FORCED DEMO MODE: Ignore Vercel Env Vars for now
-const supabaseUrl = FALLBACK_URL;
-const supabaseKey = FALLBACK_KEY;
-
-console.log('[Supabase] Client initialized in DEMO MODE (Forced Fallback).');
+if (!isRealEnv) {
+  console.log('[Supabase] Environment variables missing. Using DEMO MODE (Fallback).');
+} else {
+  console.log('[Supabase] Client initialized with Environment Variables.');
+}
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('CRITICAL: Supabase credentials missing. The app will not function correctly.');

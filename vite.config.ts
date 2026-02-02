@@ -10,6 +10,7 @@ export default defineConfig({
     minify: 'esbuild',
     cssCodeSplit: true,
     emptyOutDir: true, // Clean the output directory before building
+    sourcemap: true,   // Enable source maps for better debugging
     rollupOptions: {
       output: {
         // Force new filenames on each build to break cache
