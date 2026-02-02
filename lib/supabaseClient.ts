@@ -13,7 +13,8 @@ const getEnv = (key: string) => {
   return undefined;
 };
 
-// Fallback keys for testing/development (The Populated Demo Database)
+// Fallback keys for Sandbox/Development mode
+// These allow the app to function immediately in preview environments without env var configuration
 const FALLBACK_URL = 'https://irsurnyfjgjmlhlrkbeh.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_Zqgj49fvzbeSxzKBaRM38Q_6bLHV2rZ';
 
@@ -27,24 +28,21 @@ const formatUrl = (url?: string) => {
 };
 
 // --- CONFIGURATION ---
-// Priority: 1. Vercel/Vite Env Vars, 2. Fallback Demo Keys
+const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
+const envKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_ANON_KEY');
 
-const rawUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-const rawKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_ANON_KEY');
+// Logic: Use Env vars if available (Production), otherwise use Fallback (Sandbox)
+const supabaseUrl = envUrl ? formatUrl(envUrl) : FALLBACK_URL;
+const supabaseKey = envKey || FALLBACK_KEY;
 
-// Determine if we are using real credentials or fallback
-const isRealEnv = !!rawUrl && !!rawKey;
-const supabaseUrl = isRealEnv ? formatUrl(rawUrl) : FALLBACK_URL;
-const supabaseKey = isRealEnv ? rawKey : FALLBACK_KEY;
-
-if (!isRealEnv) {
-  console.log('[Supabase] Environment variables missing. Using DEMO MODE (Fallback).');
+if (envUrl && envKey) {
+  console.log('[Supabase] Client initialized with Production Environment Variables.');
 } else {
-  console.log('[Supabase] Client initialized with Environment Variables.');
+  console.warn('[Supabase] Environment variables missing. Using SANDBOX credentials.');
 }
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('CRITICAL: Supabase credentials missing. The app will not function correctly.');
+  console.error('CRITICAL: Supabase credentials could not be determined.');
 }
 
 // Initialize the client
@@ -56,6 +54,7 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      storageKey: 'jambo_auth_token_v1', // Unique key to prevent collisions
     },
   }
 );

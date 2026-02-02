@@ -6,23 +6,23 @@ import './index.css';
 import './styles/copilot.css';
 
 // --- CRITICAL: Service Worker Cleanup ---
-// Unregister any existing service workers to force network requests for new assets
-if ('serviceWorker' in navigator) {
-  try {
-    navigator.serviceWorker.getRegistrations()
-      .then((registrations) => {
-        for (const registration of registrations) {
-          console.log('[System] Unregistering Service Worker:', registration);
-          registration.unregister().catch(err => console.warn('[System] SW unregister failed:', err));
-        }
-      })
-      .catch((error) => {
-        console.warn('[System] Service Worker cleanup skipped (invalid state or restricted):', error);
-      });
-  } catch (e) {
-    console.warn('[System] Service Worker not accessible:', e);
+// Safely attempt to unregister existing service workers without crashing
+const unregisterServiceWorkers = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        console.log('[System] Unregistering Service Worker:', registration);
+        await registration.unregister();
+      }
+    } catch (error) {
+      // Ignore errors related to invalid document state or restricted contexts
+      console.warn('[System] SW cleanup skipped (safe to ignore):', error);
+    }
   }
-}
+};
+
+unregisterServiceWorkers();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

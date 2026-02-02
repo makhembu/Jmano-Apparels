@@ -40,6 +40,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          id: number
+          session_id: string
+          user_id: string | null
+          event_type: string
+          path: string
+          referrer: string | null
+          source: string
+          metadata: Json | null
+          geo_country: string
+          geo_city: string
+          duration: number
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          session_id: string
+          user_id?: string | null
+          event_type: string
+          path: string
+          referrer?: string | null
+          source: string
+          metadata?: Json | null
+          geo_country: string
+          geo_city: string
+          duration?: number
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          session_id?: string
+          user_id?: string | null
+          event_type?: string
+          path?: string
+          referrer?: string | null
+          source?: string
+          metadata?: Json | null
+          geo_country?: string
+          geo_city?: string
+          duration?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           announcement_text: string | null
@@ -801,6 +846,56 @@ export type Database = {
         }
         Relationships: []
       }
+      user_addresses: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          address1: string
+          address2: string | null
+          city: string
+          postcode: string
+          country: string
+          phone: string | null
+          is_default: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label?: string
+          address1: string
+          address2?: string | null
+          city: string
+          postcode: string
+          country?: string
+          phone?: string | null
+          is_default?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          label?: string
+          address1?: string
+          address2?: string | null
+          city?: string
+          postcode?: string
+          country?: string
+          phone?: string | null
+          is_default?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_addresses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -892,6 +987,34 @@ export type Database = {
       generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_analytics_overview: {
+        Args: { time_range_start: string; time_range_end: string }
+        Returns: Json
+      }
+      get_daily_analytics: {
+        Args: { days_lookback: number }
+        Returns: Json
+      }
+      get_product_analytics: {
+        Args: { limit_count: number; days_lookback: number }
+        Returns: Json
+      }
+      get_traffic_sources: {
+        Args: { days_lookback: number }
+        Returns: Json
+      }
+      get_geo_stats: {
+        Args: { days_lookback: number }
+        Returns: Json
+      }
+      get_page_analytics: {
+        Args: { days_lookback: number }
+        Returns: Json
+      }
+      get_live_visitors: {
+        Args: { lookback_minutes: number }
+        Returns: Json
       }
       get_products_paginated: {
         Args: {

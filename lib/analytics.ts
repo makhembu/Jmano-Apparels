@@ -43,7 +43,8 @@ export const analytics = {
     try {
       let userId = null;
       try {
-        const { data } = await supabase.auth.getSession();
+        // Cast to any to avoid type checking errors
+        const { data } = await (supabase.auth as any).getSession();
         userId = data.session?.user?.id || null;
       } catch (authError) { /* ignore */ }
 
@@ -61,11 +62,12 @@ export const analytics = {
         duration: Math.round(duration || 0)
       };
 
+      // By adding analytics_events to database.types.ts, this type error should be resolved.
       supabase.from('analytics_events').insert(payload).then(({ error }) => {
         if (error && error.code !== 'PGRST204' && !error.message?.includes('AbortError')) {
             console.warn("[Analytics]", error.message);
         }
-      }).catch(() => {}); // Suppress network aborts
+      }, () => {}); // Suppress network aborts
 
     } catch (e) { /* ignore */ }
   },

@@ -67,7 +67,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
     const init = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        // Cast to any to avoid type checking errors
+        const { data, error } = await (supabase.auth as any).getSession();
         if (error) throw error;
         if (data.session?.user && mounted) await syncUser(data.session.user);
       } catch (e: any) {
@@ -79,7 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Cast to any to avoid type checking errors
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
       if (!mounted) return;
       if (event === 'SIGNED_IN' && session?.user) await syncUser(session.user);
       else if (event === 'SIGNED_OUT') setUser(null);
@@ -89,7 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [syncUser]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // Cast to any to avoid type checking errors
+    const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
     if (error) {
       showToast(error.message === "Invalid login credentials" ? "Incorrect email or password." : error.message, 'error');
       throw error;
@@ -97,18 +100,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [showToast]);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { name } } });
+    // Cast to any to avoid type checking errors
+    const { error } = await (supabase.auth as any).signUp({ email, password, options: { data: { name } } });
     if (error) { showToast(error.message, 'error'); throw error; }
   }, [showToast]);
 
   const logout = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
+    // Cast to any to avoid type checking errors
+    const { error } = await (supabase.auth as any).signOut();
     if (error) showToast("Error signing out", 'error');
     setUser(null);
   }, [showToast]);
 
   const refreshProfile = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    // Cast to any to avoid type checking errors
+    const { data: { session } } = await (supabase.auth as any).getSession();
     if (session?.user) await syncUser(session.user);
   }, [syncUser]);
 

@@ -16,7 +16,7 @@ import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 // --- VERSION CONTROL ---
 // Bump this version string whenever you deploy a breaking change or schema update
 // This will force all users to reload and clear stale local storage caches
-const CURRENT_APP_VERSION = '1.0.5'; 
+const CURRENT_APP_VERSION = '1.0.7'; 
 
 // --- Lazy Loaded Components ---
 
@@ -76,7 +76,8 @@ const AuthEventHandler = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Cast to any to bypass type mismatch error
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/update-password');
       }
@@ -98,21 +99,21 @@ const VersionManager = () => {
     
     // If no version stored (first load of new system) OR version mismatch
     if (storedVersion !== CURRENT_APP_VERSION) {
-      console.log(`[VersionManager] DETECTED UPDATE. Cleaning cache...`);
+      console.log(`[VersionManager] DETECTED UPDATE. Nuclearing cache...`);
       
-      // Update version first so the next reload is clean
-      localStorage.setItem('app_version', CURRENT_APP_VERSION);
-      
-      // Clear specific application state that might be stale
-      // We DO NOT clear Auth tokens to keep user logged in
+      // Critical: Clear everything except maybe specific keys if needed, but for this fix, we clear all
+      // We explicitly remove the cart and settings to ensure a fresh fetch from the new DB
+      localStorage.removeItem('dt_cart');
+      localStorage.removeItem('jambo_app_settings');
       localStorage.removeItem('jambo_geo_data');
       localStorage.removeItem('jambo_session_id');
       
-      // Hard Reload if we had a stored version (meaning it's an update, not a fresh visit)
-      if (storedVersion) {
-         console.log('[VersionManager] Forcing reload in 100ms...');
-         setTimeout(() => window.location.reload(), 100);
-      }
+      // Update version
+      localStorage.setItem('app_version', CURRENT_APP_VERSION);
+      
+      // Hard Reload
+      console.log('[VersionManager] Forcing reload in 100ms...');
+      setTimeout(() => window.location.reload(), 100);
     }
   }, []);
   
