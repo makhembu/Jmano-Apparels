@@ -14,7 +14,6 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
   const isLive = settings.paypalMode === 'live';
   
   // Local state to manage the secret key editing (masked vs unmasked)
-  const [showRiskAlert, setShowRiskAlert] = useState(false);
   const [riskAccepted, setRiskAccepted] = useState(false);
 
   // Determine System Status
@@ -24,10 +23,12 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
   }
 
   useEffect(() => {
-    // If a secret key already exists in the DB, we might want to auto-acknowledge
-    // or just keep it hidden until they try to edit.
+    // If a secret key exists, hide the input initially (require risk acceptance to edit)
+    // Note: This relies on the fact that if a secret key exists in the DB, it might be populated here
+    // IF the parent component fetches it. However, if the parent fetches via public RPC, it won't be here.
+    // Assuming the Admin fetch uses direct table access (select *), it will be present.
     if (settings.paypalSecretKey) {
-        setRiskAccepted(false); // Force them to accept risk again if they want to edit
+        setRiskAccepted(false); 
     }
   }, []);
 

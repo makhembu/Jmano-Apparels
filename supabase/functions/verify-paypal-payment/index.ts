@@ -18,34 +18,31 @@ serve(async (req) => {
     const { orderId, paypalOrderId } = await req.json();
     if (!orderId || !paypalOrderId) throw new Error("Missing params");
 
-    // 1. Initial Environment Check (Supabase connection must exist)
+    // 1. Initial Environment Check
     const sbUrl = Deno.env.get('SUPABASE_URL');
     const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!sbUrl || !sbKey) {
-        throw new Error("Server configuration error: Database connection missing.");
-    }
+    if (!sbUrl || !sbKey) throw new Error("Database connection missing.");
 
     const supabaseClient = createClient(sbUrl, sbKey);
 
-    // 2. Fetch Payment Credentials (DB Priority -> Env Fallback)
+    // 2. Fetch Payment Credentials from DB
     const { data: settings, error: settingsError } = await supabaseClient
         .from('app_settings')
         .select('paypal_client_id, paypal_secret_key, paypal_mode')
         .single();
 
-    if (settingsError) throw new Error("Failed to fetch settings.");
+    if (settingsError || !settings) throw new Error("Failed to fetch payment settings.");
 
-    const clientId = settings?.paypal_client_id || Deno.env.get('PAYPAL_CLIENT_ID');
-    const secretKey = settings?.paypal_secret_key || Deno.env.get('PAYPAL_SECRET_KEY');
-    const mode = settings?.paypal_mode || Deno.env.get('PAYPAL_MODE') || 'sandbox';
+    const clientId = settings.paypal_client_id;
+    const secretKey = settings.paypal_secret_key;
+    const mode = settings.paypal_mode || 'sandbox';
 
     if (!clientId || !secretKey) {
-        console.error("Payment credentials missing in both DB and ENV");
-        throw new Error("Server configuration error: Payment provider credentials missing.");
+        throw new Error("Payment provider credentials missing in database.");
     }
 
-    // 3. Authenticate with PayPal
+    // 3. Authenticate with PayPal (Get Access Token)
     const auth = btoa(`${clientId}:${secretKey}`);
     const baseUrl = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
@@ -60,43 +57,62 @@ serve(async (req) => {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok) {
-        console.error("PayPal Token Error:", tokenData);
-        throw new Error("Failed to authenticate with payment provider");
+        console.error("PayPal Auth Failed:", tokenData);
+        throw new Error("Failed to authenticate with payment provider.");
     }
 
-    // 4. Verify Order
-    const orderRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}`, {
-      method: 'GET',
+    // 4. CAPTURE the Order (Server-Side)
+    // This finalizes the transaction and moves funds.
+    const captureRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation' // Get full response
       }
     });
 
-    const orderData = await orderRes.json();
-    if (orderData.status !== 'COMPLETED' && orderData.status !== 'APPROVED') {
-       throw new Error(`PayPal order status is ${orderData.status}`);
+    const captureData = await captureRes.json();
+    
+    // Handle cases where order was already captured (idempotency) or failed
+    if (!captureRes.ok) {
+        // If it says "ORDER_ALREADY_CAPTURED", we can proceed as success
+        if (captureData.details?.[0]?.issue === 'ORDER_ALREADY_CAPTURED') {
+            console.log("Order already captured, proceeding to update DB.");
+        } else {
+            console.error("PayPal Capture Failed:", captureData);
+            throw new Error(`Payment capture failed: ${captureData.message || captureData.name}`);
+        }
     }
 
-    // 5. Update Order in DB
+    // 5. Extract Transaction Status and ID
+    const status = captureData.status;
+    // Transaction ID usually in purchase_units[0].payments.captures[0].id
+    const captureId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || paypalOrderId;
+
+    if (status !== 'COMPLETED') {
+       throw new Error(`Payment status is ${status} (expected COMPLETED)`);
+    }
+
+    // 6. Update Order in Database
     const { error: updateError } = await supabaseClient
       .from('orders')
       .update({ 
         payment_status: 'paid', 
-        status: 'Processing',
-        payment_intent_id: paypalOrderId, 
+        status: 'Processing', // Move from 'Pending Payment' to 'Processing'
+        payment_intent_id: captureId, 
       })
       .eq('id', orderId);
 
     if (updateError) throw updateError;
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, transactionId: captureId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Verify Function Error:", error);
     return new Response(JSON.stringify({ success: false, message: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,13 +16,14 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "inline-flex items-center justify-center px-4 py-2 border text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200";
+  // Updated rounded-lg to rounded-2xl for consistency
+  const baseStyles = "inline-flex items-center justify-center px-6 py-3 border text-sm font-black uppercase tracking-widest rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 transform active:scale-95";
   
   const variants = {
-    primary: "border-transparent text-white bg-brand-green hover:bg-brand-dark focus:ring-brand-green",
-    secondary: "border-transparent text-brand-dark bg-brand-hope hover:bg-yellow-400 focus:ring-brand-hope",
-    danger: "border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500",
-    outline: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-brand-green"
+    primary: "border-transparent text-white bg-brand-green hover:bg-brand-dark focus:ring-brand-green shadow-lg shadow-brand-green/20",
+    secondary: "border-transparent text-brand-dark bg-brand-hope hover:bg-yellow-400 focus:ring-brand-hope shadow-lg shadow-brand-hope/20",
+    danger: "border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 shadow-lg shadow-red-600/20",
+    outline: "border-2 border-slate-200 text-slate-700 bg-white hover:border-brand-green hover:text-brand-green focus:ring-brand-green"
   };
 
   return (
@@ -31,7 +33,7 @@ export const Button: React.FC<ButtonProps> = ({
         ${baseStyles} 
         ${variants[variant]} 
         ${fullWidth ? 'w-full' : ''} 
-        ${(disabled || isLoading) ? 'opacity-60 cursor-not-allowed' : ''} 
+        ${(disabled || isLoading) ? 'opacity-60 cursor-not-allowed transform-none shadow-none' : ''} 
         ${className}
       `}
       {...props}

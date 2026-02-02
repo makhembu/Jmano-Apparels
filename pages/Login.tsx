@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -68,7 +69,7 @@ export const Login: React.FC = () => {
         <div className="absolute top-1/2 -left-24 w-72 h-72 bg-brand-hope/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-3xl shadow-2xl shadow-black/20 border-t-8 border-brand-hope animate-fade-in relative z-10">
+      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-[2rem] shadow-2xl shadow-black/20 border-t-8 border-brand-hope animate-fade-in relative z-10">
         <div className="text-center">
           <h2 className="text-3xl sm:text-4xl font-serif font-bold text-brand-dark mt-4">
             {isSignUp ? 'Join the Family' : 'Welcome Back'}
@@ -86,7 +87,7 @@ export const Login: React.FC = () => {
         </div>
         
         {errorMsg && (
-          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-xs font-bold text-center animate-shake">
+          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl text-xs font-bold text-center animate-shake">
             {errorMsg}
           </div>
         )}
@@ -99,7 +100,7 @@ export const Login: React.FC = () => {
                 <input
                   type="text"
                   required
-                  className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
+                  className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                   placeholder="Simon Peter"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -112,7 +113,7 @@ export const Login: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
+                className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -131,7 +132,7 @@ export const Login: React.FC = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
+                className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-0 focus:border-brand-hope outline-none transition-all placeholder:font-normal"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -168,10 +169,12 @@ export const Login: React.FC = () => {
           )}
 
           <div className="pt-2">
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-brand-hope text-brand-dark rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-hope/20 hover:bg-brand-dark hover:text-white hover:shadow-brand-dark/20 transform hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
+              variant="secondary"
+              className="h-14 shadow-xl shadow-brand-hope/20"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -181,7 +184,7 @@ export const Login: React.FC = () => {
               ) : (
                 isSignUp ? 'Create My Account' : 'Sign In'
               )}
-            </button>
+            </Button>
           </div>
         </form>
 
