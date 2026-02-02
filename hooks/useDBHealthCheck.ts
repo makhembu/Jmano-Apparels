@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -34,7 +33,13 @@ export const useDBHealthCheck = () => {
     }
   };
 
-  const runChecks = async () => {
+  const runChecks = async (forceHardReload = false) => {
+    if (forceHardReload) {
+        // Bust cache completely
+        window.location.href = window.location.href.split('#')[0] + '?t=' + Date.now();
+        return;
+    }
+
     setStatus('checking');
     setError(null);
     setResults([]);
@@ -86,5 +91,5 @@ export const useDBHealthCheck = () => {
     runChecks();
   }, []);
 
-  return { status, results, error, retry: runChecks };
+  return { status, results, error, retry: () => runChecks(true) };
 };

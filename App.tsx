@@ -1,5 +1,4 @@
-
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy, useState } from 'react';
 import { HashRouter, BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
@@ -12,6 +11,11 @@ import { SystemHealth } from './components/SystemHealth';
 import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
+
+// --- VERSION CONTROL ---
+// Bump this version string whenever you deploy a breaking change or schema update
+// This will force all users to reload and clear stale local storage caches
+const CURRENT_APP_VERSION = '1.0.2'; 
 
 // --- Lazy Loaded Components ---
 
@@ -85,9 +89,39 @@ const AuthEventHandler = () => {
   return null;
 };
 
+// Version Manager Component
+const VersionManager = () => {
+  useEffect(() => {
+    const storedVersion = localStorage.getItem('app_version');
+    
+    if (storedVersion !== CURRENT_APP_VERSION) {
+      console.log(`[VersionManager] Updating from ${storedVersion} to ${CURRENT_APP_VERSION}`);
+      
+      // Clear specific application state that might be stale
+      // We DO NOT clear Auth tokens to keep user logged in
+      localStorage.removeItem('dt_cart'); // Clear cart as schema might have changed
+      localStorage.removeItem('jambo_geo_data');
+      localStorage.removeItem('jambo_session_id');
+      
+      // Update version
+      localStorage.setItem('app_version', CURRENT_APP_VERSION);
+      
+      // Force hard reload to bust script cache
+      // Use window.location.href to ensure a fresh request
+      if (storedVersion) {
+         // Only force reload if there was a previous version (not a fresh visit)
+         window.location.reload(); 
+      }
+    }
+  }, []);
+  
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <SystemHealth>
+      <VersionManager />
       <AuthProvider>
         <ShopProvider>
           <CartProvider>
