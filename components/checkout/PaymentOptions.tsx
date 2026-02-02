@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -24,25 +25,23 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   const [paypalError, setPaypalError] = useState(false);
   const [isSandboxed, setIsSandboxed] = useState(false);
   
-  // Detect if we're in a sandboxed environment
+  // Detect if we're in a sandboxed environment (iframe/preview)
   useEffect(() => {
     try {
-      // Check if we can access window properties PayPal needs
-      const canAccessWindow = window.location.ancestorOrigins !== undefined || 
-                             window.parent !== window ||
-                             window.self !== window.top;
+      // Check if we are running inside an iframe
+      const isIframe = window.self !== window.top;
       
-      // Check for suspicious domain patterns
+      // Check for suspicious domain patterns (preview environments)
       const suspiciousDomain = window.location.hostname.includes('scf.usercontent.goog') ||
-                              window.location.hostname.includes('cloudflare') ||
-                              window.location.hostname.length > 100;
+                              window.location.hostname.includes('webcontainer') ||
+                              (window.location.hostname.includes('vercel') && isIframe);
       
-      if (canAccessWindow || suspiciousDomain) {
+      if (suspiciousDomain) {
         setIsSandboxed(true);
-        console.warn('PayPal disabled: Running in sandboxed or restricted environment');
+        console.warn('PayPal disabled: Running in restricted preview environment');
       }
     } catch (error) {
-      // If we can't even check, it's likely sandboxed
+      // If we can't even check (CORS blocking access to top), it's sandboxed
       setIsSandboxed(true);
     }
   }, []);
@@ -87,7 +86,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
         <div className="pt-4 animate-fade-in relative z-0 min-h-[150px]">
           <PayPalScriptProvider options={initialOptions}>
             <PayPalButtons 
-              style={{ layout: "vertical", shape: "rect", borderRadius: 12, height: 48 }}
+              style={{ layout: "vertical", shape: "rect", height: 48 }}
               createOrder={onPayPalCreateOrder}
               onApprove={onPayPalApprove}
               disabled={isProcessing}
@@ -95,18 +94,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
             />
           </PayPalScriptProvider>
           
-          <div className="mt-4 text-center">
-            <span className="text-xs text-slate-400 bg-white px-2 relative z-10">Or pay manually</span>
-            <div className="h-px bg-slate-100 -mt-2"></div>
-          </div>
-          
-          <button 
-            onClick={onManualOrder}
-            disabled={isProcessing}
-            className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-brand-dark hover:underline py-2"
-          >
-            I prefer to pay via Bank Transfer / Manual
-          </button>
+          {/* Manual payment fallback removed - PayPal is now the exclusive method when enabled */}
         </div>
       ) : (
         <Button 

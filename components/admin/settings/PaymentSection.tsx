@@ -24,9 +24,6 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
 
   useEffect(() => {
     // If a secret key exists, hide the input initially (require risk acceptance to edit)
-    // Note: This relies on the fact that if a secret key exists in the DB, it might be populated here
-    // IF the parent component fetches it. However, if the parent fetches via public RPC, it won't be here.
-    // Assuming the Admin fetch uses direct table access (select *), it will be present.
     if (settings.paypalSecretKey) {
         setRiskAccepted(false); 
     }
@@ -98,7 +95,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
         
         <Switch 
             label="Enable PayPal Checkout"
-            description="Show the 'Pay with PayPal' button on the checkout page."
+            description="Enabling PayPal will make it the exclusive payment method and disable manual checkout."
             checked={!!settings.paymentGatewayEnabled}
             onChange={handleSwitchChange}
         />
