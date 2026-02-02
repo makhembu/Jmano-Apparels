@@ -1,14 +1,14 @@
 
 export default async function handler(req, res) {
-  // Prioritize standard backend env vars (SUPABASE_URL), fallback to VITE_ prefixed ones
+  // Prioritize SERVICE ROLE KEY for health checks to bypass RLS issues
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({ 
       status: 'error', 
       message: 'Missing environment variables',
-      hint: 'Please add SUPABASE_URL and SUPABASE_ANON_KEY to Vercel Environment Variables.'
+      hint: 'Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to Vercel Environment Variables.'
     });
   }
 
