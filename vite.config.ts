@@ -13,8 +13,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['@headlessui/react', 'framer-motion', 'recharts'],
-          'vendor-utils': ['date-fns', 'uuid', 'dompurify'],
+          'vendor-ui': ['recharts'],
+          'vendor-utils': ['uuid', 'dompurify'],
           'supabase': ['@supabase/supabase-js'],
         },
       },
