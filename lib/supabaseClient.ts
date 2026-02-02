@@ -35,10 +35,13 @@ const envKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISH
 const supabaseUrl = envUrl ? formatUrl(envUrl) : FALLBACK_URL;
 const supabaseKey = envKey || FALLBACK_KEY;
 
+// Debug logging to help diagnose connection issues
 if (envUrl && envKey) {
-  console.log('[Supabase] Client initialized with Production Environment Variables.');
+  console.log(`[Supabase] Using PRODUCTION credentials. Host: ${supabaseUrl.substring(0, 20)}...`);
 } else {
-  console.warn('[Supabase] Environment variables missing. Using SANDBOX credentials.');
+  console.warn(`[Supabase] Using FALLBACK/SANDBOX credentials. Host: ${FALLBACK_URL}`);
+  if (envUrl) console.log('[Supabase] Note: Env URL present but Key missing.');
+  if (envKey) console.log('[Supabase] Note: Env Key present but URL missing.');
 }
 
 if (!supabaseUrl || !supabaseKey) {

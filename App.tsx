@@ -16,7 +16,7 @@ import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 // --- VERSION CONTROL ---
 // Bump this version string whenever you deploy a breaking change or schema update
 // This will force all users to reload and clear stale local storage caches
-const CURRENT_APP_VERSION = '1.0.7'; 
+const CURRENT_APP_VERSION = '1.0.8'; 
 
 // --- Lazy Loaded Components ---
 
