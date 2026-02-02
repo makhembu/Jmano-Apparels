@@ -116,6 +116,13 @@ export const ProductDetails: React.FC = () => {
     return products.filter(p => p.categoryKey === product.categoryKey && p.id !== product.id && p.isPublished !== false).slice(0, 4);
   }, [products, product]);
 
+  // Calculate dynamic top position for sticky gallery based on header height
+  const hasAnnouncement = settings.isAnnouncementEnabled && settings.announcementText;
+  // Desktop Header: Navbar (h-20/5rem) + Announcement (h-10/2.5rem)
+  // Base offset: 5rem. With Announcement: 7.5rem.
+  // Add 1rem extra spacing = 6rem (top-24) or 8.5rem (top-[8.5rem])
+  const galleryTopClass = hasAnnouncement ? 'lg:top-[8.5rem]' : 'lg:top-24';
+
   if (loading) return <LoadingSpinner fullScreen />;
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
 
@@ -185,7 +192,8 @@ export const ProductDetails: React.FC = () => {
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
-          <div className="lg:col-span-6 lg:sticky lg:top-28">
+          {/* Dynamic sticky class for Desktop Gallery */}
+          <div className={`lg:col-span-6 lg:sticky ${galleryTopClass} transition-all duration-300`}>
             <ProductImageGallery 
               product={product}
               isWishlisted={isWishlisted}

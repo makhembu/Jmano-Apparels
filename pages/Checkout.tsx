@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -477,6 +478,34 @@ export const Checkout: React.FC = () => {
               </ul>
             </div>
 
+            {/* LIVE PREVIEW BLOCK */}
+            {(address.address1 || address.city || orderNotes) && (
+               <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-200 mb-6 animate-fade-in transition-all">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Shipping To
+                  </h3>
+                  
+                  {address.address1 ? (
+                    <div className="text-sm text-slate-700 font-medium leading-snug">
+                       <p>{address.address1}</p>
+                       {address.address2 && <p>{address.address2}</p>}
+                       <p>{[address.city, address.postcode].filter(Boolean).join(', ')}</p>
+                       <p className="text-xs text-slate-500 uppercase tracking-wide mt-1 font-bold">{address.country}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Enter address details...</p>
+                  )}
+
+                  {orderNotes && (
+                    <div className="mt-3 pt-3 border-t border-slate-200/60">
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Instruction</p>
+                       <p className="text-xs text-slate-600 italic leading-relaxed">"{orderNotes}"</p>
+                    </div>
+                  )}
+               </div>
+            )}
+
             <div className="space-y-4 pt-6 border-t border-gray-100">
               <div className="flex justify-between text-gray-600 font-light">
                 <span>Subtotal</span>
@@ -510,13 +539,13 @@ export const Checkout: React.FC = () => {
             </div>
 
             <div className="mt-8 space-y-4">
-               <div className="flex gap-2">
+               <div className="flex gap-2 w-full">
                   <input 
                     type="text" placeholder="Discount Code" 
                     value={discountCode} onChange={e => setDiscountCode(e.target.value.toUpperCase())} 
-                    className="flex-grow border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/20" 
+                    className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/20" 
                   />
-                  <Button onClick={applyDiscount} variant="outline" className="px-6">Apply</Button>
+                  <Button onClick={applyDiscount} variant="outline" className="px-4 sm:px-6 shrink-0">Apply</Button>
                </div>
 
                {/* PAYMENT BUTTONS */}

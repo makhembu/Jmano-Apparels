@@ -76,12 +76,12 @@ export const Blog: React.FC = () => {
         {/* Floating Category Nav */}
         <div className="mb-12 relative"> 
           <div className="bg-white p-2 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 overflow-hidden">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar justify-start md:justify-center px-4 sm:px-8 py-1">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar justify-start md:justify-center px-4 sm:px-8 py-1 w-full overscroll-x-contain snap-x">
               {blogCategories.map(cat => (
                 <button
                   key={cat.key}
                   onClick={() => setActiveCategory(cat.key)}
-                  className={`flex-shrink-0 px-6 md:px-8 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                  className={`flex-shrink-0 px-6 md:px-8 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap snap-center ${
                     activeCategory === cat.key
                       ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
                       : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Product, Category } from '../../types';
 import { Button } from '../ui/Button';
@@ -34,15 +35,17 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
   const themeColorClass = category?.bgColorClass?.replace('bg-', '') || 'brand-green'; 
   // Map brand classes to specific hex/text/border styles dynamically
   const isHope = themeColorClass.includes('hope');
-  const isPatience = themeColorClass.includes('patience');
   
   // Dynamic classes based on category theme
   const activeBorderClass = `border-${themeColorClass}`;
   const activeBgClass = `bg-${themeColorClass}`;
   const activeTextClass = `text-${themeColorClass}`;
   
-  // For text contrast: Hope/Yellow needs dark text, others white usually ok (or stick to white for all primary buttons except yellow)
+  // For text contrast: Hope/Yellow needs dark text, others white usually ok
   const buttonTextClass = isHope ? 'text-brand-dark' : 'text-white';
+  
+  // For outlined button text: If Hope (Yellow), use dark text for readability against white bg
+  const outlineTextClass = isHope ? 'text-brand-dark' : activeTextClass;
 
   return (
     <div className="space-y-10 transition-all duration-300 rounded-3xl" ref={optionsRef}>
@@ -87,19 +90,20 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
       </div>
 
       <div className="pt-4 flex flex-col sm:flex-row gap-4" ref={buySectionRef}>
-        <div className="flex items-center border-2 border-slate-100 rounded-2xl bg-white w-full sm:w-fit h-14">
-          <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className={`px-6 h-full text-slate-400 hover:${activeTextClass} transition-colors text-xl font-bold`}>-</button>
+        <div className="flex items-center border-2 border-slate-100 rounded-2xl bg-white w-full sm:w-auto h-14 shrink-0 justify-between sm:justify-start">
+          <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className={`px-6 h-full text-slate-400 hover:${outlineTextClass} transition-colors text-xl font-bold`}>-</button>
           <span className="px-4 font-black text-slate-900 w-12 text-center text-lg">{quantity}</span>
-          <button onClick={() => setQuantity(quantity + 1)} className={`px-6 h-full text-slate-400 hover:${activeTextClass} transition-colors text-xl font-bold`}>+</button>
+          <button onClick={() => setQuantity(quantity + 1)} className={`px-6 h-full text-slate-400 hover:${outlineTextClass} transition-colors text-xl font-bold`}>+</button>
         </div>
         
-        <div className="flex-1 flex flex-col sm:flex-row gap-4">
+        {/* Side-by-side buttons on mobile using Grid */}
+        <div className="flex-1 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:gap-4">
           <button 
             onClick={() => handleAddToCart(false)} 
             disabled={isAdding || isOutOfStock || isOrderingNow}
-            className={`flex-1 h-14 font-black uppercase tracking-widest text-xs rounded-2xl border-2 transition-all ${
+            className={`flex-1 h-14 font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-2xl border-2 transition-all w-full ${
                 isOutOfStock ? 'border-slate-100 text-slate-400 bg-slate-50' : 
-                `bg-white ${activeBorderClass} ${activeTextClass} hover:bg-slate-50`
+                `bg-white ${activeBorderClass} ${outlineTextClass} hover:bg-slate-50`
             }`}
           >
             {isAdding ? 'Adding...' : isOutOfStock ? 'Sold Out' : 'Add to Basket'}
@@ -109,7 +113,7 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
             <button 
                 onClick={() => handleAddToCart(true)} 
                 disabled={isOrderingNow || isAdding}
-                className={`flex-1 h-14 font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 ${activeBgClass} ${buttonTextClass} shadow-black/5`}
+                className={`flex-1 h-14 font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 w-full ${activeBgClass} ${buttonTextClass} shadow-black/5`}
             >
               {isOrderingNow ? 'Processing...' : 'Checkout Now'}
             </button>
@@ -127,7 +131,7 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
             <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse"></span> Only {stock} remaining
           </div>
         ) : (
-          <div className={`flex items-center gap-2 font-black text-[10px] uppercase tracking-widest ${activeTextClass}`}>
+          <div className={`flex items-center gap-2 font-black text-[10px] uppercase tracking-widest ${outlineTextClass}`}>
             <span className={`w-2 h-2 rounded-full ${activeBgClass}`}></span> Divinely Stocked & Ready
           </div>
         )}
