@@ -1,16 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDBHealthCheck } from '../hooks/useDBHealthCheck';
 
 export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { status, error, retry } = useDBHealthCheck();
   const [isDismissed, setIsDismissed] = useState(false);
 
+  useEffect(() => {
+    const dismissed = sessionStorage.getItem('health_check_dismissed');
+    if (dismissed === 'true') {
+        setIsDismissed(true);
+    }
+  }, []);
+
+  const handleDismiss = () => {
+      setIsDismissed(true);
+      sessionStorage.setItem('health_check_dismissed', 'true');
+  };
+
   return (
     <>
       {children}
 
-      {/* Critical: Missing Tables (Unseeded) */}
+      {/* Critical: Missing Tables (Unseeded) - Cannot be dismissed permanently as app won't work */}
       {(status === 'unseeded' || status === 'empty') && !isDismissed && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 text-center border-t-8 border-amber-500">
@@ -33,7 +45,7 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
                <button onClick={retry} className="bg-brand-green text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-brand-dark transition-colors">
                   I've Ran the Scripts, Retry
                </button>
-               <button onClick={() => setIsDismissed(true)} className="text-slate-400 font-bold px-4 py-3 hover:text-slate-600">
+               <button onClick={handleDismiss} className="text-slate-400 font-bold px-4 py-3 hover:text-slate-600">
                   Ignore (Developer)
                </button>
             </div>
@@ -41,7 +53,7 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
         </div>
       )}
 
-      {/* General Connection Error */}
+      {/* General Connection Error - Dismissible */}
       {status === 'error' && !isDismissed && (
         <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-[100] animate-slide-in">
           <div className="bg-white rounded-lg shadow-2xl border-l-4 border-red-500 p-4 ring-1 ring-black/5">
@@ -55,7 +67,7 @@ export const SystemHealth: React.FC<{ children: React.ReactNode }> = ({ children
                 </p>
                 <div className="flex gap-2">
                   <button onClick={retry} className="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded font-bold transition-colors">Retry</button>
-                  <button onClick={() => setIsDismissed(true)} className="text-xs text-gray-500 hover:text-gray-800 px-2 py-1.5 underline">Dismiss</button>
+                  <button onClick={handleDismiss} className="text-xs text-gray-500 hover:text-gray-800 px-2 py-1.5 underline">Dismiss</button>
                 </div>
               </div>
             </div>

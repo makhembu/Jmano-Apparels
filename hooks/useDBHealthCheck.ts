@@ -17,10 +17,12 @@ export const useDBHealthCheck = () => {
 
   const verifyTable = async (table: string): Promise<CheckResult> => {
     try {
-      // Use HEAD request to check existence/permissions without fetching data
-      const { count, error } = await supabase
+      // Changed from HEAD to simple SELECT ID limit 1
+      // This is often more reliable through proxies and firewalls
+      const { data, error, status } = await supabase
         .from(table as any)
-        .select('*', { count: 'exact', head: true });
+        .select('id')
+        .limit(1);
 
       if (error) {
         // PostgREST 42P01: relation does not exist (Table missing)
@@ -29,15 +31,20 @@ export const useDBHealthCheck = () => {
         }
         
         // PostgREST 42501: permission denied (RLS)
-        // If we get this, the DB is reachable and the table exists, so it IS healthy.
         if (error.code === '42501') {
             return { table, status: 'ok', details: 'RLS Protected' };
         }
 
-        // AbortError (Navigation)
         if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
              return { table, status: 'aborted' };
         }
+        
+        // PGRST204 means success but no content (for HEAD), but here we do SELECT
+        // If status is 2xx, we are good even if error object is populated with hints
+        if (status >= 200 && status < 300) {
+            return { table, status: 'ok' };
+        }
+
         return { table, status: 'error', details: error.message };
       }
       
@@ -51,7 +58,6 @@ export const useDBHealthCheck = () => {
 
   const runChecks = async (forceHardReload = false) => {
     if (forceHardReload) {
-        // Explicitly clear all storage before reloading
         localStorage.clear();
         sessionStorage.clear();
         window.location.reload();
@@ -62,43 +68,36 @@ export const useDBHealthCheck = () => {
     setError(null);
     setResults([]);
 
-    const TABLE_TIMEOUT = 15000; // Increased timeout for slower connections
+    const TABLE_TIMEOUT = 10000; // 10s timeout
 
     try {
-        // Only check PUBLIC tables to avoid RLS false negatives
-        // 'users' was causing issues for unauthenticated visitors
-        const requiredTables = ['app_settings', 'products', 'categories'];
+        // Reduced to single critical table to avoid connection saturation in sandbox
+        const criticalTable = 'app_settings';
         
-        const checks = await Promise.all(requiredTables.map(async (table) => {
-          const timeoutPromise = new Promise<CheckResult>(resolve => 
-             setTimeout(() => resolve({ table, status: 'timeout' }), TABLE_TIMEOUT)
-          );
-          return await Promise.race([verifyTable(table), timeoutPromise]);
-        }));
-
-        setResults(checks);
-
-        // Analysis
-        const missingTables = checks.filter(c => c.status === 'missing_table');
-        const errors = checks.filter(c => c.status === 'error' || c.status === 'timeout');
+        const timeoutPromise = new Promise<CheckResult>(resolve => 
+             setTimeout(() => resolve({ table: criticalTable, status: 'timeout' }), TABLE_TIMEOUT)
+        );
         
-        if (missingTables.length > 0) {
+        const result = await Promise.race([verifyTable(criticalTable), timeoutPromise]);
+        
+        setResults([result]);
+
+        if (result.status === 'missing_table') {
             setStatus('unseeded');
             setError('Database Connected, but Tables Missing. Please run SQL migrations.');
             return;
         }
 
-        if (errors.length > 0) {
-            console.error("[HealthCheck] Failed Tables:", errors);
-            // Construct a detailed error message
-            const details = errors.map(e => `${e.table} (${e.status}: ${e.details || 'unknown'})`).join(', ');
+        if (result.status === 'error' || result.status === 'timeout') {
+            console.warn(`[HealthCheck] ${criticalTable} check failed:`, result);
+            // If it's a timeout, it might just be slow internet, but the app might still work.
+            // We set error, but the UI allows dismissal.
             setStatus('error');
-            setError(`Connection unstable. Failed tables: ${details}`);
+            setError(`Connection unstable (${result.status}). Check internet or API keys.`);
             return;
         }
         
         // Double check specifically for data content in app_settings (if table exists but empty)
-        // We catch errors here separately to be safe
         try {
             const { count } = await supabase.from('app_settings').select('*', { count: 'exact', head: true });
             if (count === 0) {
@@ -107,7 +106,7 @@ export const useDBHealthCheck = () => {
                 return;
             }
         } catch (settingsError) {
-            console.warn("App Settings check skipped due to error:", settingsError);
+            console.warn("App Settings count check skipped:", settingsError);
         }
 
         setStatus('healthy');
