@@ -4,6 +4,7 @@ import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
+import { isAbortError } from '../lib/utils';
 
 interface AuthContextType {
   user: User | null;
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (profile) setUser(profile);
     } catch (error: any) {
-      if (error.name === 'AbortError') return;
+      if (isAbortError(error)) return;
       console.error("User sync critical failure:", error);
     }
   }, [showToast]);
@@ -70,7 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) throw error;
         if (data.session?.user && mounted) await syncUser(data.session.user);
       } catch (e: any) {
-        if (e.name !== 'AbortError') console.error("Auth init failed", e);
+        if (isAbortError(e)) return;
+        console.error("Auth init failed", e);
       } finally {
         if (mounted) setLoading(false);
       }

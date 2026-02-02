@@ -1,5 +1,18 @@
+
 import { useEffect, RefObject } from 'react';
 import { Product } from '../types';
+
+/**
+ * Helper to check if an error is a fetch AbortError (cancelled request).
+ * This allows us to silently ignore errors caused by component unmounting.
+ */
+export const isAbortError = (error: any): boolean => {
+  return (
+    error?.name === 'AbortError' || 
+    error?.message?.includes('aborted') || 
+    error?.code === 20 // DOMException code for ABORT_ERR
+  );
+};
 
 /**
  * A custom hook to detect clicks outside a specified element.

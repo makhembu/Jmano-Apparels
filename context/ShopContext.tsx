@@ -4,6 +4,7 @@ import { Product, Category, BlogPost, AppSettings, ProductReview } from '../type
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 import { ProductFilters } from '../lib/services/catalog';
+import { isAbortError } from '../lib/utils';
 
 interface ShopContextType {
   products: Product[]; // Currently visible products in the shop
@@ -84,7 +85,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Initial Paginated Load
       await fetchPaginated(1, filters, true);
 
-    } catch (error) {
+    } catch (error: any) {
+      if (isAbortError(error)) return;
       console.error("Data fetch error:", error);
       showToast("Connection issue. Some content may be missing.", 'error');
     } finally {
@@ -103,7 +105,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         setHasMore(res.hasMore);
         setPage(p);
-    } catch (e) {
+    } catch (e: any) {
+        if (isAbortError(e)) return;
         console.error("Pagination error", e);
     }
   };
@@ -134,7 +137,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await api.updateAppSettings(settings.id, newSettings);
         setSettings(newSettings);
         showToast('Settings updated', 'success');
-    } catch (e) {
+    } catch (e: any) {
+        if (isAbortError(e)) return;
         console.error(e);
         showToast('Failed to update settings', 'error');
     }

@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CartItem, Product } from '../types';
 import { useToast } from './ToastContext';
 import { useAuth } from './AuthContext';
 import { api } from '../lib/db';
+import { isAbortError } from '../lib/utils';
 
 interface CartContextType {
   cart: CartItem[];
@@ -66,15 +68,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Local item doesn't exist on server, add it
                 merged.push(localItem);
              }
-             // If it exists, we prioritize server quantity (or we could sum them), 
-             // but usually server is source of truth + local additions.
-             // We won't sum here to avoid exploding quantities on multiple reloads.
+             // If it exists, we prioritize server quantity
           });
           
-          // Note: We don't need to manually sync here because setting the cart
-          // will trigger the persistence effect below.
           return merged;
         });
+      }).catch(err => {
+        if (!isAbortError(err)) console.error("Failed to fetch cart", err);
       });
     }
   }, [user, isLoaded, authLoading]);
@@ -89,7 +89,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Save to DB (Debounce could be added here for optimization, but kept simple for now)
     const currentUser = userRef.current;
     if (currentUser) {
-      api.syncCart(currentUser.id, cart).catch(err => console.error("Failed to sync cart", err));
+      api.syncCart(currentUser.id, cart).catch(err => {
+        if (!isAbortError(err)) console.error("Failed to sync cart", err);
+      });
     }
   }, [cart, isLoaded]); // Removed 'user' from dependencies to prevent race condition
 
@@ -142,7 +144,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('dt_cart');
     const currentUser = userRef.current;
     if (currentUser) {
-      api.syncCart(currentUser.id, []).catch(console.error);
+      api.syncCart(currentUser.id, []).catch(err => {
+        if (!isAbortError(err)) console.error("Failed to clear remote cart", err);
+      });
     }
   }, []);
 

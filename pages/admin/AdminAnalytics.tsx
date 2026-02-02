@@ -11,6 +11,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
 import { Button } from '../../components/ui/Button';
+import { isAbortError } from '../../lib/utils';
 
 // Color Palette for Charts
 const COLORS = ['#2E7D32', '#F1C40F', '#B96AD9', '#E67E22', '#3498DB', '#E74C3C', '#95A5A6'];
@@ -24,7 +25,7 @@ const LiveMonitor: React.FC = () => {
             const data = await api.getLiveVisitors(5); // Active in last 5 mins
             setVisitors(data);
         } catch (e) {
-            console.error("Live fetch error", e);
+            if (!isAbortError(e)) console.error("Live fetch error", e);
         } finally {
             setLoading(false);
         }
@@ -153,6 +154,7 @@ export const AdminAnalytics: React.FC = () => {
       cache.current[timeRange] = { data: payload, timestamp: now };
 
     } catch (e: any) {
+      if (isAbortError(e)) return;
       console.error("Analytics fetch failed", e);
       setError("Failed to load analytics data. Please check your connection.");
     } finally {
@@ -217,8 +219,10 @@ export const AdminAnalytics: React.FC = () => {
 
         setAiReport(response.text || "Could not generate insights.");
     } catch (e: any) {
-        console.error("AI Error:", e);
-        setAiReport(`Error generating report: ${e.message}`);
+        if (!isAbortError(e)) {
+            console.error("AI Error:", e);
+            setAiReport(`Error generating report: ${e.message}`);
+        }
     } finally {
         setAnalyzing(false);
     }
@@ -344,9 +348,11 @@ export const AdminAnalytics: React.FC = () => {
             
             <div className="flex-1 bg-white/50 rounded-xl border border-white/50 p-4 mb-4 overflow-y-auto max-h-[300px] text-sm text-slate-700 leading-relaxed shadow-inner scrollbar-thin">
                {aiReport ? (
-                  <ReactMarkdown className="prose prose-sm prose-green max-w-none">
-                     {aiReport}
-                  </ReactMarkdown>
+                  <div className="prose prose-sm prose-green max-w-none">
+                    <ReactMarkdown>
+                        {aiReport}
+                    </ReactMarkdown>
+                  </div>
                ) : (
                   <div className="text-center text-gray-400 py-10 flex flex-col items-center justify-center h-full">
                      <p className="text-sm font-medium">Ready to analyze your store performance.</p>
