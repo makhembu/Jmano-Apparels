@@ -39,14 +39,19 @@ export const SEO: React.FC<SEOProps> = ({
   const finalDesc = description || defaultDescription;
   const finalImage = image || defaultImage;
   
-  // Smart Canonical:
-  // React Router's useLocation().pathname returns the path *inside* the router context.
-  // - In Browser Mode: URL is /shop -> pathname is /shop
-  // - In Hash Mode: URL is /#/shop -> pathname is /shop
-  // We prepend the production domain to ensure Google indexes the CLEAN version, 
-  // even if we are viewing the Hash version in dev.
-  const path = location.pathname === '/' ? '' : location.pathname;
-  const finalCanonical = canonical || `https://jamboapparels.com${path}`;
+  // --- SMART CANONICAL LOGIC (CRITICAL FOR SEO) ---
+  // 1. Get the path without query params (e.g. "/shop" instead of "/shop?sort=price")
+  // 2. Remove trailing slash if present (standardize to no-trailing-slash)
+  // 3. Prepend production domain.
+  // This forces Google to ignore junk params like "?products-2-order=asc"
+  
+  let cleanPath = location.pathname;
+  if (cleanPath !== '/' && cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+
+  const autoCanonical = `https://jamboapparels.com${cleanPath}`;
+  const finalCanonical = canonical || autoCanonical;
 
   const robotsContent = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
 
@@ -96,7 +101,7 @@ export const SEO: React.FC<SEOProps> = ({
     updateMeta('twitter:description', finalDesc);
     updateMeta('twitter:image', finalImage);
 
-    // Canonical
+    // Canonical - THE MOST IMPORTANT FIX
     updateLink('canonical', finalCanonical);
 
     // JSON-LD Structured Data

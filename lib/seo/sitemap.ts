@@ -90,6 +90,6 @@ Disallow: /forgot-password/
 Disallow: /update-password/
 
 # Sitemap location
-Sitemap: ${BASE_URL}/sitemap.xml
+Sitemap: https://jamboapparels.com/sitemap.xml
 `;
 };

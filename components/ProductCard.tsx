@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
@@ -68,7 +69,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 
   const style = index !== undefined ? colors[index % colors.length] : defaultStyle;
   const categoryColor = index !== undefined ? style.muted : (category?.color || '#2E7D32');
-  const primaryImage = product.images?.[0] || 'https://via.placeholder.com/800x800.png?text=Image+Not+Found';
+  
+  // Use a reliable Unsplash fallback that allows robots
+  const primaryImage = product.images?.[0] || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&h=800&fit=crop';
   
   return (
     <Link 
