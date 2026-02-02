@@ -9,6 +9,10 @@ import { OptimizedImage } from '../components/ui/OptimizedImage';
 
 export const Home: React.FC = () => {
   const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
+  
+  // OPTIMIZATION: Do not block the entire page on loading. 
+  // Allow the Hero section to render immediately with defaults to fix LCP.
+  
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);
 
   const latestBlogs = [...blogPosts]
@@ -31,7 +35,7 @@ export const Home: React.FC = () => {
     return colors[index % colors.length];
   };
 
-  if (loading) return <LoadingSpinner fullScreen />;
+  const defaultHeroImage = "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop";
 
   return (
     <div className="animate-fade-in bg-slate-50">
@@ -52,8 +56,8 @@ export const Home: React.FC = () => {
         }}
       />
 
-      {/* Hero Section */}
-      <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block">
+      {/* Hero Section - Render immediately even if settings are loading */}
+      <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block min-h-[400px]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="relative z-10 bg-brand-dark lg:max-w-2xl lg:w-full pb-12 lg:pb-28 xl:pb-32">
             <main className="pt-10 lg:pt-28 mx-auto max-w-7xl px-6 sm:px-8 lg:px-8">
@@ -63,8 +67,8 @@ export const Home: React.FC = () => {
                   <span className="block text-brand-hope">in Humility and</span>
                   <span className="block text-brand-hope">Boldness</span>
                 </h1>
-                <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-90">
-                  {settings.mission}
+                <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-90 min-h-[3rem]">
+                  {settings.mission || "Loading mission..."}
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-4">
                   <Link to="/shop" className="flex items-center justify-center px-8 py-4 text-sm font-black uppercase tracking-widest rounded-xl text-brand-dark bg-brand-hope hover:bg-white hover:text-brand-green transition-all shadow-xl shadow-brand-hope/10 active:scale-95">
@@ -79,15 +83,16 @@ export const Home: React.FC = () => {
           </div>
         </div>
         
+        {/* LCP Optimization: High Priority, Eager Load */}
         <div className="relative h-64 sm:h-72 md:h-96 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 lg:h-full bg-slate-900">
-           {/* LCP Optimization: Use OptimizedImage with priority and explicit dimensions */}
            <OptimizedImage
-             src={settings.heroBannerImage || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1920&h=600&fit=crop"}
+             src={settings.heroBannerImage || defaultHeroImage}
              alt="Jambo Apparels Faith Based Clothing"
              className="h-full w-full object-cover object-center opacity-90 lg:opacity-100"
              width={1920}
              height={1080}
-             priority={true}
+             priority={true} // Critical for LCP
+             fit="cover"
            />
            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/20 to-transparent lg:hidden"></div>
         </div>
@@ -96,17 +101,26 @@ export const Home: React.FC = () => {
       {/* Featured Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-3xl font-bold text-brand-dark mb-8 font-serif border-b-2 border-brand-green/20 pb-4">Featured Collections</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {featuredProducts.length > 0 ? (
-            featuredProducts.map((product, idx) => (
-              <ProductCard key={product.id} product={product} index={idx} />
-            ))
-          ) : (
-            <div className="col-span-4 text-center py-10 text-gray-500">
-              No featured products available at the moment.
-            </div>
-          )}
-        </div>
+        
+        {loading ? (
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[1,2,3,4].map(i => (
+                 <div key={i} className="h-96 bg-gray-100 rounded-2xl animate-pulse"></div>
+              ))}
+           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map((product, idx) => (
+                <ProductCard key={product.id} product={product} index={idx} />
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-10 text-gray-500">
+                No featured products available at the moment.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Categories */}
@@ -117,17 +131,22 @@ export const Home: React.FC = () => {
                <p className="text-brand-dark/70">Explore our curated collections, each designed with a specific spiritual intention.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-4">
-               {displayCategories.map(cat => (
-                  <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 text-base font-bold border-2 border-white/20`}>
-                     {cat.label}
-                  </Link>
-               ))}
+               {loading ? (
+                  // Skeleton for Categories
+                  [1,2,3,4].map(i => <div key={i} className="h-14 w-32 bg-white/50 rounded-2xl animate-pulse"></div>)
+               ) : (
+                  displayCategories.map(cat => (
+                    <Link to={`/shop?cat=${cat.key}`} key={cat.key} className={`${cat.bgColorClass} text-white px-8 py-4 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 text-base font-bold border-2 border-white/20`}>
+                        {cat.label}
+                    </Link>
+                  ))
+               )}
             </div>
          </div>
       </div>
 
       {/* Latest Blog Posts */}
-      {latestBlogs.length > 0 && (
+      {!loading && latestBlogs.length > 0 && (
         <div className="bg-white py-16 border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
@@ -182,7 +201,7 @@ export const Home: React.FC = () => {
       )}
 
       {/* Reviews */}
-      {settings.enableReviews && latestReviews.length > 0 && (
+      {!loading && settings.enableReviews && latestReviews.length > 0 && (
         <section className="bg-brand-light py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">

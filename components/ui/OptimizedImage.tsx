@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -60,8 +61,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         onLoad={() => setIsLoaded(true)}
         onError={() => setError(true)}
         loading={priority ? "eager" : "lazy"}
+        decoding={priority ? "sync" : "async"}
         // @ts-ignore - fetchPriority is standard but React types might lag
-        fetchpriority={priority ? "high" : "auto"}
+        fetchPriority={priority ? "high" : "auto"}
         {...props}
       />
     </div>
