@@ -3,11 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '../database.types';
 import { SECRETS } from '../secrets';
 
-// Helper to safely access environment variables across Vite/Node environments
+// Helper to safely access environment variables
 const getEnv = (key: string) => {
+  // Vite standard
   if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
     return (import.meta as any).env[key];
   }
+  // Fallback for some node/build environments
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key];
   }
@@ -29,15 +31,29 @@ const HARDCODED_URL = `https://${PROJECT_ID}.supabase.co`;
 const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
 const envKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY');
 
-// Priority: Env Vars -> Secrets File -> Hardcoded Fallback
 const supabaseUrl = envUrl ? formatUrl(envUrl) : (SECRETS.SUPABASE_URL || HARDCODED_URL);
 const supabaseKey = envKey || SECRETS.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('[Supabase] CRITICAL: No API Key found. Please ensure VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY is set.');
+  console.error('[Supabase] CRITICAL: No API Key found. Auth will fail.');
 }
 
-// Initialize the client
+// Custom Storage Adapter to be explicit
+const localStorageAdapter = {
+  getItem: (key: string) => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(key);
+  },
+};
+
 export const supabase = createClient<Database>(
   supabaseUrl,
   supabaseKey || '', 
@@ -46,9 +62,8 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: 'jambo_auth_token_v1',
-      // Explicitly set storage to window.localStorage to avoid any environment ambiguity
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'jambo_auth_v1', // Simplified key
+      storage: localStorageAdapter,
     },
   }
 );

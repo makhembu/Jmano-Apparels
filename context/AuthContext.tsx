@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
-import { isAbortError } from '../lib/utils';
 
 interface AuthContextType {
   user: User | null;
@@ -27,13 +26,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Guards
-  const listenerInitialized = useRef(false);
   const mountedRef = useRef(true);
 
-  // Helper: Fetch Profile (Single Source of Truth)
+  // Helper: Fetch Profile
   const fetchProfile = useCallback(async (uid: string, email: string, metaName?: string) => {
-    // 1. Default Fallback
     const fallback: User = {
       id: uid,
       email: email,
@@ -67,103 +63,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- CORE INITIALIZATION LOGIC ---
   useEffect(() => {
-    // Strict Mode Guard: Prevent double initialization
-    if (listenerInitialized.current) return;
-    listenerInitialized.current = true;
-
-    console.log("[Auth] 🔐 Initializing auth listener");
     let subscription: any = null;
 
-    const init = async () => {
-      try {
-        // 1. Check Initial Session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-            console.error("[Auth] Session restore error:", error.message);
-            throw error;
-        }
-        
+    const handleSession = async (session: any) => {
         if (session?.user) {
-          console.log(`[Auth] 👤 Restored session for ${session.user.email}`);
-          const profile = await fetchProfile(
-            session.user.id,
-            session.user.email!,
-            session.user.user_metadata?.name
-          );
-          if (mountedRef.current) setUser(profile);
+            console.log(`[Auth] Session active for ${session.user.email}`);
+            const profile = await fetchProfile(
+                session.user.id,
+                session.user.email!,
+                session.user.user_metadata?.name
+            );
+            if (mountedRef.current) {
+                setUser(profile);
+            }
         } else {
-          console.log("[Auth] No active session found (Guest)");
+            console.log("[Auth] No session");
+            if (mountedRef.current) {
+                setUser(null);
+            }
         }
-      } catch (e: any) {
-        if (!isAbortError(e)) {
-          console.error("[Auth] Init Critical Error", e);
-        }
-      } finally {
         if (mountedRef.current) {
-          setLoading(false);
-          setIsAuthReady(true);
-        }
-      }
-
-      // 2. Set up Listener
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log(`[Auth] Event: ${event}`);
-        
-        if (!mountedRef.current) return;
-
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          // Only show loading on explicit sign in, not silent refresh
-          if (event === 'SIGNED_IN') setLoading(true);
-          
-          const profile = await fetchProfile(
-            session.user.id,
-            session.user.email!,
-            session.user.user_metadata?.name
-          );
-          
-          if (mountedRef.current) {
-            setUser(profile);
             setLoading(false);
-            if (!isAuthReady) setIsAuthReady(true);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          if (mountedRef.current) {
-            setUser(null);
-            setLoading(false);
-            setIsAuthReady(true); // Ensure app unblocks even on logout
-            navigate('/');
-          }
+            setIsAuthReady(true);
         }
-      });
-      subscription = data.subscription;
     };
 
-    init();
+    // 1. Set up the listener FIRST
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`[Auth] Event: ${event}`);
+      if (!mountedRef.current) return;
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        handleSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setLoading(false);
+        setIsAuthReady(true);
+        navigate('/');
+      }
+    });
+    subscription = data.subscription;
+
+    // 2. Check explicitly once on mount (handles edge case where listener might miss the initial state)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!isAuthReady) {
+            handleSession(session);
+        }
+    });
 
     return () => {
       mountedRef.current = false;
       if (subscription) subscription.unsubscribe();
-      listenerInitialized.current = false;
     };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+        setLoading(false);
+        throw error;
+    }
+    // State update handled by listener
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
+    setLoading(true);
     const { error } = await supabase.auth.signUp({ 
         email, 
         password, 
         options: { data: { name } } 
     });
-    if (error) throw error;
+    if (error) {
+        setLoading(false);
+        throw error;
+    }
+    // If auto-confirm is off, they won't be signed in yet.
+    if (mountedRef.current) setLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
+    setLoading(true);
     await supabase.auth.signOut();
+    // State update handled by listener
   }, []);
 
   const refreshProfile = useCallback(async () => {
