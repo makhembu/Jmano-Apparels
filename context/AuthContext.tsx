@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
+import { isAbortError } from '../lib/utils';
 
 interface AuthContextType {
   user: User | null;
@@ -81,7 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const init = async () => {
       try {
         // 1. Check Initial Session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
         
         if (session?.user) {
           console.log("[Auth] 👤 Initial session found");
@@ -92,8 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
           if (mountedRef.current) setUser(profile);
         }
-      } catch (e) {
-        console.error("[Auth] Init Error", e);
+      } catch (e: any) {
+        if (isAbortError(e)) {
+          // Suppress AbortError logs (common during refresh/strict mode)
+          console.debug("[Auth] Session initialization aborted (non-critical)");
+        } else {
+          console.error("[Auth] Init Error", e);
+        }
       } finally {
         if (mountedRef.current) {
           setLoading(false);
