@@ -1,4 +1,5 @@
-import React, { useEffect, Suspense, lazy, useState } from 'react';
+
+import React, { useEffect, Suspense, lazy } from 'react';
 // @ts-ignore
 import { HashRouter, BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
@@ -12,11 +13,7 @@ import { SystemHealth } from './components/SystemHealth';
 import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
-
-// --- VERSION CONTROL ---
-// Bump this version string whenever you deploy a breaking change or schema update
-// This will force all users to reload and clear stale local storage caches
-const CURRENT_APP_VERSION = '1.0.8'; 
+import { CacheManager } from './lib/cache';
 
 // --- Lazy Loaded Components ---
 
@@ -91,39 +88,14 @@ const AuthEventHandler = () => {
   return null;
 };
 
-// Version Manager Component
-const VersionManager = () => {
-  useEffect(() => {
-    const storedVersion = localStorage.getItem('app_version');
-    console.log(`[VersionManager] Checking... Current: ${CURRENT_APP_VERSION}, Stored: ${storedVersion}`);
-    
-    // If no version stored (first load of new system) OR version mismatch
-    if (storedVersion !== CURRENT_APP_VERSION) {
-      console.log(`[VersionManager] DETECTED UPDATE. Nuclearing cache...`);
-      
-      // Critical: Clear everything except maybe specific keys if needed, but for this fix, we clear all
-      // We explicitly remove the cart and settings to ensure a fresh fetch from the new DB
-      localStorage.removeItem('dt_cart');
-      localStorage.removeItem('jambo_app_settings');
-      localStorage.removeItem('jambo_geo_data');
-      localStorage.removeItem('jambo_session_id');
-      
-      // Update version
-      localStorage.setItem('app_version', CURRENT_APP_VERSION);
-      
-      // Hard Reload
-      console.log('[VersionManager] Forcing reload in 100ms...');
-      setTimeout(() => window.location.reload(), 100);
-    }
-  }, []);
-  
-  return null;
-};
-
 const App: React.FC = () => {
+  // Version Check on Mount
+  useEffect(() => {
+    CacheManager.checkVersion();
+  }, []);
+
   return (
     <SystemHealth>
-      <VersionManager />
       <AuthProvider>
         <ShopProvider>
           <CartProvider>

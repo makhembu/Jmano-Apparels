@@ -5,6 +5,7 @@ import { useToast } from './ToastContext';
 import { useAuth } from './AuthContext';
 import { api } from '../lib/db';
 import { isAbortError } from '../lib/utils';
+import { CacheManager, STORAGE_KEYS } from '../lib/cache';
 
 interface CartContextType {
   cart: CartItem[];
@@ -23,20 +24,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Use a ref to access the current user in effects without triggering them
-  // This prevents the persistence effect from running immediately on login (before merge)
   const userRef = useRef(user);
 
   useEffect(() => {
     userRef.current = user;
   }, [user]);
 
-  // 1. Initial Load: Try LocalStorage first to show something immediately
+  // 1. Initial Load: Use CacheManager to get local cart
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem('dt_cart');
+      const savedCart = CacheManager.local.get<CartItem[]>(STORAGE_KEYS.CART);
       if (savedCart) {
-        setCart(JSON.parse(savedCart));
+        setCart(savedCart);
       }
     } catch (e) {
       console.error("Error loading cart from storage", e);
@@ -44,17 +43,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoaded(true);
   }, []);
 
-  // 2. Auth Merge: When user logs in, fetch DB cart and intelligently merge with local
+  // 2. Auth Merge: When user logs in, fetch DB cart and merge
   useEffect(() => {
     if (!isLoaded || authLoading) return;
 
     if (user) {
       api.fetchCart(user.id).then(serverCart => {
         setCart(currentLocalCart => {
-          // If local cart is empty, just take server cart
           if (currentLocalCart.length === 0) return serverCart;
 
-          // Merge Logic: Create a Map based on unique item keys
           const merged = [...serverCart];
 
           currentLocalCart.forEach(localItem => {
@@ -65,10 +62,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
              );
 
              if (!exists) {
-                // Local item doesn't exist on server, add it
                 merged.push(localItem);
              }
-             // If it exists, we prioritize server quantity
           });
           
           return merged;
@@ -79,31 +74,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, isLoaded, authLoading]);
 
-  // 3. Persistence: Whenever cart changes, save to LocalStorage AND DB (if logged in)
+  // 3. Persistence: Save to CacheManager and DB
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Save to local
-    localStorage.setItem('dt_cart', JSON.stringify(cart));
+    // Save to local via centralized manager
+    CacheManager.local.set(STORAGE_KEYS.CART, cart);
 
-    // Save to DB (Debounce could be added here for optimization, but kept simple for now)
+    // Save to DB
     const currentUser = userRef.current;
     if (currentUser) {
       api.syncCart(currentUser.id, cart).catch(err => {
         if (!isAbortError(err)) console.error("Failed to sync cart", err);
       });
     }
-  }, [cart, isLoaded]); // Removed 'user' from dependencies to prevent race condition
+  }, [cart, isLoaded]);
 
   const addToCart = useCallback((product: Product, size: string, quantity: number, color?: string) => {
-    // Validate stock
     if (product.stockQuantity !== undefined && product.stockQuantity < quantity) {
         showToast(`Only ${product.stockQuantity} items left in stock.`, 'error');
         return;
     }
 
     setCart(prev => {
-      // Find existing item matching ID, Size AND Color
       const existingIndex = prev.findIndex(item => 
         item.id === product.id && 
         item.selectedSize === size && 
@@ -114,7 +107,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const existingItem = prev[existingIndex];
         const newQty = existingItem.quantity + quantity;
         
-        // Stock check on accumulation
         if (product.stockQuantity !== undefined && newQty > product.stockQuantity) {
             showToast(`Cannot add more. You have ${existingItem.quantity} in cart and stock is ${product.stockQuantity}.`, 'error');
             return prev;
@@ -125,7 +117,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return newCart;
       }
       
-      // Add new item
       return [...prev, { ...product, quantity, selectedSize: size, selectedColor: color }];
     });
   }, [showToast]);
@@ -141,7 +132,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = useCallback(() => {
     setCart([]);
-    localStorage.removeItem('dt_cart');
+    CacheManager.local.remove(STORAGE_KEYS.CART);
     const currentUser = userRef.current;
     if (currentUser) {
       api.syncCart(currentUser.id, []).catch(err => {

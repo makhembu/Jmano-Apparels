@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartItem } from '../../types';
@@ -33,7 +34,7 @@ export const CartPreviewPopup: React.FC<CartPreviewPopupProps> = ({ isOpen, onCl
             <ul className="divide-y divide-slate-50 p-2">
               {cart.map(item => (
                 <li key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}>
-                  <button onClick={() => handleLinkClick(`/product/${item.id}`)} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left">
+                  <button onClick={() => handleLinkClick(`/product/${item.slug || item.id}`)} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left">
                     <img src={item.images[0]} alt={item.title} className="w-12 h-12 rounded-lg object-cover border border-slate-100" />
                     <div className="flex-1 overflow-hidden">
                       <p className="text-xs font-bold text-slate-800 truncate">{item.title}</p>

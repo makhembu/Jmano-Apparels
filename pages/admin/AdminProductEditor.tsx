@@ -59,6 +59,12 @@ export const AdminProductEditor: React.FC = () => {
     return () => setPageData(undefined);
   }, [id, products, setPageData]);
 
+  const generateSlug = (text: string) => {
+    return text.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
@@ -66,6 +72,9 @@ export const AdminProductEditor: React.FC = () => {
        setFormData(prev => ({ ...prev, [name]: checked }));
     } else if (type === 'number') {
        setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : parseFloat(value) }));
+    } else if (name === 'title' && !id && !formData.slug) {
+       // Auto-generate slug for new products if slug is empty
+       setFormData(prev => ({ ...prev, title: value, slug: generateSlug(value) }));
     } else {
        setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -182,6 +191,18 @@ export const AdminProductEditor: React.FC = () => {
                                     {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                                 </select>
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">URL Slug</label>
+                            <input 
+                                type="text" 
+                                name="slug" 
+                                value={formData.slug || ''} 
+                                onChange={handleChange} 
+                                className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-700 text-sm font-mono focus:ring-2 focus:ring-brand-green/10 outline-none"
+                                placeholder="product-url-slug"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Leave empty to auto-generate from title. Controls the product URL.</p>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Description</label>
@@ -332,7 +353,7 @@ export const AdminProductEditor: React.FC = () => {
                       onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k}))}
                       defaultTitle={formData.title} defaultDescription={formData.description?.substring(0, 160)}
                       previewImage={formData.images?.[0]}
-                      permalink={`https://jamboapparels.com/#/product/${formData.id || 'new'}`}
+                      permalink={`https://jamboapparels.com/#/product/${formData.slug || formData.id || 'new'}`}
                       contextData={{ title: formData.title || '', description: formData.description || '', type: 'product' }}
                    />
                 </div>

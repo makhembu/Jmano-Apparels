@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Chat } from "@google/genai";
 import { functionDeclarations } from './tools';
+import { SECRETS } from '../../src/secrets';
 
 // ============================================================================
 // MODEL CONFIGURATION WITH FALLBACK CHAIN
@@ -54,11 +55,17 @@ const MODEL_FALLBACK_CHAIN: ModelConfig[] = [
  */
 const getSafeEnvApiKey = (): string | undefined => {
   try {
+    // 1. Check Process Env
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
       return process.env.API_KEY;
     }
+    // 2. Check Vite Env
     if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_KEY) {
       return (import.meta as any).env.VITE_API_KEY;
+    }
+    // 3. Check Local Secrets
+    if (SECRETS && SECRETS.GEMINI_API_KEY) {
+      return SECRETS.GEMINI_API_KEY;
     }
   } catch (e) {
     return undefined;
@@ -76,7 +83,7 @@ export class GeminiClient {
   }
 
   /**
-   * Checks if an API key is available either from settings or env
+   * Checks if an API key is available either from settings, env, or secrets
    */
   isAvailable(settingsKey?: string): boolean {
     return !!(settingsKey || getSafeEnvApiKey());
@@ -103,7 +110,7 @@ export class GeminiClient {
     const apiKey = customApiKey || getSafeEnvApiKey();
     if (!apiKey) {
       this.lastError = 'API_KEY not configured';
-      console.error('❌ Gemini API key missing. Set process.env.API_KEY or configure in App Settings.');
+      console.error('❌ Gemini API key missing. Set process.env.API_KEY, src/secrets.ts, or configure in App Settings.');
       return null;
     }
 
@@ -160,7 +167,6 @@ export class GeminiClient {
     };
 
     // Add thinking config for models that support it
-    // Thinking helps with complex navigation decisions and multi-step planning
     if (model.supportsThinking) {
       config.thinkingConfig = { 
         thinkingBudget: model.name === 'gemini-2.5-pro' ? 8000 : 4000 
@@ -220,10 +226,6 @@ export class GeminiClient {
 }
 
 export const geminiClient = new GeminiClient();
-
-// ============================================================================
-// UTILITY: Export available models for UI selection
-// ============================================================================
 
 export function getAvailableModels(): ModelConfig[] {
   return MODEL_FALLBACK_CHAIN;

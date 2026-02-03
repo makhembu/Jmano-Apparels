@@ -78,7 +78,7 @@ export const DesktopNavbar: React.FC = () => {
                     {filteredResults.length > 0 ? (
                       <>
                         {filteredResults.map(product => (
-                          <button key={product.id} onClick={() => { navigate(`/product/${product.id}`); setShowResults(false); setSearchQuery(''); }} className="w-full flex items-center p-3 hover:bg-gray-50 transition-colors text-left group">
+                          <button key={product.id} onClick={() => { navigate(`/product/${product.slug || product.id}`); setShowResults(false); setSearchQuery(''); }} className="w-full flex items-center p-3 hover:bg-gray-50 transition-colors text-left group">
                             <img src={product.images[0]} alt="" width="40" height="40" className="h-10 w-10 rounded-xl object-cover border border-gray-100" />
                             <div className="ml-3 overflow-hidden">
                               <p className="text-xs font-bold text-gray-900 truncate group-hover:text-brand-green">{product.title}</p>

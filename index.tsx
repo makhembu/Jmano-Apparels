@@ -5,26 +5,10 @@ import App from './App';
 import { ToastProvider } from './context/ToastContext';
 import './index.css';
 import './styles/copilot.css';
+import { CacheManager } from './lib/cache';
 
-// --- CRITICAL: Service Worker Cleanup ---
-// Safely attempt to unregister existing service workers without crashing
-const unregisterServiceWorkers = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        // console.log('[System] Unregistering Service Worker:', registration);
-        await registration.unregister();
-      }
-    } catch (error: any) {
-      // Silently ignore specific errors related to invalid document states or restricted contexts
-      // These often happen in sandboxed environments (like StackBlitz/Replit) or if called too early
-      return;
-    }
-  }
-};
-
-unregisterServiceWorkers();
+// Initialize System Cache (Service Workers, etc)
+CacheManager.initialize();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

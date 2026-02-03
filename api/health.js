@@ -1,14 +1,19 @@
 
 export default async function handler(req, res) {
   // Prioritize SERVICE ROLE KEY for health checks to bypass RLS issues
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  // Fallback to the publishable key if service role is missing (read-only check)
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                      process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
+                      process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
+                      process.env.SUPABASE_ANON_KEY;
+                      
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({ 
       status: 'error', 
       message: 'Missing environment variables',
-      hint: 'Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to Vercel Environment Variables.'
+      hint: 'Please add SUPABASE_URL and key to Vercel Environment Variables.'
     });
   }
 

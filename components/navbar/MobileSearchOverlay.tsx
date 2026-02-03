@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { getVisibleProducts, searchProducts } from '../../lib/utils';
+import { Product } from '../../types';
 
 interface MobileSearchOverlayProps {
   isOpen: boolean;
@@ -22,8 +24,8 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
     }
   };
 
-  const handleProductClick = (id: string) => {
-    navigate(`/product/${id}`);
+  const handleProductClick = (product: Product) => {
+    navigate(`/product/${product.slug || product.id}`);
     setSearchQuery('');
     onClose();
   };
@@ -61,7 +63,7 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
           <div className="space-y-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Suggestions</p>
             {filteredResults.map(product => (
-              <button key={product.id} onClick={() => handleProductClick(product.id)} className="w-full flex items-center gap-4 p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
+              <button key={product.id} onClick={() => handleProductClick(product)} className="w-full flex items-center gap-4 p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
                 <img src={product.images[0]} className="w-12 h-12 rounded-xl object-cover border border-slate-50" alt={product.title} />
                 <div className="text-left overflow-hidden">
                   <p className="text-sm font-bold text-slate-900 truncate">{product.title}</p>

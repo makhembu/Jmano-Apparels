@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../database.types';
+import { SECRETS } from '../src/secrets';
 
 // Helper to safely access environment variables across Vite/Node environments
 const getEnv = (key: string) => {
@@ -22,31 +23,26 @@ const formatUrl = (url?: string) => {
 };
 
 // --- CONFIGURATION ---
-// Inferred from your project token
 const PROJECT_ID = 'irsurnyfjgjmlhlrkbeh'; 
 const HARDCODED_URL = `https://${PROJECT_ID}.supabase.co`;
-// The Service Role Key provided for Sandbox access (Handles RLS bypass if needed)
-const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlyc3VybnlmamdqbWxobHJrYmVoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTAxNzkzNiwiZXhwIjoyMDg0NTkzOTM2fQ.CmvRoEu8DeiPmfnTkj7ezdMH1esSlHRoJS4ZZnjb730';
 
 const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-// Prioritize the hardcoded key if envs are missing or it's the specific service role needed
-const envKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
 
-// Priority: Env Vars -> Hardcoded Fallback
-const supabaseUrl = envUrl ? formatUrl(envUrl) : HARDCODED_URL;
-// Use the powerful key provided to ensure DB connectivity works even if RLS is broken
-const supabaseKey = HARDCODED_KEY || envKey; 
+// FIX: Prioritize the specific publishable key name requested
+const envKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY');
+
+// Priority: Env Vars -> Secrets File -> Hardcoded Fallback
+const supabaseUrl = envUrl ? formatUrl(envUrl) : (SECRETS.SUPABASE_URL || HARDCODED_URL);
+const supabaseKey = envKey || SECRETS.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('[Supabase] CRITICAL: No API credentials found.');
-} else {
-  // console.log('[Supabase] Client Initialized', { url: supabaseUrl });
+  console.error('[Supabase] CRITICAL: No API Key found. Please ensure VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY is set.');
 }
 
 // Initialize the client
 export const supabase = createClient<Database>(
   supabaseUrl,
-  supabaseKey,
+  supabaseKey || '', 
   {
     auth: {
       persistSession: true,

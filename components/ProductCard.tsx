@@ -76,7 +76,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   
   return (
     <Link 
-      to={`/product/${product.id}`} 
+      to={`/product/${product.slug || product.id}`} 
       className={`group block ${style.bg} border ${style.border} rounded-2xl overflow-hidden hover:shadow-xl ${style.hover} transition-all duration-300 transform hover:-translate-y-1 h-full flex flex-col`}
     >
       <div className="aspect-square w-full bg-gray-100 overflow-hidden relative">

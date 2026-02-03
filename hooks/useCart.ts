@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Product, CartItem } from '../types';
 import { useToast } from '../context/ToastContext';
+import { CacheManager, STORAGE_KEYS } from '../lib/cache';
 
 export const useCart = () => {
   const { showToast } = useToast();
@@ -9,15 +11,15 @@ export const useCart = () => {
   // -- Cart Persistence --
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem('dt_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
+      const savedCart = CacheManager.local.get<CartItem[]>(STORAGE_KEYS.CART);
+      if (savedCart) setCart(savedCart);
     } catch (e) {
       console.error("Failed to load cart", e);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('dt_cart', JSON.stringify(cart));
+    CacheManager.local.set(STORAGE_KEYS.CART, cart);
   }, [cart]);
 
   const addToCart = (product: Product, size: string, quantity: number) => {
@@ -40,7 +42,10 @@ export const useCart = () => {
     showToast('Item removed', 'info');
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    CacheManager.local.remove(STORAGE_KEYS.CART);
+  };
 
   return { cart, addToCart, removeFromCart, clearCart };
 };

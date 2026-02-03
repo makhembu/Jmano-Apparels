@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../../types';
@@ -8,7 +9,7 @@ interface ProductShareProps {
 
 export const ProductShare: React.FC<ProductShareProps> = ({ product }) => {
   // Fix: Construct a canonical URL instead of using window.location.href to avoid blob URLs in sandboxed environments.
-  const pageUrl = `https://jamboapparels.com/#/product/${product.id}`;
+  const pageUrl = `https://jamboapparels.com/#/product/${product.slug || product.id}`;
   const shareTitle = encodeURIComponent(product.title);
   const encodedUrl = encodeURIComponent(pageUrl);
   const shareDescription = encodeURIComponent(`Check out this piece from Jambo Apparels: "${product.title}"`);
@@ -32,7 +33,7 @@ export const ProductShare: React.FC<ProductShareProps> = ({ product }) => {
           </a>
           <a href={emailShareUrl} className="text-gray-400 hover:text-brand-green transition-colors">
             <span className="sr-only">Email</span>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           </a>
         </div>
       </div>

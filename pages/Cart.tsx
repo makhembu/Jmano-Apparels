@@ -79,7 +79,7 @@ export const Cart: React.FC = () => {
                 <div className="ml-6 flex-1 flex flex-col sm:flex-row sm:justify-between">
                   <div>
                      <h3 className="text-lg font-bold text-slate-900 hover:text-brand-green transition font-serif">
-                       <Link to={`/product/${item.id}`}>{item.title}</Link>
+                       <Link to={`/product/${item.slug || item.id}`}>{item.title}</Link>
                      </h3>
                      <div className="text-xs font-bold text-slate-400 mt-2 space-x-3 uppercase tracking-widest">
                        <span>Size: {item.selectedSize}</span>

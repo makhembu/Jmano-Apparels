@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -14,7 +15,8 @@ export const UserOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user, refreshOrders, products, addToCart } = useApp();
+  // Access allProducts from context (even if not strictly typed in older interface, it's provided by ShopProvider)
+  const { user, refreshOrders, products, addToCart, allProducts } = useApp() as any;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,7 @@ export const UserOrderDetails: React.FC = () => {
     setReordering(true);
 
     for (const item of order.products) {
-      const productToAdd = products.find(p => p.id === item.productId);
+      const productToAdd = products.find((p: any) => p.id === item.productId);
       if (productToAdd) {
         addToCart(productToAdd, item.size, item.quantity, item.selectedColor);
       } else {
@@ -83,19 +85,25 @@ export const UserOrderDetails: React.FC = () => {
     navigate('/cart');
   };
 
+  const getProductSlug = (productId: string) => {
+    const productList = allProducts || products || [];
+    const found = productList.find((p: any) => p.id === productId);
+    return found?.slug || productId;
+  };
+
   const recommendedProducts = useMemo(() => {
     if (!order || !products?.length) return [];
 
     const orderProductIds = new Set(order.products.map(p => p.productId));
-    const orderProducts = products.filter(p => orderProductIds.has(p.id));
-    const categoryKeys = new Set(orderProducts.map(p => p.categoryKey));
+    const orderProducts = products.filter((p: any) => orderProductIds.has(p.id));
+    const categoryKeys = new Set(orderProducts.map((p: any) => p.categoryKey));
 
     if (categoryKeys.size === 0) {
       // Fallback: If no categories found (e.g., product deleted), show featured items
-      return products.filter(p => p.isFeatured && !orderProductIds.has(p.id)).slice(0, 4);
+      return products.filter((p: any) => p.isFeatured && !orderProductIds.has(p.id)).slice(0, 4);
     }
 
-    const similar = products.filter(p => 
+    const similar = products.filter((p: any) => 
       categoryKeys.has(p.categoryKey) &&
       !orderProductIds.has(p.id) &&
       p.isPublished !== false
@@ -146,30 +154,33 @@ export const UserOrderDetails: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold p-6 border-b border-gray-100">Items Ordered ({order.products.length})</h2>
             <ul className="divide-y divide-gray-100">
-              {order.products.map((item, idx) => (
-                <li key={idx} className="p-6 flex flex-col sm:flex-row gap-4 items-start">
-                  {/* Product info on the left */}
-                  <div className="flex gap-4 flex-1">
-                    <Link to={`/product/${item.productId}`}>
-                      <img src={item.image} alt={item.title} className="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
-                    </Link>
-                    <div className="flex-1">
-                      <Link to={`/product/${item.productId}`} className="font-bold text-sm text-gray-900 hover:text-brand-green transition-colors block">{item.title}</Link>
-                      <p className="text-xs text-gray-500 mt-1">Size: {item.size} {item.selectedColor && `| Color: ${item.selectedColor}`}</p>
-                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                    </div>
-                  </div>
-                  {/* Price and Action on the right */}
-                  <div className="flex flex-col items-start sm:items-end justify-between h-full w-full sm:w-auto mt-4 sm:mt-0">
-                    <p className="text-sm font-bold text-gray-900 mb-2 sm:mb-0">£{(item.price * item.quantity).toFixed(2)}</p>
-                    {order.status === 'Delivered' && (
-                      <Link to={`/product/${item.productId}#reviews`}>
-                        <Button variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-wider">Leave a Testimony</Button>
+              {order.products.map((item, idx) => {
+                const slug = getProductSlug(item.productId);
+                return (
+                  <li key={idx} className="p-6 flex flex-col sm:flex-row gap-4 items-start">
+                    {/* Product info on the left */}
+                    <div className="flex gap-4 flex-1">
+                      <Link to={`/product/${slug}`}>
+                        <img src={item.image} alt={item.title} className="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
                       </Link>
-                    )}
-                  </div>
-                </li>
-              ))}
+                      <div className="flex-1">
+                        <Link to={`/product/${slug}`} className="font-bold text-sm text-gray-900 hover:text-brand-green transition-colors block">{item.title}</Link>
+                        <p className="text-xs text-gray-500 mt-1">Size: {item.size} {item.selectedColor && `| Color: ${item.selectedColor}`}</p>
+                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                    {/* Price and Action on the right */}
+                    <div className="flex flex-col items-start sm:items-end justify-between h-full w-full sm:w-auto mt-4 sm:mt-0">
+                      <p className="text-sm font-bold text-gray-900 mb-2 sm:mb-0">£{(item.price * item.quantity).toFixed(2)}</p>
+                      {order.status === 'Delivered' && (
+                        <Link to={`/product/${slug}#reviews`}>
+                          <Button variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-wider">Leave a Testimony</Button>
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -231,7 +242,7 @@ export const UserOrderDetails: React.FC = () => {
         <section className="mt-24 border-t border-slate-100 pt-16">
           <h2 className="text-3xl font-serif font-bold text-brand-dark mb-12">You May Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {recommendedProducts.map(prod => (
+            {recommendedProducts.map((prod: any) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
           </div>

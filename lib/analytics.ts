@@ -1,29 +1,29 @@
 
 import { supabase } from './supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-
-const SESSION_KEY = 'jambo_session_id';
-const GEO_KEY = 'jambo_geo_data';
+import { CacheManager, STORAGE_KEYS } from './cache';
 
 // Helper to get or create a session ID
 const getSessionId = (): string => {
-  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  let sessionId = CacheManager.session.get<string>(STORAGE_KEYS.SESSION);
   if (!sessionId) {
     sessionId = uuidv4();
-    sessionStorage.setItem(SESSION_KEY, sessionId);
+    CacheManager.session.set(STORAGE_KEYS.SESSION, sessionId);
   }
   return sessionId;
 };
 
 const getApproxGeo = () => {
   try {
-    const stored = sessionStorage.getItem(GEO_KEY);
-    if (stored) return JSON.parse(stored);
+    const stored = CacheManager.session.get<{country: string, city: string}>(STORAGE_KEYS.GEO);
+    if (stored) return stored;
+    
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const country = timeZone.split('/')[0] || 'Unknown';
     const city = timeZone.split('/')[1] || 'Unknown';
     const geo = { country, city: city.replace('_', ' ') };
-    sessionStorage.setItem(GEO_KEY, JSON.stringify(geo));
+    
+    CacheManager.session.set(STORAGE_KEYS.GEO, geo);
     return geo;
   } catch (e) {
     return { country: 'Unknown', city: 'Unknown' };
