@@ -33,8 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper: Fetch Profile (Single Source of Truth)
   const fetchProfile = useCallback(async (uid: string, email: string, metaName?: string) => {
-    console.log(`[Auth] 📥 Fetching profile for ${email}`);
-    
     // 1. Default Fallback
     const fallback: User = {
       id: uid,
@@ -45,7 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     try {
-      // 2. Single DB Query (No retries loop here, let UI handle retry if needed)
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -53,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
       
       if (!error && data) {
-        console.log(`[Auth] ✅ Profile loaded: role=${data.role}`);
         return {
           id: data.id,
           name: data.name,
@@ -66,7 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn(`[Auth] Profile fetch warning:`, err.message);
     }
     
-    console.log("[Auth] Using fallback profile");
     return fallback;
   }, []);
 
@@ -76,30 +71,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (listenerInitialized.current) return;
     listenerInitialized.current = true;
 
-    console.log("[Auth] 🔐 Initializing auth listener (ONCE)");
+    console.log("[Auth] 🔐 Initializing auth listener");
     let subscription: any = null;
 
     const init = async () => {
       try {
         // 1. Check Initial Session
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        
+        if (error) {
+            console.error("[Auth] Session restore error:", error.message);
+            throw error;
+        }
         
         if (session?.user) {
-          console.log("[Auth] 👤 Initial session found");
+          console.log(`[Auth] 👤 Restored session for ${session.user.email}`);
           const profile = await fetchProfile(
             session.user.id,
             session.user.email!,
             session.user.user_metadata?.name
           );
           if (mountedRef.current) setUser(profile);
+        } else {
+          console.log("[Auth] No active session found (Guest)");
         }
       } catch (e: any) {
-        if (isAbortError(e)) {
-          // Suppress AbortError logs (common during refresh/strict mode)
-          console.debug("[Auth] Session initialization aborted (non-critical)");
-        } else {
-          console.error("[Auth] Init Error", e);
+        if (!isAbortError(e)) {
+          console.error("[Auth] Init Critical Error", e);
         }
       } finally {
         if (mountedRef.current) {
@@ -108,31 +106,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 2. Set up Listener (ONCE)
+      // 2. Set up Listener
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log(`[Auth] Event: ${event}`);
         
         if (!mountedRef.current) return;
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          setLoading(true);
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          // Only show loading on explicit sign in, not silent refresh
+          if (event === 'SIGNED_IN') setLoading(true);
+          
           const profile = await fetchProfile(
             session.user.id,
             session.user.email!,
             session.user.user_metadata?.name
           );
+          
           if (mountedRef.current) {
             setUser(profile);
             setLoading(false);
+            if (!isAuthReady) setIsAuthReady(true);
           }
         } else if (event === 'SIGNED_OUT') {
           if (mountedRef.current) {
             setUser(null);
             setLoading(false);
+            setIsAuthReady(true); // Ensure app unblocks even on logout
             navigate('/');
           }
         }
-        // Ignored: TOKEN_REFRESHED, INITIAL_SESSION (handled manually above)
       });
       subscription = data.subscription;
     };
@@ -144,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (subscription) subscription.unsubscribe();
       listenerInitialized.current = false;
     };
-  }, []); // Empty dependency array is CRITICAL
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

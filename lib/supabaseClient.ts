@@ -27,7 +27,6 @@ const PROJECT_ID = 'irsurnyfjgjmlhlrkbeh';
 const HARDCODED_URL = `https://${PROJECT_ID}.supabase.co`;
 
 const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-
 const envKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY');
 
 // Priority: Env Vars -> Secrets File -> Hardcoded Fallback
@@ -48,6 +47,8 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'jambo_auth_token_v1',
+      // Explicitly set storage to window.localStorage to avoid any environment ambiguity
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   }
 );
