@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { Product } from '../../types';
 import { ProductPreview } from '../../components/admin/products/ProductPreview';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
-import { useCopilot } from '../../contexts/CopilotContext';
+import { useCopilot } from '../../context/CopilotContext';
 import { Switch } from '../../components/ui/Switch';
 
 interface ExtendedProduct extends Product {

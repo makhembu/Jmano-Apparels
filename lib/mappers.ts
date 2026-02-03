@@ -27,6 +27,8 @@ export const Mappers = {
     stockQuantity: p.stock_quantity ?? 0,
     lowStockThreshold: p.low_stock_threshold || 5,
     weight: p.weight || 0,
+    // Map isFreeShipping
+    isFreeShipping: p.is_free_shipping || false,
     
     // SEO
     seoTitle: p.seo_title || undefined,

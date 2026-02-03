@@ -1,5 +1,7 @@
+import { Database, Json } from './database.types';
 
-import { Tables, Json } from './database.types';
+// Helper to extract tables from Database type
+type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
 
 // ... (Keep existing types)
 
@@ -32,6 +34,8 @@ export interface Product {
   stockQuantity: number;
   lowStockThreshold: number;
   weight: number;
+  // Added isFreeShipping property
+  isFreeShipping?: boolean;
   seoTitle?: string;
   seoDescription?: string;
   canonicalUrl?: string;

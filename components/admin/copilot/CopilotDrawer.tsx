@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useCopilot } from '../../../contexts/CopilotContext';
+import { useCopilot } from '../../../context/CopilotContext';
 import { useCopilotShortcuts } from '../../../hooks/useCopilotShortcuts';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';

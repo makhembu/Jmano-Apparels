@@ -10,14 +10,13 @@ import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import ScrollToTop from './components/ScrollToTop';
 import { SystemHealth } from './components/SystemHealth';
-import { supabase } from './lib/supabaseClient';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 import { CacheManager } from './lib/cache';
 
 // --- Lazy Loaded Components ---
 
-// Public Pages (Critical Path - Keep Home Eager if possible, but lazy for now to split bundle)
+// Public Pages
 import { Home } from './pages/Home';
 import { Shop } from './pages/Shop';
 import { ProductDetails } from './pages/ProductDetails';
@@ -68,26 +67,6 @@ const AdminProfile = lazy(() => import('./pages/admin/AdminProfile').then(module
 const isProduction = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
 const Router = isProduction ? BrowserRouter : HashRouter;
 
-// Auth Event Handler
-const AuthEventHandler = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Cast to any to bypass type mismatch error
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        navigate('/update-password');
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  return null;
-};
-
 const App: React.FC = () => {
   // Version Check on Mount
   useEffect(() => {
@@ -96,15 +75,14 @@ const App: React.FC = () => {
 
   return (
     <SystemHealth>
-      <AuthProvider>
-        <ShopProvider>
-          <CartProvider>
-            <AppProvider>
-              <Router>
+      <Router>
+        <AuthProvider>
+          <ShopProvider>
+            <CartProvider>
+              <AppProvider>
                 <GlobalScriptInjector />
                 <GlobalAnalyticsTracker />
                 <ScrollToTop />
-                <AuthEventHandler />
                 
                 <Suspense fallback={<LoadingSpinner fullScreen />}>
                   <Routes>
@@ -161,11 +139,11 @@ const App: React.FC = () => {
                     <Route path="*" element={<Layout><NotFound /></Layout>} />
                   </Routes>
                 </Suspense>
-              </Router>
-            </AppProvider>
-          </CartProvider>
-        </ShopProvider>
-      </AuthProvider>
+              </AppProvider>
+            </CartProvider>
+          </ShopProvider>
+        </AuthProvider>
+      </Router>
     </SystemHealth>
   );
 };

@@ -44,26 +44,6 @@ export const SystemSection: React.FC<SystemSectionProps> = ({ settings, onChange
         )}
       </div>
 
-      {/* AI Configuration */}
-      <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
-        <h3 className="text-lg font-medium border-b pb-2 text-brand-green">AI Capabilities</h3>
-        <p className="text-sm text-gray-500">Configure the API Key for your Admin Copilot and AI content generation tools.</p>
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Gemini API Key</label>
-          <input 
-            type="password" 
-            name="geminiApiKey" 
-            value={settings.geminiApiKey || ''} 
-            onChange={onChange} 
-            placeholder="AI Key from Google AI Studio"
-            className="w-full border border-gray-300 rounded-lg p-3 text-sm font-mono focus:ring-2 focus:ring-brand-green/20 outline-none"
-          />
-          <p className="text-[10px] text-slate-400 mt-2">
-            Obtain your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-green hover:underline">Google AI Studio</a>.
-          </p>
-        </div>
-      </div>
-
       <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
          <p className="text-sm text-gray-500">Email Configuration is managed in the <strong>Notifications</strong> tab.</p>
       </div>

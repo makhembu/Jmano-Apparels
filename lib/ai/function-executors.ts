@@ -86,6 +86,22 @@ export function createFunctionExecutors(context: ExecutionContext) {
         }
     },
 
+    getLiveTraffic: async () => {
+        try {
+            const visitors = await api.getLiveVisitors();
+            return {
+                count: visitors.length,
+                active_users: visitors.slice(0, 5).map(v => ({
+                    page: v.path,
+                    location: v.geo_country === 'Unknown' ? 'Anonymous Location' : `${v.geo_city}, ${v.geo_country}`,
+                    user: v.user_email || 'Guest'
+                }))
+            };
+        } catch (e: any) {
+            return { error: e.message };
+        }
+    },
+
     highlightElement: async (args: HighlightTarget) => {
       const { elementId, duration = 5000 } = args;
       

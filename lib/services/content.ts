@@ -1,4 +1,6 @@
+
 import { supabase } from '../supabaseClient';
+import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
 import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, EmailTemplate, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate } from '../../types';
@@ -6,21 +8,24 @@ import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmi
 export class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
     log('SELECT', 'blog_posts');
-    const { data, error } = await supabase.from('blog_posts').select('*').order('date', { ascending: false });
+    // Use public client
+    const { data, error } = await supabasePublic.from('blog_posts').select('*').order('date', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbBlogPost[]).map(Mappers.toBlogPost);
   }
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
     log('SELECT', 'blog_posts', slug);
-    const { data, error } = await supabase.from('blog_posts').select('*').eq('slug', slug).single();
+    // Use public client
+    const { data, error } = await supabasePublic.from('blog_posts').select('*').eq('slug', slug).single();
     if (error) return null;
     return Mappers.toBlogPost(data as DbBlogPost);
   }
   
   async getCategories(): Promise<BlogCategory[]> {
     log('SELECT', 'blog_categories');
-    const { data, error } = await supabase.from('blog_categories').select('*');
+    // Use public client
+    const { data, error } = await supabasePublic.from('blog_categories').select('*');
     if (error) throw error;
     return ((data || []) as DbBlogCategory[]).map(Mappers.toBlogCategory);
   }
@@ -63,8 +68,15 @@ export class BlogService {
 
   async incrementViewCount(id: string): Promise<void> {
     log('RPC/UPDATE', 'blog_posts', `increment views for ${id}`);
-    const { data } = await supabase.from('blog_posts').select('view_count').eq('id', id).single();
+    // Use public client for select, but write needs proper perms. 
+    // Usually view count increment is an RPC or public write policy.
+    // For now we'll stick to supabase (auth) or supabasePublic depending on policy.
+    // Assuming anyone can increment views:
+    const { data } = await supabasePublic.from('blog_posts').select('view_count').eq('id', id).single();
     if (data) {
+       // Since this is a write, and often RLS allows only auth users or admins to UPDATE, 
+       // but view counts are special. If this fails due to RLS, an RPC is better.
+       // We'll leave this as 'supabase' (legacy client) which might be anon or auth.
        await supabase.from('blog_posts').update({ view_count: (data.view_count || 0) + 1 }).eq('id', id);
     }
   }
@@ -96,14 +108,16 @@ export class BlogService {
 export class SettingsService {
   async get(): Promise<AppSettings | null> {
     log('SELECT', 'app_settings');
-    const { data, error } = await supabase.from('app_settings').select('*').single();
+    // Use public client
+    const { data, error } = await supabasePublic.from('app_settings').select('*').single();
     if (error) return null;
     return Mappers.toAppSettings(data as DbAppSettings);
   }
 
   async getPublicPaymentSettings(): Promise<{ paypalClientId: string; paypalMode: string; paymentGatewayEnabled: boolean; currency: string } | null> {
     log('RPC', 'get_public_payment_settings');
-    const { data, error } = await supabase.rpc('get_public_payment_settings');
+    // Use public client for this RPC which is specifically granted to anon
+    const { data, error } = await supabasePublic.rpc('get_public_payment_settings');
     if (error) {
       console.error(error);
       return null;
@@ -144,7 +158,6 @@ export class SettingsService {
       privacy_policy: settings.privacyPolicy,
       terms_conditions: settings.termsConditions,
       return_policy: settings.returnPolicy,
-      // FIX: Changed settings.shipping_policy to settings.shippingPolicy to match AppSettings interface
       shipping_policy: settings.shippingPolicy,
       tax_rate: settings.taxRate,
       free_shipping_threshold: settings.freeShippingThreshold,
@@ -181,7 +194,6 @@ export class SettingsService {
       // PayPal Settings Mapping
       paypal_client_id: settings.paypalClientId,
       paypal_secret_key: settings.paypalSecretKey,
-      // FIX: Changed settings.paypal_mode to settings.paypalMode to match AppSettings interface
       paypal_mode: settings.paypalMode,
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };

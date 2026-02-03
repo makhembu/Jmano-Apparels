@@ -1,10 +1,11 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 import { ProductFilters } from '../lib/services/catalog';
 import { isAbortError } from '../lib/utils';
+import { useAuth } from './AuthContext';
 
 interface ShopContextType {
   products: Product[]; // Currently visible products in the shop
@@ -42,6 +43,10 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   
+  // Prevent double-fetch on mount
+  const hasInitialized = useRef(false);
+  const isLoadingRef = useRef(false);
+  
   // Split Loading States
   const [initialLoading, setInitialLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -60,40 +65,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Initial Data Load (Settings, Cats, Blogs - Small payloads)
-  const refreshData = useCallback(async () => {
-    try {
-      // Note: We don't set initialLoading to true here if it's already false (re-fetching)
-      // to avoid full screen blockers on background refreshes.
-      
-      const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
-        api.getAppSettings(),
-        api.getCategories(),
-        api.getBlogPosts(),
-        api.getRecentReviews(6)
-      ]);
-
-      if (fetchedSettings) setSettings(fetchedSettings);
-      if (fetchedCats) setCategories(fetchedCats);
-      if (fetchedPosts) setBlogPosts(fetchedPosts);
-      if (fetchedReviews) setLatestReviews(fetchedReviews);
-      
-      // Load All Products for Admin/Home compatibility (legacy support)
-      const all = await api.getProducts();
-      setAllProducts(all);
-
-      // Initial Paginated Load
-      await fetchPaginated(1, filters, true);
-
-    } catch (error: any) {
-      if (isAbortError(error)) return;
-      console.error("Data fetch error:", error);
-      showToast("Connection issue. Some content may be missing.", 'error');
-    } finally {
-      setInitialLoading(false);
-    }
-  }, [showToast, filters]); // Note: filters dependency is okay here as it's part of initial grid load
-
   // Specialized fetcher for the shop grid
   const fetchPaginated = async (p: number, currentFilters: ProductFilters, reset: boolean = false) => {
     try {
@@ -108,29 +79,97 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e: any) {
         if (isAbortError(e)) return;
         console.error("Pagination error", e);
+        // Don't re-throw, just fail gracefully
     }
   };
+
+  // Initial Data Load (Settings, Cats, Blogs - Small payloads)
+  const loadInitialData = useCallback(async () => {
+    // Prevent concurrent calls
+    if (isLoadingRef.current) return;
+    
+    isLoadingRef.current = true;
+    setInitialLoading(true);
+    
+    try {
+      console.log("Starting initial data load...");
+      
+      // TIMEOUT SAFETY: 10s max
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Data fetch timed out")), 10000)
+      );
+
+      const fetchDataPromise = async () => {
+          // Wrap critical calls to prevent cascading failure
+          const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
+            api.getAppSettings().catch(err => { console.warn("Settings fetch failed", err); return null; }),
+            api.getCategories().catch(err => { console.warn("Categories fetch failed", err); return []; }),
+            api.getBlogPosts().catch(err => { console.warn("Blog posts fetch failed", err); return []; }),
+            api.getRecentReviews(6).catch(err => { console.warn("Reviews fetch failed", err); return []; })
+          ]);
+
+          if (fetchedSettings) setSettings(fetchedSettings);
+          if (fetchedCats) setCategories(fetchedCats);
+          if (fetchedPosts) setBlogPosts(fetchedPosts);
+          if (fetchedReviews) setLatestReviews(fetchedReviews);
+          
+          // Load All Products for Admin/Home compatibility (legacy support)
+          try {
+            const all = await api.getProducts();
+            setAllProducts(all);
+          } catch (e) {
+            console.warn("Legacy product fetch failed", e);
+          }
+
+          // Initial Paginated Load
+          await fetchPaginated(1, { sortBy: 'newest' }, true);
+      };
+
+      await Promise.race([fetchDataPromise(), timeoutPromise]);
+      
+    } catch (error: any) {
+      if (isAbortError(error)) return;
+      console.error("Data fetch error:", error);
+      // Even on error, we proceed so the app isn't stuck on a white screen
+    } finally {
+      setInitialLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, []);
 
   // Called when user changes filters (Category, Search)
   const updateFilters = useCallback((newFilters: Partial<ProductFilters>) => {
       const updated = { ...filters, ...newFilters };
       setFilters(updated);
-      setProductsLoading(true); // Only show local loading
-      fetchPaginated(1, updated, true).finally(() => setProductsLoading(false));
+      setProductsLoading(true);
+      fetchPaginated(1, updated, true)
+        .finally(() => setProductsLoading(false));
   }, [filters]);
 
   // Called when user clicks "Load More"
   const loadMore = useCallback(async () => {
       if (!hasMore || isLoadingMore) return;
       setIsLoadingMore(true);
-      await fetchPaginated(page + 1, filters, false);
-      setIsLoadingMore(false);
+      try {
+        await fetchPaginated(page + 1, filters, false);
+      } finally {
+        setIsLoadingMore(false);
+      }
   }, [page, hasMore, isLoadingMore, filters]);
 
+  // Refresh data function
+  const refreshData = useCallback(async () => {
+    hasInitialized.current = false; // Allow re-initialization
+    await loadInitialData();
+  }, [loadInitialData]);
+
+  // Load immediately on mount - DECOUPLED FROM AUTH
   useEffect(() => {
-    // Initial boot
-    refreshData();
-  }, []);
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      loadInitialData();
+    }
+  }, [loadInitialData]);
 
   const updateSettings = useCallback(async (newSettings: AppSettings) => {
     try {
@@ -151,8 +190,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       blogPosts, 
       latestReviews, 
       settings, 
-      loading: initialLoading, // Only expose initial loading as the main 'loading' blocker
-      productsLoading,         // Specific to shop grid
+      loading: initialLoading,
+      productsLoading, 
       refreshData, 
       updateSettings,
       hasMore,
@@ -160,7 +199,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loadMore,
       filters,
       updateFilters
-  }), [products, allProducts, categories, blogPosts, latestReviews, settings, initialLoading, productsLoading, refreshData, updateSettings, hasMore, isLoadingMore, loadMore, filters, updateFilters]);
+  }), [
+    products, 
+    allProducts, 
+    categories, 
+    blogPosts, 
+    latestReviews, 
+    settings, 
+    initialLoading, 
+    productsLoading, 
+    refreshData, 
+    updateSettings, 
+    hasMore, 
+    isLoadingMore, 
+    loadMore, 
+    filters, 
+    updateFilters
+  ]);
 
   return (
     <ShopContext.Provider value={value}>

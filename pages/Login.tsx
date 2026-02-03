@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const Login: React.FC = () => {
-  const { login, signUp, user } = useApp();
+  const { login, signUp, user, loading: authLoading, refreshProfile } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -17,11 +18,16 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Destination path (defaults to home if not specified)
   const from = location.state?.from || '/';
+
+  // If Auth is initializing, show spinner to prevent form flash
+  if (authLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
 
   // If user is already logged in, redirect immediately
   if (user) {
@@ -34,31 +40,29 @@ export const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
     setErrorMsg('');
     
     try {
       if (isSignUp) {
         if (!agreedToTerms) {
           setErrorMsg("You must agree to the terms and privacy policy to sign up.");
-          setLoading(false);
+          setFormLoading(false);
           return;
         }
         await signUp(email, password, name);
-        // Signup successful - stop loading.
-        // If auto-confirm is enabled, `user` will update and trigger redirect.
-        setLoading(false);
+        // Signup successful
+        setFormLoading(false);
       } else {
         await login(email, password);
-        // Login successful.
-        // We do NOT navigate manually here. We wait for the `user` state to update via AuthContext.
-        // This ensures the profile (and role) is loaded before the redirect logic above runs.
-        // We also do NOT set loading to false, to prevent the form from becoming interactive again before redirect.
+        // Login successful. Explicitly sync profile to ensure immediate UI update
+        await refreshProfile();
+        // The 'user' state update will trigger the Redirect above.
       }
     } catch (err: any) {
       console.error("Form submission error:", err);
       setErrorMsg(err.message || "Authentication failed. Please check your credentials.");
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -172,12 +176,12 @@ export const Login: React.FC = () => {
           <div className="pt-2">
             <Button
               type="submit"
-              disabled={loading}
+              disabled={formLoading}
               fullWidth
               variant="secondary"
               className="h-14 shadow-xl shadow-brand-hope/20"
             >
-              {loading ? (
+              {formLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                   Processing...

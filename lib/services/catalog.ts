@@ -1,5 +1,6 @@
 
 import { supabase } from '../supabaseClient';
+import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
 import { Product, Category, ProductReview, DbProduct, DbCategory } from '../../types';
@@ -23,7 +24,8 @@ export class ProductService {
   // Legacy method kept for Admin/Home compatibility, but restricted
   async getAll(): Promise<Product[]> {
     log('SELECT', 'products', 'ALL');
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    // Use public client for reading products
+    const { data, error } = await supabasePublic.from('products').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }
@@ -32,7 +34,8 @@ export class ProductService {
   async getPaginated(page: number = 1, pageSize: number = 12, filters: ProductFilters = {}): Promise<PaginatedResult> {
     log('RPC', 'get_products_paginated', { page, ...filters });
     
-    const { data, error } = await supabase.rpc('get_products_paginated', {
+    // Use public client for RPC
+    const { data, error } = await supabasePublic.rpc('get_products_paginated', {
       p_page: page,
       p_page_size: pageSize,
       p_category_key: filters.categoryKey || null,
@@ -58,7 +61,8 @@ export class ProductService {
 
   async getById(id: string): Promise<Product | null> {
     log('SELECT', 'products', id);
-    const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+    // Use public client
+    const { data, error } = await supabasePublic.from('products').select('*').eq('id', id).single();
     if (error) return null;
     return Mappers.toProduct(data as any);
   }
@@ -117,7 +121,8 @@ export class ProductService {
 export class CategoryService {
   async getAll(): Promise<Category[]> {
     log('SELECT', 'categories');
-    const { data, error } = await supabase.from('categories').select('*');
+    // Use public client
+    const { data, error } = await supabasePublic.from('categories').select('*');
     if (error) throw error;
     return ((data || []) as any[]).map(Mappers.toCategory);
   }
@@ -146,7 +151,8 @@ export class CategoryService {
 export class ReviewService {
   async getByProduct(productId: string): Promise<ProductReview[]> {
     log('SELECT', 'product_reviews', productId);
-    const { data, error } = await supabase
+    // Use public client
+    const { data, error } = await supabasePublic
       .from('product_reviews')
       .select('*')
       .eq('product_id', productId)
@@ -158,7 +164,8 @@ export class ReviewService {
 
   async getRecent(limit: number = 5): Promise<ProductReview[]> {
     log('SELECT', 'product_reviews', `LIMIT ${limit}`);
-    const { data, error } = await supabase
+    // Use public client
+    const { data, error } = await supabasePublic
       .from('product_reviews')
       .select('*')
       .eq('is_approved', true)

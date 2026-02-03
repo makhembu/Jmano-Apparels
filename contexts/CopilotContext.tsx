@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { geminiClient } from '../lib/ai/gemini-client';
-import { buildSystemPrompt } from '../lib/ai/system-prompt';
+import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { Chat } from '@google/genai';
@@ -51,9 +51,9 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     if (settingsLoading) return;
 
-    const apiKey = settings.geminiApiKey;
+    const apiKey = settings.geminiApiKey || undefined;
     if (geminiClient.isAvailable(apiKey)) {
-        const prompt = buildSystemPrompt(pageContext);
+        const prompt = generateSystemPrompt(pageContext);
         chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
   }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading]); 
@@ -61,10 +61,10 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = settings.geminiApiKey;
+    const apiKey = settings.geminiApiKey || undefined;
     
     if (!chatSession.current) {
-      const prompt = buildSystemPrompt(pageContext);
+      const prompt = generateSystemPrompt(pageContext);
       chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
     
@@ -125,9 +125,9 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const clearHistory = () => {
       setMessages([]);
-      const apiKey = settings.geminiApiKey;
+      const apiKey = settings.geminiApiKey || undefined;
       if (geminiClient.isAvailable(apiKey)) {
-        chatSession.current = geminiClient.createChat(buildSystemPrompt(pageContext), apiKey);
+        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
       }
   };
 

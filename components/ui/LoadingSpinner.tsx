@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface LoadingSpinnerProps {
@@ -15,7 +16,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ className = "", 
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white bg-opacity-90 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-white bg-opacity-95 z-[100] flex items-center justify-center">
         {spinner}
       </div>
     );

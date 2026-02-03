@@ -70,7 +70,8 @@ export const functionDeclarations: FunctionDeclaration[] = [
             'tab-emails',
             'tab-contact',
             'tab-content',
-            'tab-system'
+            'tab-system',
+            'live-traffic-card'
           ]
         }
       },
@@ -86,5 +87,6 @@ export const ELEMENT_ID_MAP = {
   'Revenue Card': 'card-kpi-revenue',
   'Brand Tab': 'tab-brand',
   'SEO Tab': 'tab-seo',
-  'Payments Tab': 'tab-payments'
+  'Payments Tab': 'tab-payments',
+  'Live Traffic': 'live-traffic-card'
 } as const;

@@ -27,7 +27,6 @@ const PROJECT_ID = 'irsurnyfjgjmlhlrkbeh';
 const HARDCODED_URL = `https://${PROJECT_ID}.supabase.co`;
 
 const envUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-
 const envKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY');
 
 // Priority: Env Vars -> Secrets File -> Hardcoded Fallback
@@ -35,19 +34,18 @@ const supabaseUrl = envUrl ? formatUrl(envUrl) : (SECRETS.SUPABASE_URL || HARDCO
 const supabaseKey = envKey || SECRETS.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('[Supabase] CRITICAL: No API Key found. Please ensure VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY is set.');
+  console.error('[Supabase Public] CRITICAL: No API Key found.');
 }
 
-// Initialize the client
-export const supabase = createClient<Database>(
+// Initialize the public client with NO session persistence
+export const supabasePublic = createClient<Database>(
   supabaseUrl,
   supabaseKey || '', 
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: 'jambo_auth_token_v1',
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
   }
 );
