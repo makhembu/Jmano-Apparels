@@ -12,6 +12,7 @@ interface CartContextType {
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
   removeFromCart: (productId: string, size: string, color?: string) => void;
   clearCart: () => void;
+  refreshCart: (userId: string) => Promise<void>;
   cartTotal: number;
   cartCount: number;
 }
@@ -20,79 +21,96 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
   const userRef = useRef(user);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     userRef.current = user;
   }, [user]);
 
-  // 1. Initial Load: Use CacheManager to get local cart
+  // 1. Initial Local Load
   useEffect(() => {
     try {
       const savedCart = CacheManager.local.get<CartItem[]>(STORAGE_KEYS.CART);
-      if (savedCart) {
-        setCart(savedCart);
-      }
+      if (savedCart) setCart(savedCart);
     } catch (e) {
-      console.error("Error loading cart from storage", e);
+      console.error("Error loading local cart", e);
     }
     setIsLoaded(true);
   }, []);
 
-  // 2. Auth Merge: When user logs in, fetch DB cart and merge
-  useEffect(() => {
-    if (!isLoaded || authLoading) return;
+  // 2. Explicit Refresh (Called by App Orchestrator)
+  const refreshCart = useCallback(async (userId: string) => {
+    if (!userId) return;
+    console.log(`[Cart] Refreshing for user ${userId}...`);
+    
+    try {
+      const serverCart = await api.fetchCart(userId);
+      
+      setCart(currentLocalCart => {
+        // Simple merge strategy: If local is empty, take server.
+        // If local has items, we prefer local changes (assuming recent action), 
+        // but typically you'd merge. For safety, we'll append new server items to local.
+        
+        if (currentLocalCart.length === 0) {
+            // Avoid state update if identical
+            if (JSON.stringify(serverCart) === JSON.stringify(currentLocalCart)) return currentLocalCart;
+            return serverCart;
+        }
 
-    if (user) {
-      api.fetchCart(user.id).then(serverCart => {
-        setCart(currentLocalCart => {
-          if (currentLocalCart.length === 0) return serverCart;
+        const merged = [...currentLocalCart];
+        let hasChanges = false;
 
-          const merged = [...serverCart];
+        serverCart.forEach(serverItem => {
+           const exists = merged.find(localItem => 
+             localItem.id === serverItem.id && 
+             localItem.selectedSize === serverItem.selectedSize && 
+             localItem.selectedColor === serverItem.selectedColor
+           );
 
-          currentLocalCart.forEach(localItem => {
-             const exists = merged.find(serverItem => 
-               serverItem.id === localItem.id && 
-               serverItem.selectedSize === localItem.selectedSize && 
-               serverItem.selectedColor === localItem.selectedColor
-             );
-
-             if (!exists) {
-                merged.push(localItem);
-             }
-          });
-          
-          return merged;
+           if (!exists) {
+              merged.push(serverItem);
+              hasChanges = true;
+           }
         });
-      }).catch(err => {
-        if (!isAbortError(err)) console.error("Failed to fetch cart", err);
-      });
-    }
-  }, [user, isLoaded, authLoading]);
 
-  // 3. Persistence: Save to CacheManager and DB
+        return hasChanges ? merged : currentLocalCart;
+      });
+    } catch (err) {
+      if (!isAbortError(err)) console.error("Failed to fetch remote cart", err);
+    }
+  }, []);
+
+  // 3. Persistence (Debounced Sync)
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Save to local via centralized manager
     CacheManager.local.set(STORAGE_KEYS.CART, cart);
 
-    // Save to DB
     const currentUser = userRef.current;
-    if (currentUser) {
-      api.syncCart(currentUser.id, cart).catch(err => {
-        if (!isAbortError(err)) console.error("Failed to sync cart", err);
-      });
+    if (currentUser?.id) {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+
+      syncTimeoutRef.current = setTimeout(() => {
+        console.log(`[Cart] Syncing ${cart.length} items to DB...`);
+        api.syncCart(currentUser.id, cart).catch(err => {
+          if (!isAbortError(err)) console.error("DB Sync failed", err);
+        });
+      }, 2000); // 2s debounce
     }
-  }, [cart, isLoaded]);
+
+    return () => {
+        if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, [cart, isLoaded]); 
 
   const addToCart = useCallback((product: Product, size: string, quantity: number, color?: string) => {
     if (product.stockQuantity !== undefined && product.stockQuantity < quantity) {
-        showToast(`Only ${product.stockQuantity} items left in stock.`, 'error');
+        showToast(`Only ${product.stockQuantity} items left.`, 'error');
         return;
     }
 
@@ -108,7 +126,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newQty = existingItem.quantity + quantity;
         
         if (product.stockQuantity !== undefined && newQty > product.stockQuantity) {
-            showToast(`Cannot add more. You have ${existingItem.quantity} in cart and stock is ${product.stockQuantity}.`, 'error');
+            showToast(`Stock limit reached.`, 'error');
             return prev;
         }
 
@@ -116,9 +134,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         newCart[existingIndex] = { ...existingItem, quantity: newQty };
         return newCart;
       }
-      
       return [...prev, { ...product, quantity, selectedSize: size, selectedColor: color }];
     });
+    showToast(`Added ${product.title}`, 'success');
   }, [showToast]);
 
   const removeFromCart = useCallback((productId: string, size: string, color?: string) => {
@@ -135,16 +153,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     CacheManager.local.remove(STORAGE_KEYS.CART);
     const currentUser = userRef.current;
     if (currentUser) {
-      api.syncCart(currentUser.id, []).catch(err => {
-        if (!isAbortError(err)) console.error("Failed to clear remote cart", err);
-      });
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      api.syncCart(currentUser.id, []).catch(console.error);
     }
   }, []);
 
   const cartTotal = cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  const value = useMemo(() => ({ cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount }), [cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount]);
+  const value = useMemo(() => ({ 
+      cart, addToCart, removeFromCart, clearCart, refreshCart, cartTotal, cartCount 
+  }), [cart, addToCart, removeFromCart, clearCart, refreshCart, cartTotal, cartCount]);
 
   return (
     <CartContext.Provider value={value}>

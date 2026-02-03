@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { api } from '../lib/db';
 import { Product, Order } from '../types';
@@ -13,25 +14,47 @@ import { Profile } from '../components/dashboard/Profile';
 type Tab = 'overview' | 'orders' | 'wishlist' | 'profile';
 
 export const Dashboard: React.FC = () => {
-  const { user, orders, loading: appLoading } = useApp();
+  // Use Auth Context directly for user state and readiness
+  const { user, isAuthReady } = useAuth();
+  
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  
+  // Local Data State
+  const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      setWishlistLoading(true);
-      api.getWishlistProducts(user.id)
-        .then(setWishlistItems)
-        .catch(err => console.error("Wishlist fetch error", err))
-        .finally(() => setWishlistLoading(false));
+    // Only fetch when Auth is confirmed ready and we have a user
+    if (isAuthReady && user) {
+      setLoading(true);
+      Promise.all([
+        api.getOrders(user.id),
+        api.getWishlistProducts(user.id)
+      ])
+      .then(([fetchedOrders, fetchedWishlist]) => {
+        setOrders(fetchedOrders);
+        setWishlistItems(fetchedWishlist);
+      })
+      .catch(err => console.error("Dashboard data fetch failed", err))
+      .finally(() => setLoading(false));
+    } else if (isAuthReady && !user) {
+        setLoading(false);
     }
-  }, [user]);
+  }, [isAuthReady, user?.id]);
 
-  if (appLoading) return <LoadingSpinner fullScreen />;
-  if (!user) return <div className="p-20 text-center animate-fade-in"><p className="text-gray-500 mb-4">Please sign in to access your dashboard.</p><a href="/#/login" className="text-brand-green font-bold underline underline-offset-4">Sign In Now &rarr;</a></div>;
+  // If Auth hasn't settled yet, wait (prevents flash of login screen)
+  if (!isAuthReady) return <LoadingSpinner fullScreen />;
+  
+  // If settled but no user, prompt login
+  if (!user) return (
+    <div className="p-20 text-center animate-fade-in">
+        <p className="text-gray-500 mb-4">Please sign in to access your dashboard.</p>
+        <Link to="/login" className="text-brand-green font-bold underline underline-offset-4">Sign In Now &rarr;</Link>
+    </div>
+  );
 
-  const myOrders = orders.filter(o => o.userId === user.id);
+  if (loading) return <LoadingSpinner fullScreen />;
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> },
@@ -93,15 +116,15 @@ export const Dashboard: React.FC = () => {
               </h1>
 
               {activeTab === 'overview' && (
-                <Overview user={user} orders={myOrders} wishlistCount={wishlistItems.length} onNavigate={(tab) => setActiveTab(tab as Tab)} />
+                <Overview user={user} orders={orders} wishlistCount={wishlistItems.length} onNavigate={(tab) => setActiveTab(tab as Tab)} />
               )}
               
               {activeTab === 'orders' && (
-                <Orders orders={myOrders} />
+                <Orders orders={orders} />
               )}
 
               {activeTab === 'wishlist' && (
-                <Wishlist products={wishlistItems} loading={wishlistLoading} />
+                <Wishlist products={wishlistItems} loading={false} />
               )}
 
               {activeTab === 'profile' && (

@@ -6,6 +6,7 @@ import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { Chat } from '@google/genai';
+import { useShop } from './ShopContext';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -15,8 +16,8 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings, loading: settingsLoading } = useShop();
   
-  // Track page context
   const [pageContext, setPageContext] = useState<PageContext>({
     route: location.pathname,
     pageName: 'Dashboard',
@@ -33,142 +34,109 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const path = location.pathname;
     let name = 'Dashboard';
-    let actions: string[] = [];
-
-    if (path.includes('/orders')) {
-        name = path.includes('new') ? 'Create Order' : 'Orders';
-        actions = ['getLatestOrder', 'navigate'];
-    } else if (path.includes('/products')) {
-        name = 'Products';
-        actions = ['getDetailedInventoryReport', 'navigate'];
-    } else if (path.includes('/settings')) {
-        name = 'Settings';
-    }
+    if (path.includes('/orders')) name = path.includes('new') ? 'Create Order' : 'Orders';
+    else if (path.includes('/products')) name = 'Products';
+    else if (path.includes('/app-settings')) name = 'App Settings';
+    else if (path.includes('/shop-settings')) name = 'Shop Settings';
 
     setPageContext(prev => ({
         ...prev,
         route: path,
         pageName: name,
-        availableActions: actions,
         pageData: prev.route === path ? prev.pageData : undefined 
     }));
   }, [location.pathname]);
 
-  // Initialize Chat Session
+  // Handle Session Initialization - Prioritizing DB Key
   useEffect(() => {
-    if (geminiClient.isAvailable()) {
+    if (settingsLoading) return;
+
+    const apiKey = settings.geminiApiKey || undefined;
+    if (geminiClient.isAvailable(apiKey)) {
         const prompt = generateSystemPrompt(pageContext);
-        // Re-create chat when context fundamentally changes or on init
-        if (!chatSession.current) {
-            chatSession.current = geminiClient.createChat(prompt);
-        }
+        chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
-  }, [pageContext.pageName]); 
+  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading]); 
 
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
+    const apiKey = settings.geminiApiKey || undefined;
+    
     if (!chatSession.current) {
-        // Try one more time to init if key wasn't ready earlier
-        if (geminiClient.isAvailable()) {
-             chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext));
-        } else {
-             setMessages(prev => [...prev, { 
-                id: Date.now().toString(), 
-                role: 'user', 
-                content, 
-                timestamp: new Date() 
-            }, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                content: "I'm sorry, I haven't been configured with an API Key yet.",
-                timestamp: new Date(),
-                isError: true
-            }]);
-            return;
-        }
+      const prompt = generateSystemPrompt(pageContext);
+      chatSession.current = geminiClient.createChat(prompt, apiKey);
     }
     
     if (!chatSession.current || !content.trim()) return;
 
-    // 1. Add User Message
-    const userMsg: Message = {
-        id: Date.now().toString(),
-        role: 'user',
-        content,
-        timestamp: new Date()
+    const userMsg: Message = { 
+        id: Date.now().toString(), 
+        role: 'user', 
+        content, 
+        timestamp: new Date() 
     };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
     try {
-        // 2. Send to Gemini
         let response = await chatSession.current.sendMessage({ message: content });
         
-        // 3. Handle Tool Calls Loop
         while (response.functionCalls && response.functionCalls.length > 0) {
             const functionResponses = await Promise.all(
                 response.functionCalls.map(async (call) => {
                     const executor = (executors as any)[call.name];
-                    let result;
-                    if (executor) {
-                        result = await executor(call.args);
-                    } else {
-                        result = { error: `Function ${call.name} not found` };
-                    }
-                    
-                    return {
-                        functionResponse: {
-                            name: call.name,
-                            id: call.id,
-                            response: { result }
-                        }
+                    const result = executor ? await executor(call.args) : { error: `Function ${call.name} not found` };
+                    return { 
+                        functionResponse: { 
+                            name: call.name, 
+                            id: call.id, 
+                            response: { result } 
+                        } 
                     };
                 })
             );
-
-            // Send tool outputs back
             response = await chatSession.current.sendMessage({ message: functionResponses });
         }
 
-        // 4. Add Model Response
-        const text = response.text || "I processed that for you.";
-        const botMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'model',
-            content: text,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, botMsg]);
+        const text = response.text || "I've handled that request for you.";
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'model', 
+            content: text, 
+            timestamp: new Date() 
+        }]);
 
     } catch (e: any) {
-        console.error("Copilot Error:", e);
-        const errorMsg: Message = {
-            id: Date.now().toString(),
-            role: 'model',
-            content: "Sorry, I encountered an error connecting to Gemini. Please try again later.",
-            timestamp: new Date(),
-            isError: true
-        };
-        setMessages(prev => [...prev, errorMsg]);
+        console.error("Jambo Copilot Error:", e);
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'model', 
+            content: "I'm having trouble processing that right now. Please try again.", 
+            timestamp: new Date(), 
+            isError: true 
+        }]);
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors]); 
+  }, [pageContext, executors, settings.geminiApiKey]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
+  
   const clearHistory = () => {
       setMessages([]);
-      if (geminiClient.isAvailable()) {
-          chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext));
+      const apiKey = settings.geminiApiKey || undefined;
+      if (geminiClient.isAvailable(apiKey)) {
+        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
       }
   };
-  const updatePageContext = (ctx: Partial<PageContext>) => setPageContext(prev => ({...prev, ...ctx}));
 
   return (
     <CopilotContext.Provider value={{
         messages, isOpen, isLoading, pageContext, 
-        sendMessage, toggleDrawer, clearHistory, updatePageContext, setPageData
+        sendMessage, toggleDrawer, clearHistory, 
+        updatePageContext: (ctx) => setPageContext(prev => ({...prev, ...ctx})),
+        setPageData
     }}>
         {children}
     </CopilotContext.Provider>

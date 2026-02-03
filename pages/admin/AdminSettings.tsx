@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../lib/db';
@@ -58,15 +59,19 @@ export const AdminSettings: React.FC = () => {
     }
   }, [settings]);
 
+  const fetchCategories = useCallback(async () => {
+    const [prodCatsData, blogCatsData] = await Promise.all([
+        api.getCategories(),
+        api.getBlogCategories()
+    ]);
+    setProdCats(prodCatsData);
+    setBlogCats(blogCatsData);
+  }, []);
+
   // Load Categories on mount
   useEffect(() => {
     fetchCategories();
-  }, []);
-
-  const fetchCategories = () => {
-    api.getCategories().then(setProdCats);
-    api.getBlogCategories().then(setBlogCats);
-  };
+  }, [fetchCategories]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -126,7 +131,7 @@ export const AdminSettings: React.FC = () => {
       await api.createCategory(newProdCat);
       showToast('Category created', 'success');
       setNewProdCat({ key: '', label: '', color: '#000000', bgColorClass: '' });
-      api.getCategories().then(setProdCats);
+      await fetchCategories();
     } catch (e) {
       showToast('Failed to create category', 'error');
     } finally {
@@ -139,7 +144,7 @@ export const AdminSettings: React.FC = () => {
     try {
       await api.deleteCategory(key);
       showToast('Category deleted', 'success');
-      api.getCategories().then(setProdCats);
+      await fetchCategories();
     } catch(e) {
       showToast('Failed to delete', 'error');
     }
@@ -156,7 +161,7 @@ export const AdminSettings: React.FC = () => {
       await api.createBlogCategory({ ...newBlogCat, slug });
       showToast('Blog Category created', 'success');
       setNewBlogCat({ name: '', slug: '', description: '' });
-      api.getBlogCategories().then(setBlogCats);
+      await fetchCategories();
     } catch (e) {
       showToast('Failed to create category', 'error');
     } finally {
@@ -169,7 +174,7 @@ export const AdminSettings: React.FC = () => {
     try {
       await api.deleteBlogCategory(id);
       showToast('Category deleted', 'success');
-      api.getBlogCategories().then(setBlogCats);
+      await fetchCategories();
     } catch(e) {
       showToast('Failed to delete', 'error');
     }

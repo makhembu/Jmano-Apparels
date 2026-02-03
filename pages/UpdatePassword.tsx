@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/db';
@@ -11,19 +12,18 @@ export const UpdatePassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthReady } = useAuth();
 
-  // If no user session is detected (which should exist if they clicked a valid recovery link), redirect.
-  // We'll give it a slight delay to allow session hydration.
+  // Redirect if not authenticated after auth is ready
   useEffect(() => {
-    const timer = setTimeout(() => {
-        if (!user && !loading) {
-            // Uncommenting this might be too aggressive if auth takes time to load.
-            // For now, we rely on the user being on this page due to the AuthEventHandler redirection.
-        }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [user, loading]);
+    if (isAuthReady && !user) {
+        // If auth is initialized and no user, the password reset link might be invalid or expired.
+        // However, supabase.auth.onAuthStateChange in App.tsx/AuthContext usually handles the session from the URL hash.
+        // If we are here, we expect a user session to be active.
+        showToast("Invalid or expired password reset link.", "error");
+        navigate('/login');
+    }
+  }, [isAuthReady, user, navigate, showToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -26,14 +26,17 @@ const Icons = {
 }
 
 export const AdminLayout: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthReady } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
 
-  if (loading) {
+  // STRICT ORDER:
+  // 1. Wait for Auth Check to complete
+  if (!isAuthReady || loading) {
     return <LoadingSpinner fullScreen />;
   }
 
+  // 2. Check if user is logged in AND is admin
   if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }

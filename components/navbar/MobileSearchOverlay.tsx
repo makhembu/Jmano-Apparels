@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
-import { getVisibleProducts, searchProducts } from '../../lib/utils';
+import { api } from '../../lib/db';
 import { Product } from '../../types';
 
 interface MobileSearchOverlayProps {
@@ -11,15 +10,37 @@ interface MobileSearchOverlayProps {
 }
 
 export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen, onClose }) => {
-  const { products } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 1) {
+        setIsSearching(true);
+        try {
+          const data = await api.getPaginatedProducts(1, 5, { search: searchQuery });
+          setResults(data.data);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setResults([]);
       onClose();
     }
   };
@@ -27,12 +48,9 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
   const handleProductClick = (product: Product) => {
     navigate(`/product/${product.slug || product.id}`);
     setSearchQuery('');
+    setResults([]);
     onClose();
   };
-
-  const visibleProducts = getVisibleProducts(products);
-  const searchResults = searchProducts(visibleProducts, searchQuery);
-  const filteredResults = searchResults.slice(0, 5);
 
   if (!isOpen) return null;
 
@@ -53,7 +71,7 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
           />
         </form>
         {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="p-2 text-slate-300">
+          <button onClick={() => { setSearchQuery(''); setResults([]); }} className="p-2 text-slate-300">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
@@ -61,8 +79,10 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
       <div className="flex-1 overflow-y-auto p-4 bg-slate-50/30">
         {searchQuery.trim() ? (
           <div className="space-y-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Suggestions</p>
-            {filteredResults.map(product => (
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                {isSearching ? 'Searching...' : 'Suggestions'}
+            </p>
+            {!isSearching && results.map(product => (
               <button key={product.id} onClick={() => handleProductClick(product)} className="w-full flex items-center gap-4 p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
                 <img src={product.images[0]} className="w-12 h-12 rounded-xl object-cover border border-slate-50" alt={product.title} />
                 <div className="text-left overflow-hidden">
@@ -71,7 +91,7 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({ isOpen
                 </div>
               </button>
             ))}
-            {filteredResults.length === 0 && <p className="text-center text-sm text-slate-500 py-10">No results found for "{searchQuery}"</p>}
+            {!isSearching && results.length === 0 && <p className="text-center text-sm text-slate-500 py-10">No results found for "{searchQuery}"</p>}
           </div>
         ) : (
           <div className="text-center py-24 px-8">

@@ -1,14 +1,14 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
-import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthReady: boolean;
   login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -20,129 +20,124 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const navigate = useNavigate();
+  
+  // State
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-  const syncUser = useCallback(async (sessionUser: any) => {
-    if (!sessionUser) {
-      setUser(null);
-      return;
-    }
+  // Guards
+  const listenerInitialized = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Helper: Fetch Profile (Single Source of Truth)
+  const fetchProfile = useCallback(async (uid: string, email: string, metaName?: string) => {
+    console.log(`[Auth] 📥 Fetching profile for ${email}`);
+    
+    // 1. Default Fallback
+    const fallback: User = {
+      id: uid,
+      email: email,
+      name: metaName || email.split('@')[0] || 'User',
+      role: 'user', 
+      createdAt: new Date().toISOString()
+    };
 
     try {
-      // TIMEOUT SAFETY: If DB fetch hangs (e.g. RLS deadlock), fallback after 8 seconds
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("User sync timed out")), 8000)
-      );
-
-      const dbPromise = supabase
+      // 2. Single DB Query (No retries loop here, let UI handle retry if needed)
+      const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', sessionUser.id)
+        .eq('id', uid)
         .maybeSingle();
-
-      const { data, error } = await Promise.race([dbPromise, timeoutPromise]) as any;
-
-      if (error) {
-         console.warn("[Auth] DB Fetch Warning:", error.message);
-      }
-
-      if (data) {
-        // Authoritative Profile found
-        setUser({
-            id: data.id,
-            name: data.name,
-            email: data.email,
-            role: data.role as UserRole,
-            createdAt: data.created_at || undefined,
-        });
-      } else {
-        // No profile in DB (new user or data issue), create fallback from session
-        console.warn("[Auth] No DB profile found, using session fallback.");
-        const fallbackProfile: User = {
-            id: sessionUser.id,
-            email: sessionUser.email!,
-            name: sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'User',
-            role: 'user', // Default safe role
-            createdAt: new Date().toISOString()
+      
+      if (!error && data) {
+        console.log(`[Auth] ✅ Profile loaded: role=${data.role}`);
+        return {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          createdAt: data.created_at || undefined,
         };
-        
-        setUser(fallbackProfile);
-        
-        // Self-heal: Create the missing profile in background
-        api.createUserProfile(fallbackProfile).catch(err => console.error("Background profile creation failed", err));
       }
-    } catch (criticalError: any) {
-      console.error("User sync critical error:", criticalError);
-      // Emergency fallback if DB is completely unreachable
-      setUser({
-          id: sessionUser.id,
-          email: sessionUser.email!,
-          name: sessionUser.user_metadata?.name || 'User',
-          role: 'user',
-          createdAt: new Date().toISOString()
-      });
+    } catch (err: any) {
+      console.warn(`[Auth] Profile fetch warning:`, err.message);
     }
+    
+    console.log("[Auth] Using fallback profile");
+    return fallback;
   }, []);
 
+  // --- CORE INITIALIZATION LOGIC ---
   useEffect(() => {
-    let mounted = true;
+    // Strict Mode Guard: Prevent double initialization
+    if (listenerInitialized.current) return;
+    listenerInitialized.current = true;
 
-    const initializeAuth = async () => {
+    console.log("[Auth] 🔐 Initializing auth listener (ONCE)");
+    let subscription: any = null;
+
+    const init = async () => {
       try {
-        // TIMEOUT SAFETY: Force completion after 12 seconds max
-        const timeoutPromise = new Promise((resolve) => 
-            setTimeout(() => {
-                if (mounted) {
-                    console.warn("[Auth] Initialization timed out, releasing block.");
-                    resolve(null);
-                }
-            }, 12000)
-        );
-
-        const authTask = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) throw error;
-            if (session?.user && mounted) {
-                await syncUser(session.user);
-            }
-        };
-
-        await Promise.race([authTask(), timeoutPromise]);
-
+        // 1. Check Initial Session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          console.log("[Auth] 👤 Initial session found");
+          const profile = await fetchProfile(
+            session.user.id,
+            session.user.email!,
+            session.user.user_metadata?.name
+          );
+          if (mountedRef.current) setUser(profile);
+        }
       } catch (e) {
-        console.error("Auth initialization error:", e);
+        console.error("[Auth] Init Error", e);
       } finally {
-        if (mounted) setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+          setIsAuthReady(true);
+        }
       }
-    };
 
-    initializeAuth();
+      // 2. Set up Listener (ONCE)
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`[Auth] Event: ${event}`);
+        
+        if (!mountedRef.current) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-          // Check if we need to sync (e.g. user changed or initial load didn't catch it)
-          if (user?.id !== session.user.id) {
-            setLoading(true);
-            await syncUser(session.user);
+        if (event === 'SIGNED_IN' && session?.user) {
+          setLoading(true);
+          const profile = await fetchProfile(
+            session.user.id,
+            session.user.email!,
+            session.user.user_metadata?.name
+          );
+          if (mountedRef.current) {
+            setUser(profile);
             setLoading(false);
           }
-      } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setLoading(false);
-          navigate('/'); 
-      } else if (event === 'PASSWORD_RECOVERY') {
-          navigate('/update-password');
-      }
-    });
-
-    return () => { 
-      mounted = false; 
-      subscription.unsubscribe(); 
+        } else if (event === 'SIGNED_OUT') {
+          if (mountedRef.current) {
+            setUser(null);
+            setLoading(false);
+            navigate('/');
+          }
+        }
+        // Ignored: TOKEN_REFRESHED, INITIAL_SESSION (handled manually above)
+      });
+      subscription = data.subscription;
     };
-  }, [syncUser, navigate]); // Removed 'user' dependency to avoid loop
+
+    init();
+
+    return () => {
+      mountedRef.current = false;
+      if (subscription) subscription.unsubscribe();
+      listenerInitialized.current = false;
+    };
+  }, []); // Empty dependency array is CRITICAL
 
   const login = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -159,21 +154,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (err) {
-      console.error("Sign out error", err);
-      setUser(null);
-    }
+    await supabase.auth.signOut();
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) await syncUser(session.user);
-  }, [syncUser]);
+    if (!user) return;
+    const profile = await fetchProfile(user.id, user.email, user.name);
+    if (mountedRef.current) setUser(profile);
+  }, [user, fetchProfile]);
 
-  const value = useMemo(() => ({ user, loading, login, signUp, logout, refreshProfile }), [user, loading, login, signUp, logout, refreshProfile]);
+  const value = useMemo(() => ({ 
+    user, 
+    loading, 
+    isAuthReady, 
+    login, 
+    signUp, 
+    logout, 
+    refreshProfile 
+  }), [user, loading, isAuthReady, login, signUp, logout, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

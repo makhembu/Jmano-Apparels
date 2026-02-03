@@ -14,7 +14,7 @@ export const Shop: React.FC = () => {
     products, 
     categories, 
     settings, 
-    loading, // Global app loading
+    loading, // Global app loading (Auth+Shop)
     productsLoading, // Shop filter loading
     loadMore, 
     hasMore, 
@@ -72,8 +72,9 @@ export const Shop: React.FC = () => {
   const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
   const seoDesc = activeCategory?.seoDescription || settings.shopSeoDescription;
 
-  // Show full screen spinner ONLY on initial application load, not on filtering
-  if (loading) return <LoadingSpinner fullScreen />;
+  // Show full screen spinner ONLY if we have NO products AND we are loading.
+  // This prevents blocking when Auth check is running but public Shop data is already available.
+  if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen">

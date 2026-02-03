@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
-import { Order } from '../../types';
+import { Order, Product } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { BackButton } from '../../components/ui/BackButton';
 import { useToast } from '../../context/ToastContext';
@@ -15,8 +15,7 @@ export const UserOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  // Access allProducts from context (even if not strictly typed in older interface, it's provided by ShopProvider)
-  const { user, refreshOrders, products, addToCart, allProducts } = useApp() as any;
+  const { user, refreshOrders, products, addToCart } = useApp();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,28 +65,56 @@ export const UserOrderDetails: React.FC = () => {
   };
 
   const handleReorder = async () => {
-    if (!order || !products) return;
+    if (!order) return;
     setReordering(true);
 
-    for (const item of order.products) {
-      const productToAdd = products.find((p: any) => p.id === item.productId);
-      if (productToAdd) {
-        addToCart(productToAdd, item.size, item.quantity, item.selectedColor);
-      } else {
-        showToast(`Product "${item.title}" is no longer available.`, 'info');
-      }
-    }
+    const itemsToAdd: { product: Product; item: any }[] = [];
+    const missingItems: string[] = [];
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Parallel fetching for performance
+    await Promise.all(order.products.map(async (item) => {
+        // 1. Check if product is already loaded in Context (paginated view)
+        let productToAdd = products.find((p) => p.id === item.productId);
+        
+        // 2. If not found in memory, fetch individually from DB
+        if (!productToAdd) {
+            try {
+                productToAdd = await api.getProductById(item.productId);
+            } catch (e) {
+                console.warn(`Product ${item.productId} not found/deleted`);
+            }
+        }
+
+        // 3. Verify availability
+        if (productToAdd && (productToAdd.isPublished !== false)) {
+            itemsToAdd.push({ product: productToAdd, item });
+        } else {
+            missingItems.push(item.title);
+        }
+    }));
+
+    // Execute Add
+    itemsToAdd.forEach(({ product, item }) => {
+        addToCart(product, item.size, item.quantity, item.selectedColor);
+    });
 
     setReordering(false);
-    showToast('Items added back to your cart!', 'success');
-    navigate('/cart');
+    
+    if (itemsToAdd.length > 0) {
+        showToast('Items added to cart!', 'success');
+        navigate('/cart');
+    }
+    
+    if (missingItems.length > 0) {
+        // Slight delay to ensure toast doesn't conflict
+        setTimeout(() => {
+            showToast(`${missingItems.length} items unavailable for reorder.`, 'info');
+        }, 500);
+    }
   };
 
   const getProductSlug = (productId: string) => {
-    const productList = allProducts || products || [];
-    const found = productList.find((p: any) => p.id === productId);
+    const found = products.find((p) => p.id === productId);
     return found?.slug || productId;
   };
 
@@ -95,15 +122,15 @@ export const UserOrderDetails: React.FC = () => {
     if (!order || !products?.length) return [];
 
     const orderProductIds = new Set(order.products.map(p => p.productId));
-    const orderProducts = products.filter((p: any) => orderProductIds.has(p.id));
-    const categoryKeys = new Set(orderProducts.map((p: any) => p.categoryKey));
+    const orderProducts = products.filter((p) => orderProductIds.has(p.id));
+    const categoryKeys = new Set(orderProducts.map((p) => p.categoryKey));
 
     if (categoryKeys.size === 0) {
       // Fallback: If no categories found (e.g., product deleted), show featured items
-      return products.filter((p: any) => p.isFeatured && !orderProductIds.has(p.id)).slice(0, 4);
+      return products.filter((p) => p.isFeatured && !orderProductIds.has(p.id)).slice(0, 4);
     }
 
-    const similar = products.filter((p: any) => 
+    const similar = products.filter((p) => 
       categoryKeys.has(p.categoryKey) &&
       !orderProductIds.has(p.id) &&
       p.isPublished !== false
@@ -122,9 +149,9 @@ export const UserOrderDetails: React.FC = () => {
     );
   }
 
-  const canCancel = ['Pending', 'Processing'].includes(order.status);
+  const canCancel = ['Pending', 'Processing', 'Pending Payment'].includes(order.status);
   const canReturn = order.status === 'Delivered';
-  const canReorder = order.status !== 'Cancelled';
+  const canReorder = !['Cancelled', 'Refunded'].includes(order.status);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">

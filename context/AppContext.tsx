@@ -1,11 +1,10 @@
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { User, Product, CartItem, Order, BlogPost, AppSettings, Category, ShippingAddress, ProductReview } from '../types';
 import { useAuth } from './AuthContext';
 import { useCart } from './CartContext';
 import { useShop } from './ShopContext';
 import { api } from '../lib/db';
-import { useToast } from './ToastContext';
 
 // Legacy Interface Compatibility
 interface AppContextType {
@@ -13,6 +12,7 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   
   products: Product[];
   categories: Category[];
@@ -34,64 +34,67 @@ interface AppContextType {
   refreshOrders: () => Promise<void>;
   
   loading: boolean;
+  isAuthReady: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// This component now acts as a bridge
+// This component acts as the Central Orchestrator
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useAuth();
   const shop = useShop();
   const cart = useCart();
-  const { showToast } = useToast();
+  
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // Manual refresh function
+  // Manual refresh function for orders
   const refreshOrders = useCallback(async () => {
-    if (auth.user) {
-        try {
-          const data = auth.user.role === 'admin'
-              ? await api.getAllOrders()
-              : await api.getOrders(auth.user.id);
-          setOrders(data);
-        } catch (e) {
-          console.error("Failed to refresh orders (DB might be unreachable):", e);
-          // Don't throw, just log. UI will show empty orders.
-        }
-    } else {
+    if (!auth.user) {
         setOrders([]);
+        return;
+    }
+    setOrdersLoading(true);
+    try {
+      console.log("[App] Refreshing orders...");
+      const data = auth.user.role === 'admin'
+          ? await api.getAllOrders()
+          : await api.getOrders(auth.user.id);
+      setOrders(data);
+    } catch (e) {
+      console.error("Order fetch failed:", e);
+    } finally {
+      setOrdersLoading(false);
     }
   }, [auth.user]);
 
-  // Automatic fetch on user change
+  // --- 1. PUBLIC DATA INIT (Immediate & Non-Blocking) ---
   useEffect(() => {
-    let mounted = true;
-    const fetchUserOrders = async () => {
-        if (auth.user) {
-            try {
-                // If user just logged in, small delay to ensure DB token is ready
-                await new Promise(r => setTimeout(r, 200));
-                
-                const data = (auth.user.role === 'admin')
-                    ? await api.getAllOrders()
-                    : await api.getOrders(auth.user.id);
-                
-                if (mounted) setOrders(data);
-            } catch (e) {
-                console.error("Failed to fetch orders:", e);
-                // Silent fail - don't spam toasts on auto-fetch
-                if (mounted) setOrders([]);
-            }
-        } else {
-            if (mounted) setOrders([]);
-        }
-    };
-    fetchUserOrders();
-    return () => { mounted = false; };
-  }, [auth.user]);
+    // Initialize Shop Data immediately on mount
+    // This allows the UI (Home, Shop) to render content while Auth is still checking in background.
+    shop.initShopData();
+  }, []);
+
+  // --- 2. USER DATA SYNC (Auth Dependent) ---
+  useEffect(() => {
+    // Only proceed once Auth Status is definitive
+    if (!auth.isAuthReady) return;
+
+    if (auth.user) {
+        // Parallel fetch for user data
+        Promise.all([
+            cart.refreshCart(auth.user.id),
+            refreshOrders()
+        ]).catch(console.error);
+    } else {
+        // Handle guest state or cleanup if necessary
+        setOrders([]);
+        // We do NOT clear cart here to preserve guest carts loaded from local storage
+    }
+  }, [auth.isAuthReady, auth.user?.id]); // Re-run if user changes
 
   const placeOrder = useCallback(async (shippingAddress: ShippingAddress) => {
-      if (!auth.user) throw new Error("Must be logged in");
+      if (!auth.user && !cart.cart.length) throw new Error("Cart is empty");
       
       const orderItems = cart.cart.map(c => ({
         productId: c.id,
@@ -103,17 +106,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         image: c.images[0]
       }));
 
+      // Supports both Guest and Auth checkout
       await api.createOrder({
-        userId: auth.user.id,
+        userId: auth.user?.id || null, 
         products: orderItems,
         total: cart.cartTotal,
         shippingAddress
       });
       
       cart.clearCart();
-      await refreshOrders();
-      await shop.refreshData(); 
-  }, [auth.user, cart, shop, refreshOrders]);
+      if (auth.user) await refreshOrders();
+  }, [auth.user, cart, refreshOrders]);
 
   const loading = auth.loading || shop.loading;
 

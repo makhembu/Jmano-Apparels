@@ -66,7 +66,10 @@ export const ProductDetails: React.FC = () => {
 
   useEffect(() => {
     if (!loading && location.hash === '#reviews' && reviewsRef.current) {
-      setTimeout(() => reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      // Small tick to allow layout to settle
+      requestAnimationFrame(() => {
+        reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     }
   }, [location.hash, loading]);
 
@@ -93,13 +96,14 @@ export const ProductDetails: React.FC = () => {
     if (redirect) setIsOrderingNow(true);
     else setIsAdding(true);
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    // REMOVED: Artificial 400ms delay. Action should be instant.
     addToCart(product, selectedSize, quantity, selectedColor);
     
     if (redirect) {
       navigate('/cart');
     } else {
       setIsAdding(false);
+      // Optional: Add a small visual feedback logic here if needed, but not blocking.
       showToast(`Added to cart: ${product.title}`, 'success', {
          label: 'GO TO CART',
          onClick: () => navigate('/cart')
@@ -119,9 +123,6 @@ export const ProductDetails: React.FC = () => {
 
   // Calculate dynamic top position for sticky gallery based on header height
   const hasAnnouncement = settings.isAnnouncementEnabled && settings.announcementText;
-  // Desktop Header: Navbar (h-20/5rem) + Announcement (h-10/2.5rem)
-  // Base offset: 5rem. With Announcement: 7.5rem.
-  // Add 1rem extra spacing = 6rem (top-24) or 8.5rem (top-[8.5rem])
   const galleryTopClass = hasAnnouncement ? 'lg:top-[8.5rem]' : 'lg:top-24';
 
   if (loading) return <LoadingSpinner fullScreen />;

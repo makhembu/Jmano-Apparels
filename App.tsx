@@ -13,6 +13,7 @@ import { SystemHealth } from './components/SystemHealth';
 import { GlobalScriptInjector } from './components/GlobalScriptInjector';
 import { GlobalAnalyticsTracker } from './components/GlobalAnalyticsTracker';
 import { CacheManager } from './lib/cache';
+import { AppInitializer } from './components/AppInitializer';
 
 // --- Lazy Loaded Components ---
 
@@ -80,65 +81,67 @@ const App: React.FC = () => {
           <ShopProvider>
             <CartProvider>
               <AppProvider>
-                <GlobalScriptInjector />
-                <GlobalAnalyticsTracker />
-                <ScrollToTop />
-                
-                <Suspense fallback={<LoadingSpinner fullScreen />}>
-                  <Routes>
-                    {/* Public Routes (Eager) */}
-                    <Route path="/" element={<Layout><Home /></Layout>} />
-                    <Route path="/shop" element={<Layout><Shop /></Layout>} />
-                    <Route path="/product/:id" element={<Layout><ProductDetails /></Layout>} />
-                    
-                    {/* Public Routes (Lazy) */}
-                    <Route path="/cart" element={<Layout><Cart /></Layout>} />
-                    <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
-                    <Route path="/about" element={<Layout><About /></Layout>} />
-                    <Route path="/blog" element={<Layout><Blog /></Layout>} />
-                    <Route path="/blog/:slug" element={<Layout><BlogPost /></Layout>} />
-                    
-                    {/* Auth Routes */}
-                    <Route path="/login" element={<Layout><Login /></Layout>} />
-                    <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
-                    <Route path="/update-password" element={<Layout><UpdatePassword /></Layout>} />
-                    
-                    {/* Legal Routes */}
-                    <Route path="/terms" element={<Layout><Terms /></Layout>} />
-                    <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
-                    <Route path="/cookies" element={<Layout><Cookies /></Layout>} />
-                    <Route path="/returns" element={<Layout><Returns /></Layout>} />
+                <AppInitializer>
+                  <GlobalScriptInjector />
+                  <GlobalAnalyticsTracker />
+                  <ScrollToTop />
+                  
+                  <Suspense fallback={<LoadingSpinner fullScreen />}>
+                    <Routes>
+                      {/* Public Routes (Eager) */}
+                      <Route path="/" element={<Layout><Home /></Layout>} />
+                      <Route path="/shop" element={<Layout><Shop /></Layout>} />
+                      <Route path="/product/:id" element={<Layout><ProductDetails /></Layout>} />
+                      
+                      {/* Public Routes (Lazy) */}
+                      <Route path="/cart" element={<Layout><Cart /></Layout>} />
+                      <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+                      <Route path="/about" element={<Layout><About /></Layout>} />
+                      <Route path="/blog" element={<Layout><Blog /></Layout>} />
+                      <Route path="/blog/:slug" element={<Layout><BlogPost /></Layout>} />
+                      
+                      {/* Auth Routes */}
+                      <Route path="/login" element={<Layout><Login /></Layout>} />
+                      <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+                      <Route path="/update-password" element={<Layout><UpdatePassword /></Layout>} />
+                      
+                      {/* Legal Routes */}
+                      <Route path="/terms" element={<Layout><Terms /></Layout>} />
+                      <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+                      <Route path="/cookies" element={<Layout><Cookies /></Layout>} />
+                      <Route path="/returns" element={<Layout><Returns /></Layout>} />
 
-                    {/* User Routes */}
-                    <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-                    <Route path="/order/:id" element={<Layout><UserOrderDetails /></Layout>} />
+                      {/* User Routes */}
+                      <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+                      <Route path="/order/:id" element={<Layout><UserOrderDetails /></Layout>} />
 
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={<AdminLayout />}>
-                      <Route index element={<AdminDashboard />} />
-                      <Route path="analytics" element={<AdminAnalytics />} />
-                      <Route path="app-settings" element={<AdminAppSettings />} />
-                      <Route path="shop-settings" element={<AdminShopSettings />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="products/new" element={<AdminProductEditor />} />
-                      <Route path="products/:id" element={<AdminProductEditor />} />
-                      <Route path="orders" element={<AdminOrders />} />
-                      <Route path="orders/new" element={<AdminOrderNew />} />
-                      <Route path="orders/:id" element={<AdminOrderDetails />} />
-                      <Route path="payments" element={<AdminPayments />} />
-                      <Route path="users" element={<AdminUsers />} />
-                      <Route path="blog" element={<AdminBlog />} />
-                      <Route path="blog/new" element={<AdminBlogEditor />} />
-                      <Route path="blog/:id" element={<AdminBlogEditor />} />
-                      <Route path="newsletter" element={<AdminNewsletter />} />
-                      <Route path="contact" element={<AdminContact />} />
-                      <Route path="profile" element={<AdminProfile />} />
-                    </Route>
+                      {/* Admin Routes */}
+                      <Route path="/admin" element={<AdminLayout />}>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="analytics" element={<AdminAnalytics />} />
+                        <Route path="app-settings" element={<AdminAppSettings />} />
+                        <Route path="shop-settings" element={<AdminShopSettings />} />
+                        <Route path="products" element={<AdminProducts />} />
+                        <Route path="products/new" element={<AdminProductEditor />} />
+                        <Route path="products/:id" element={<AdminProductEditor />} />
+                        <Route path="orders" element={<AdminOrders />} />
+                        <Route path="orders/new" element={<AdminOrderNew />} />
+                        <Route path="orders/:id" element={<AdminOrderDetails />} />
+                        <Route path="payments" element={<AdminPayments />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="blog" element={<AdminBlog />} />
+                        <Route path="blog/new" element={<AdminBlogEditor />} />
+                        <Route path="blog/:id" element={<AdminBlogEditor />} />
+                        <Route path="newsletter" element={<AdminNewsletter />} />
+                        <Route path="contact" element={<AdminContact />} />
+                        <Route path="profile" element={<AdminProfile />} />
+                      </Route>
 
-                    {/* 404 Catch-All */}
-                    <Route path="*" element={<Layout><NotFound /></Layout>} />
-                  </Routes>
-                </Suspense>
+                      {/* 404 Catch-All */}
+                      <Route path="*" element={<Layout><NotFound /></Layout>} />
+                    </Routes>
+                  </Suspense>
+                </AppInitializer>
               </AppProvider>
             </CartProvider>
           </ShopProvider>

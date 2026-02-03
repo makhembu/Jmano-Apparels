@@ -1,35 +1,58 @@
 
-import React, { useState, useRef } from 'react';
-// FIX: Ensuring Link, useLocation, and useNavigate are correctly imported from react-router-dom
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { useClickOutside, getVisibleProducts, searchProducts } from '../../lib/utils';
+import { useClickOutside } from '../../lib/utils';
+import { api } from '../../lib/db';
+import { Product } from '../../types';
 
 export const DesktopNavbar: React.FC = () => {
-  const { user, cartCount, logout, products, settings } = useApp();
+  const { user, cartCount, logout, settings } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  
   const searchRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
-  // White text for active, light green for inactive to contrast with brand-dark bg
   const activeClass = "text-brand-hope font-bold border-b-2 border-brand-hope pb-1";
   const inactiveClass = "text-brand-light/90 hover:text-white transition-colors font-medium";
 
-  const handleSearch = (e?: React.FormEvent) => {
+  // Debounced Search Effect
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 1) {
+        setIsSearching(true);
+        try {
+          // Fetch top 5 matching products
+          const result = await api.getPaginatedProducts(1, 5, { search: searchQuery });
+          setSearchResults(result.data);
+          setShowResults(true);
+        } catch (e) {
+          console.error("Search failed", e);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
       setShowResults(false);
+      setSearchQuery(''); // Optional: clear after search
     }
   };
-
-  const visibleProducts = getVisibleProducts(products);
-  const searchResults = searchProducts(visibleProducts, searchQuery);
-  const filteredResults = searchResults.slice(0, 5);
 
   useClickOutside(searchRef, () => setShowResults(false));
 
@@ -60,24 +83,30 @@ export const DesktopNavbar: React.FC = () => {
 
             <div className="flex items-center space-x-6 h-10">
               <div className="relative h-10" ref={searchRef}>
-                <form onSubmit={handleSearch} className="relative flex items-center h-full">
+                <form onSubmit={handleSearchSubmit} className="relative flex items-center h-full">
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
-                    onFocus={() => setShowResults(true)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
                     placeholder="Search..."
                     className="pl-10 pr-4 h-10 text-xs font-bold border border-transparent rounded-2xl bg-brand-green/30 text-white placeholder-brand-light/60 w-40 lg:w-56 focus:outline-none focus:bg-white focus:text-brand-dark focus:placeholder-gray-400 transition-all shadow-inner uppercase tracking-wide"
                   />
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-light/70 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  {isSearching ? (
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4">
+                       <div className="animate-spin h-3 w-3 border-2 border-brand-light rounded-full border-t-transparent"></div>
+                    </div>
+                  ) : (
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-light/70 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  )}
                 </form>
-                {showResults && searchQuery.trim() && (
+                {showResults && (
                   <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden animate-fade-in divide-y divide-gray-50 z-50">
-                    {filteredResults.length > 0 ? (
+                    {searchResults.length > 0 ? (
                       <>
-                        {filteredResults.map(product => (
+                        {searchResults.map(product => (
                           <button key={product.id} onClick={() => { navigate(`/product/${product.slug || product.id}`); setShowResults(false); setSearchQuery(''); }} className="w-full flex items-center p-3 hover:bg-gray-50 transition-colors text-left group">
                             <img src={product.images[0]} alt="" width="40" height="40" className="h-10 w-10 rounded-xl object-cover border border-gray-100" />
                             <div className="ml-3 overflow-hidden">
@@ -86,14 +115,12 @@ export const DesktopNavbar: React.FC = () => {
                             </div>
                           </button>
                         ))}
-                        {searchResults.length > 5 && (
-                            <button onClick={() => handleSearch()} className="w-full p-3 text-center text-[10px] font-black uppercase tracking-widest text-brand-green bg-brand-light/50 hover:bg-brand-light">
-                                View all {searchResults.length} results &rarr;
-                            </button>
-                        )}
+                        <button onClick={() => handleSearchSubmit()} className="w-full p-3 text-center text-[10px] font-black uppercase tracking-widest text-brand-green bg-brand-light/50 hover:bg-brand-light">
+                            View all results &rarr;
+                        </button>
                       </>
                     ) : (
-                      <div className="p-4 text-center text-xs text-gray-500 font-medium">No matches for "{searchQuery}"</div>
+                      !isSearching && <div className="p-4 text-center text-xs text-gray-500 font-medium">No matches found</div>
                     )}
                   </div>
                 )}

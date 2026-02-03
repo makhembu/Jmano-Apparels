@@ -2,7 +2,7 @@
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { User, Product, DbProduct, UserAddress } from '../../types';
+import { User, UserAddress, Product } from '../../types';
 
 export class UserService {
   async getAll(): Promise<User[]> {
@@ -42,27 +42,16 @@ export class UserService {
 
             if (error) {
                 console.error("Edge Function Invocation Error:", error);
-                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-                     throw new Error("Connection failed. Please ensure the 'admin-create-user' Edge Function is deployed and reachable.");
-                }
                 throw error;
             }
 
-            if (data?.error) {
-                throw new Error(data.error);
-            }
-
-            if (!data?.user?.id) {
-                throw new Error("User creation succeeded but returned no ID.");
-            }
+            if (data?.error) throw new Error(data.error);
+            if (!data?.user?.id) throw new Error("User creation succeeded but returned no ID.");
 
             // Fetch the newly created profile to return it
-            // We wait a brief moment to ensure the DB trigger/insert has propagated if it was async
-            await new Promise(resolve => setTimeout(resolve, 500));
             const newProfile = await this.getProfile(data.user.id);
             
             if (!newProfile) {
-                // If profile fetch fails, return a constructed object so the UI doesn't crash
                 return {
                     id: data.user.id,
                     name: user.name!,
@@ -75,9 +64,6 @@ export class UserService {
 
         } catch (err: any) {
             console.error("User Creation Process Failed:", err);
-            // If it's the specific edge function error, pass it through
-            if (err.message.includes('Edge Function')) throw err;
-            
             throw new Error(`Failed to create account: ${err.message}`);
         }
     } 
@@ -104,9 +90,8 @@ export class UserService {
 
   async getUserAddresses(userId: string): Promise<UserAddress[]> {
     log('SELECT', 'user_addresses', userId);
-    // FIX: Cast table name to `any` to bypass incorrect generated types where 'user_addresses' is missing.
     const { data, error } = await supabase
-      .from('user_addresses' as any)
+      .from('user_addresses')
       .select('*')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
@@ -142,7 +127,7 @@ export class UserService {
     };
 
     const { data, error } = await supabase
-      .from('user_addresses' as any)
+      .from('user_addresses')
       .upsert(payload)
       .select()
       .single();
@@ -167,7 +152,7 @@ export class UserService {
 
   async deleteUserAddress(id: string): Promise<void> {
     log('DELETE', 'user_addresses', id);
-    const { error } = await supabase.from('user_addresses' as any).delete().eq('id', id);
+    const { error } = await supabase.from('user_addresses').delete().eq('id', id);
     if (error) throw error;
   }
 }
@@ -190,7 +175,7 @@ export class WishlistService {
     if (error) throw error;
     return (data || [])
       .filter((row: any) => row.product)
-      .map((row: any) => Mappers.toProduct(row.product as DbProduct));
+      .map((row: any) => Mappers.toProduct(row.product as any));
   }
 
   async toggle(userId: string, productId: string): Promise<boolean> {

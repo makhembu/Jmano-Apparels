@@ -11,8 +11,9 @@ import { OptimizedImage } from '../components/ui/OptimizedImage';
 export const Home: React.FC = () => {
   const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
   
-  // OPTIMIZATION: Do not block the entire page on loading. 
-  // Allow the Hero section to render immediately with defaults to fix LCP.
+  // OPTIMIZATION: Non-blocking render
+  // Only show skeletons if we have NO data. If we have data but Auth is checking, show the data.
+  const showSkeletons = loading && products.length === 0;
   
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);
 
@@ -57,7 +58,7 @@ export const Home: React.FC = () => {
         }}
       />
 
-      {/* Hero Section - Render immediately even if settings are loading */}
+      {/* Hero Section - Render immediately */}
       <div className="relative bg-brand-dark overflow-hidden flex flex-col lg:block min-h-[400px]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="relative z-10 bg-brand-dark lg:max-w-2xl lg:w-full pb-12 lg:pb-28 xl:pb-32">
@@ -92,7 +93,7 @@ export const Home: React.FC = () => {
              className="h-full w-full object-cover object-center opacity-90 lg:opacity-100"
              width={1920}
              height={600} 
-             priority={true} // Critical for LCP
+             priority={true} 
              fit="cover"
            />
            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/20 to-transparent lg:hidden"></div>
@@ -103,7 +104,7 @@ export const Home: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-3xl font-bold text-brand-dark mb-8 font-serif border-b-2 border-brand-green/20 pb-4">Featured Collections</h2>
         
-        {loading ? (
+        {showSkeletons ? (
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[1,2,3,4].map(i => (
                  <div key={i} className="h-96 bg-gray-100 rounded-2xl animate-pulse"></div>
@@ -132,8 +133,7 @@ export const Home: React.FC = () => {
                <p className="text-brand-dark/70">Explore our curated collections, each designed with a specific spiritual intention.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-4">
-               {loading ? (
-                  // Skeleton for Categories
+               {showSkeletons ? (
                   [1,2,3,4].map(i => <div key={i} className="h-14 w-32 bg-white/50 rounded-2xl animate-pulse"></div>)
                ) : (
                   displayCategories.map(cat => (
@@ -147,7 +147,7 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Latest Blog Posts */}
-      {!loading && latestBlogs.length > 0 && (
+      {!showSkeletons && latestBlogs.length > 0 && (
         <div className="bg-white py-16 border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
@@ -202,7 +202,7 @@ export const Home: React.FC = () => {
       )}
 
       {/* Reviews */}
-      {!loading && settings.enableReviews && latestReviews.length > 0 && (
+      {!showSkeletons && settings.enableReviews && latestReviews.length > 0 && (
         <section className="bg-brand-light py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">

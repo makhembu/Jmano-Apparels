@@ -105,9 +105,6 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       clearCart();
       showToast('Payment successful! Order confirmed.', 'success');
       
-      // Small delay to allow DB propagation
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       if (user) {
         navigate(`/order/${dbOrderId}`);
       } else {
