@@ -57,8 +57,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrdersLoading(true);
     try {
       console.log("[App] Refreshing orders...");
+      // LIMIT applied here to prevent 502/Timeout on large datasets
       const data = auth.user.role === 'admin'
-          ? await api.getAllOrders()
+          ? await api.getAllOrders(50) 
           : await api.getOrders(auth.user.id);
       setOrders(data);
     } catch (e) {

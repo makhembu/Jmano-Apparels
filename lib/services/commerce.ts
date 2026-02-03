@@ -12,9 +12,9 @@ export class OrderService {
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
   }
 
-  async getAll(): Promise<Order[]> {
-    log('SELECT', 'orders', 'ALL');
-    const { data, error } = await supabase.from('orders').select('*').order('date', { ascending: false });
+  async getAll(limit: number = 50): Promise<Order[]> {
+    log('SELECT', 'orders', `ALL LIMIT ${limit}`);
+    const { data, error } = await supabase.from('orders').select('*').order('date', { ascending: false }).limit(limit);
     if (error) throw error;
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
   }

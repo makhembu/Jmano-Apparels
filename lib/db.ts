@@ -65,7 +65,7 @@ export const api = {
   // Commerce
   getUserOrders: (userId: string) => orderService.getUserOrders(userId), // Legacy alias
   getOrders: (userId: string) => orderService.getUserOrders(userId),
-  getAllOrders: () => orderService.getAll(),
+  getAllOrders: (limit?: number) => orderService.getAll(limit),
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
@@ -203,8 +203,8 @@ export const api = {
     return data as unknown as PageStat[];
   },
 
-  getLiveVisitors: async (lookbackMinutes: number = 5): Promise<LiveVisitor[]> => {
-    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes: lookbackMinutes });
+  getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
+    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
   }

@@ -13,7 +13,8 @@ export const AdminPayments: React.FC = () => {
   const [filterMethod, setFilterMethod] = useState<'ALL' | 'PAYPAL' | 'MANUAL'>('ALL');
 
   useEffect(() => {
-    api.getAllOrders().then(setOrders).finally(() => setLoading(false));
+    // Fetch last 100 to avoid timeouts
+    api.getAllOrders(100).then(setOrders).finally(() => setLoading(false));
   }, []);
 
   const filteredOrders = useMemo(() => {

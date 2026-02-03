@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
@@ -11,7 +12,8 @@ export const AdminOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getAllOrders().then(setOrders).finally(() => setLoading(false));
+    // Fetch last 100 orders to balance performance and utility
+    api.getAllOrders(100).then(setOrders).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSpinner />;
