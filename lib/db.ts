@@ -30,7 +30,6 @@ const storageService = new StorageService();
 // Helper for hybrid routing redirect
 const getRedirectUrl = () => {
   const isProd = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
-  // If Prod, clean URL. If Dev/Preview, use Hash.
   return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
 };
 
@@ -43,7 +42,6 @@ export const api = {
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
   adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    // Simple loop implementation or bulk RPC if available
     for (const id of ids) {
       await productService.update(id, updates);
     }
@@ -63,7 +61,7 @@ export const api = {
   addProductReview: (review: Partial<ProductReview>) => reviewService.add(review),
 
   // Commerce
-  getUserOrders: (userId: string) => orderService.getUserOrders(userId), // Legacy alias
+  getUserOrders: (userId: string) => orderService.getUserOrders(userId),
   getOrders: (userId: string) => orderService.getUserOrders(userId),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
   getOrderById: (id: string) => orderService.getById(id),
@@ -102,6 +100,7 @@ export const api = {
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
+  checkEmailHealth: (email: string) => settingsService.checkEmailHealth(email),
 
   // Support / Marketing
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
@@ -118,25 +117,27 @@ export const api = {
   updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
   createUserProfile: (data: any) => userService.createProfile(data),
   updateUserPassword: async (password: string) => {
-    // Cast to any to avoid type check error
     const { error } = await (supabase.auth as any).updateUser({ password });
     if (error) throw error;
   },
   requestPasswordReset: async (email: string) => {
-    // Cast to any to avoid type check error
     const { error } = await (supabase.auth as any).resetPasswordForEmail(email, { redirectTo: getRedirectUrl() });
     if (error) throw error;
   },
   adminDeleteUser: (id: string) => userService.deleteUser(id),
   adminSendPasswordReset: async (email: string) => {
-    // Cast to any to avoid type check error
     const { error } = await (supabase.auth as any).resetPasswordForEmail(email);
     if (error) throw error;
   },
   adminSendMagicLink: async (email: string) => {
-    // Cast to any to avoid type check error
     const { error } = await (supabase.auth as any).signInWithOtp({ email });
     if (error) throw error;
+  },
+  
+  // GDPR: User Self-Deletion
+  deleteUserAccount: async (userId: string) => {
+    // Calls the secure RPC to scrub data and delete auth user
+    return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
   },
 
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
@@ -158,7 +159,6 @@ export const api = {
     });
     if (error) {
         console.error("Analytics Error", error);
-        // Return dummy data if RPC fails to prevent crash
         return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
     }
     return data as unknown as AnalyticsOverview;

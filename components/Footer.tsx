@@ -1,13 +1,15 @@
+
 import React, { useState } from 'react';
-// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../lib/db';
 import { useToast } from '../context/ToastContext';
+import { useConsent } from '../context/CookieConsentContext';
 
 export const Footer: React.FC = () => {
   const { settings } = useApp();
   const { showToast } = useToast();
+  const { resetConsent } = useConsent();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +37,6 @@ export const Footer: React.FC = () => {
             <p className="text-brand-light text-sm italic">{settings.slogan}</p>
             <p className="text-brand-light text-sm mt-2">{settings.coreValues}</p>
             
-            {/* Newsletter Form - Conditioned on setting */}
             {settings.enableNewsletterSignup && (
               <div className="mt-6">
                 <h5 className="text-sm font-semibold mb-2">Join our Newsletter</h5>
@@ -48,6 +49,10 @@ export const Footer: React.FC = () => {
                     required
                     className="px-3 py-2 text-sm text-gray-900 bg-white rounded focus:outline-none focus:ring-2 focus:ring-brand-green"
                   />
+                  <div className="flex items-start gap-2">
+                     <input type="checkbox" required className="mt-1 w-3 h-3 rounded border-gray-300 text-brand-green focus:ring-brand-green" />
+                     <span className="text-[10px] text-brand-light">I consent to receive marketing emails.</span>
+                  </div>
                   <button 
                     type="submit" 
                     disabled={loading}
@@ -79,27 +84,18 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Help</h4>
             <ul className="space-y-2 text-sm">
+              <li><Link to="/returns" className="hover:text-brand-hope">Returns & Refunds</Link></li>
+              <li><Link to="/cookies" className="hover:text-brand-hope">Cookie Policy</Link></li>
               <li>
-                <Link to="/returns" className="hover:text-brand-hope">
-                  Returns & Refunds
-                </Link>
-              </li>
-              <li>
-                <Link to="/cookies" className="hover:text-brand-hope">
-                  Cookie Policy
-                </Link>
+                <button onClick={resetConsent} className="hover:text-brand-hope text-left">
+                  Cookie Settings
+                </button>
               </li>
               <li className="pt-2 text-brand-light break-all">
                 {settings.contactEmail || 'support@jamboapparels.com'}
               </li>
               <li className="text-brand-light">
-                {settings.contactPhone ? (
-                  <a href={`tel:${settings.contactPhone}`} className="hover:text-brand-hope">
-                    {settings.contactPhone}
-                  </a>
-                ) : (
-                  <span>+44 7938 065717</span>
-                )}
+                {settings.contactPhone || '+44 7938 065717'}
               </li>
               <li className="text-brand-light text-xs mt-1">
                 {settings.contactAddress || 'London, UK'}

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useConsent } from '../context/CookieConsentContext';
 
 declare global {
   interface Window {
@@ -12,92 +13,92 @@ declare global {
 
 export const GlobalScriptInjector: React.FC = () => {
   const { settings, loading } = useApp();
+  const { consent } = useConsent();
   const location = useLocation();
 
   // 1. Determine the Google Analytics ID
-  // Logic: Use DB setting if available, otherwise fallback to hardcoded ID.
   const gaId = useMemo(() => {
     const HARDCODED_DEFAULT = 'G-26S55GN10D';
     const dbValue = settings.googleAnalyticsId?.trim();
-    
-    // Use DB value if it exists and isn't empty, otherwise default
     const activeId = dbValue || HARDCODED_DEFAULT;
-    
-    // Ensure "G-" prefix is present (Google requirement)
     return activeId.startsWith('G-') ? activeId : `G-${activeId}`;
   }, [settings.googleAnalyticsId]);
 
-  // 2. Initialize Google Analytics (Run Once)
+  // 2. Initialize Google Analytics (ONLY IF CONSENTED)
   useEffect(() => {
     if (loading) return;
 
-    // Prevent duplicate script injection if already present
     const scriptId = 'google-analytics-script';
-    if (document.getElementById(scriptId)) return;
+    const existingScript = document.getElementById(scriptId);
 
-    // Create and inject the script tag
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-    document.head.appendChild(script);
+    // If analytics allowed and not present, inject
+    if (consent.analytics && !existingScript) {
+      console.log(`[Analytics] Consent granted. Injecting ${gaId}`);
+      
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+      document.head.appendChild(script);
 
-    // Initialize dataLayer
-    window.dataLayer = window.dataLayer || [];
-    
-    // Define the global gtag function
-    window.gtag = function(...args: any[]) {
-      window.dataLayer.push(args);
-    };
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function(...args: any[]) {
+        window.dataLayer.push(args);
+      };
 
-    // Initial Configuration
-    window.gtag('js', new Date());
-    
-    // Disable automatic page view to avoid double counting on first load,
-    // as we handle it manually in the effect below.
-    window.gtag('config', gaId, {
-      send_page_view: false
-    });
+      window.gtag('js', new Date());
+      window.gtag('config', gaId, { 
+        send_page_view: false,
+        anonymize_ip: true // GDPR Requirement
+      });
+    }
+    // If analytics NOT allowed but present (revoked consent), remove it
+    else if (!consent.analytics && existingScript) {
+      console.log(`[Analytics] Consent revoked. Removing scripts.`);
+      existingScript.remove();
+      // Optionally clear cookies here if strictly required, but usually stopping tracking is enough
+      // window.location.reload(); // Simple way to clear in-memory GTAG state
+    }
+  }, [loading, gaId, consent.analytics]);
 
-    console.log(`[Analytics] Initialized with ID: ${gaId}`);
-  }, [loading, gaId]);
-
-  // 3. Track Page Views on Route Change (SPA support)
+  // 3. Track Page Views (ONLY IF CONSENTED)
   useEffect(() => {
-    if (loading || !window.gtag) return;
+    if (loading || !window.gtag || !consent.analytics) return;
 
-    // Send page_view event with the new path
     window.gtag('event', 'page_view', {
       page_path: location.pathname + location.search,
       send_to: gaId
     });
-  }, [location, gaId, loading]);
+  }, [location, gaId, loading, consent.analytics]);
 
-  // 4. Inject Custom Head Scripts (Optional - e.g. Meta Pixel)
+  // 4. Inject Custom Head Scripts (ONLY IF CONSENTED OR MARKED NECESSARY)
+  // For safety, we assume custom scripts are tracking/marketing unless specified otherwise.
+  // We strictly gate them behind 'marketing' consent here for safety.
   useEffect(() => {
-    if (loading) return;
-    if (!settings.customHeadScripts) return;
+    if (loading || !settings.customHeadScripts) return;
+    if (!consent.marketing) {
+       // Remove if exists
+       const existing = document.getElementById('custom-injected-scripts');
+       if(existing) existing.remove();
+       return;
+    }
     
     const containerId = 'custom-injected-scripts';
     if (document.getElementById(containerId)) return;
 
     try {
-      // Create a hidden container to hold custom scripts
       const container = document.createElement('div');
       container.id = containerId;
       container.style.display = 'none';
-      
-      // Use createContextualFragment to safely parse and execute scripts
       const range = document.createRange();
       range.selectNode(document.body);
       const fragment = range.createContextualFragment(settings.customHeadScripts);
-      
       container.appendChild(fragment);
       document.body.appendChild(container);
     } catch (e) {
       console.error("[Analytics] Failed to inject custom scripts", e);
     }
-  }, [loading, settings.customHeadScripts]);
+  }, [loading, settings.customHeadScripts, consent.marketing]);
 
   return null;
 };

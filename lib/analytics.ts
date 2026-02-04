@@ -3,7 +3,18 @@ import { supabase } from './supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager, STORAGE_KEYS } from './cache';
 
-// Helper to get or create a session ID
+// Helper to check consent without hooks (for raw JS functions)
+const checkConsent = (): boolean => {
+  try {
+    const stored = localStorage.getItem('jambo_cookie_consent');
+    if (!stored) return false;
+    const parsed = JSON.parse(stored);
+    return !!parsed.analytics;
+  } catch {
+    return false;
+  }
+};
+
 const getSessionId = (): string => {
   let sessionId = CacheManager.session.get<string>(STORAGE_KEYS.SESSION);
   if (!sessionId) {
@@ -40,10 +51,12 @@ const getSource = (): string => {
 
 export const analytics = {
   track: async (eventType: string, metadata: Record<string, any> = {}, duration: number = 0) => {
+    // GDPR Check: Stop if no consent
+    if (!checkConsent()) return;
+
     try {
       let userId = null;
       try {
-        // Cast to any to avoid type checking errors
         const { data } = await (supabase.auth as any).getSession();
         userId = data.session?.user?.id || null;
       } catch (authError) { /* ignore */ }
@@ -62,12 +75,11 @@ export const analytics = {
         duration: Math.round(duration || 0)
       };
 
-      // By adding analytics_events to database.types.ts, this type error should be resolved.
       supabase.from('analytics_events').insert(payload).then(({ error }) => {
         if (error && error.code !== 'PGRST204' && !error.message?.includes('AbortError')) {
             console.warn("[Analytics]", error.message);
         }
-      }, () => {}); // Suppress network aborts
+      }, () => {}); 
 
     } catch (e) { /* ignore */ }
   },
