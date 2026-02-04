@@ -2,7 +2,7 @@
 import { GoogleGenAI, Chat } from "@google/genai";
 import { functionDeclarations } from './tools';
 
-const MODEL_NAME = 'gemini-3-pro-preview';
+const MODEL_NAME = 'gemini-2.5-pro';
 
 export class GeminiClient {
   constructor() {}
