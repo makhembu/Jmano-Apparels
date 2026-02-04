@@ -44,6 +44,37 @@ export const SystemSection: React.FC<SystemSectionProps> = ({ settings, onChange
         )}
       </div>
 
+      {/* AI Configuration */}
+      <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
+        <h3 className="text-lg font-medium border-b pb-2 text-brand-green">AI & Intelligence</h3>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+          <div className="relative rounded-md shadow-sm">
+            <input 
+              type="password" 
+              name="geminiApiKey" 
+              value={settings.geminiApiKey || ''} 
+              onChange={onChange} 
+              className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green sm:text-sm pr-10" 
+              placeholder="AIzaSy..."
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Required for <strong>Jambo Copilot</strong>, SEO generation, and AI analytics features.
+            <br/>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-brand-green hover:underline font-bold inline-flex items-center gap-1 mt-1">
+              Get an API Key &rarr;
+            </a>
+          </p>
+        </div>
+      </div>
+
       <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
          <p className="text-sm text-gray-500">Email Configuration is managed in the <strong>Notifications</strong> tab.</p>
       </div>
