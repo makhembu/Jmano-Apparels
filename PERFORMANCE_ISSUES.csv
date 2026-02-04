@@ -1,0 +1,7 @@
+Severity,Component,File,Line,Issue,Recommendation
+CRITICAL,Admin Users,pages/admin/AdminUsers.tsx,50,`api.getAllUsers()` fetches entire DB table.,Implement server-side pagination (limit/offset).
+CRITICAL,Admin Dashboard,pages/admin/AdminDashboard.tsx,25,Fetches all orders/users to calculate KPIs in JS.,Create `get_admin_stats` RPC to calculate SUM/COUNT in Postgres.
+HIGH,State Management,context/AppContext.tsx,60,Context value includes `cart` and `orders`, causing app-wide re-renders.,Split Cart logic into isolated provider or use selectors.
+MEDIUM,Order History,lib/services/commerce.ts,13,`getAllOrders` uses hard limit (50/100). Data older than 100 is inaccessible.,Implement pagination for order history.
+MEDIUM,Analytics,pages/admin/AdminAnalytics.tsx,40,Client-side aggregation of analytics data.,Ensure `get_analytics_overview` RPC handles 100% of math.
+LOW,Images,components/ui/OptimizedImage.tsx,25,Uses Supabase transformation but no CDN caching headers in `vercel.json`.,Ensure `Cache-Control` headers are aggressive for `/assets`.

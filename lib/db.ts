@@ -10,6 +10,7 @@ import { OrderService, CartService, ShippingService, DiscountService } from './s
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
+import { Mappers } from './mappers';
 
 // Instantiate Services
 const productService = new ProductService();
@@ -64,6 +65,27 @@ export const api = {
   getUserOrders: (userId: string) => orderService.getUserOrders(userId),
   getOrders: (userId: string) => orderService.getUserOrders(userId),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
+  
+  // SCALABILITY FIX: Paginated Orders
+  getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
+    const { data, error } = await supabase.rpc('get_orders_paginated', {
+      page_num: page,
+      page_size: limit,
+      status_filter: status === 'ALL' ? null : status
+    });
+    if (error) throw error;
+    
+    // Map raw JSONB to Order objects
+    const orders = (data.data || []).map((o: any) => Mappers.toOrder(o));
+    
+    return {
+      data: orders as Order[],
+      total: data.total || 0,
+      page: data.page || 1,
+      totalPages: data.totalPages || 1
+    };
+  },
+
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
@@ -95,7 +117,7 @@ export const api = {
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
 
   getAppSettings: () => settingsService.get(),
-  getAdminSettings: () => settingsService.getAdminSettings(), // Exposed for Copilot
+  getAdminSettings: () => settingsService.getAdminSettings(),
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
@@ -114,6 +136,27 @@ export const api = {
 
   // User
   getAllUsers: () => userService.getAll(),
+  
+  // SCALABILITY FIX: Paginated Users
+  getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
+    const { data, error } = await supabase.rpc('get_users_paginated', {
+        page_num: page,
+        page_size: limit,
+        search_term: search || null
+    });
+    if (error) throw error;
+    
+    // Map raw JSON to User objects
+    const users = (data.data || []).map((u: any) => Mappers.toUser(u));
+    
+    return {
+        data: users as User[],
+        total: data.total || 0,
+        page: data.page || 1,
+        totalPages: data.totalPages || 1
+    };
+  },
+
   getUserProfile: (id: string) => userService.getProfile(id),
   updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
   createUserProfile: (data: any) => userService.createProfile(data),
@@ -135,7 +178,6 @@ export const api = {
     if (error) throw error;
   },
   
-  // GDPR: User Self-Deletion
   deleteUserAccount: async (userId: string) => {
     return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
   },
@@ -162,6 +204,20 @@ export const api = {
         return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
     }
     return data as unknown as AnalyticsOverview;
+  },
+
+  // SCALABILITY FIX: Fast Admin Dashboard Stats
+  getAdminDashboardStats: async () => {
+    const { data, error } = await supabase.rpc('get_admin_stats');
+    if (error) throw error;
+    return data as {
+        revenue: number;
+        orders: number;
+        users: number;
+        products: number;
+        low_stock: number;
+        pending_orders: number;
+    };
   },
 
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
