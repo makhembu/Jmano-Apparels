@@ -7,81 +7,86 @@
 
 ## Executive Summary
 
-- **Total Vulnerabilities Found:** 3
+- **Total Vulnerabilities Found:** 4
 - **Critical:** 1
 - **High:** 2
-- **Medium:** 0
-- **Low:** 1
+- **Medium:** 1
+- **Low:** 0
 
-**Overall Risk Level:** CRITICAL
+**Overall Risk Level:** HIGH
 
 **Immediate Action Required:** Yes
 
 ---
 
-## 1. Critical Vulnerability: Sensitive Data Exposure (API Keys)
+## 1. Critical Vulnerability: IDOR on Orders Table (Missing RLS)
 
 ### Description
-The `app_settings` table stores both public configuration (Site Title, Logo) and **private secrets** (PayPal Secret Key, Gemini API Key, SMTP Password).
-While the frontend code (`SettingsService.get`) attempts to select only specific columns, the **Supabase Data API** allows any authenticated or anonymous user to query the table directly if Row Level Security (RLS) policies allow read access.
+The `orders` table does not have explicit Row Level Security (RLS) policies defined in the provided schema. By default, if RLS is enabled without policies, access is denied (safe failure). However, if RLS is *disabled* or if policies are overly permissive to support development, any authenticated user (or anonymous user) could potentially query `SELECT * FROM orders` via the Supabase Client.
 
 **Vulnerable Endpoint:**
-`GET /rest/v1/app_settings?select=*`
+`GET /rest/v1/orders?select=*`
 
 **Impact:**
-An attacker can extract the `gemini_api_key`, `paypal_secret_key`, and `smtp_settings` (email credentials). This could lead to:
-- **Financial Loss:** Refund fraud via PayPal.
-- **Data Exfiltration:** Access to AI models.
-- **Phishing:** Sending emails from your domain.
+A user could enumerate order IDs (UUIDs) or dump the entire order history, exposing PII (Customer Names, Emails, Addresses) of all other customers.
 
 **Remediation (Applied):**
-- Created a PostgreSQL View `public_app_settings` that explicitly exposes *only* non-sensitive columns.
-- Revoked direct access to the `app_settings` table for non-admin users.
-- Updated frontend to query the secure View for public data.
+- Created `seed_security_orders.sql` to explicitly ENABLE RLS on `orders`.
+- Added policies to allow:
+    - Users to view *only* their own orders (`auth.uid() = user_id`).
+    - Admins to view all orders.
+    - Public insert (for guest checkout flow) but restricted select.
 
 ---
 
-## 2. High Vulnerability: Analytics Data Leak (IDOR)
+## 2. High Vulnerability: Unrestricted Email Function
 
 ### Description
-The analytics Remote Procedure Calls (RPCs) such as `get_analytics_overview` and `get_daily_analytics` were defined with `SECURITY DEFINER` but lacked internal role checks.
-Although they were granted to the `authenticated` role, **any logged-in customer** falls into this role.
+The `send-email` Edge Function accepts a JSON body and sends emails via SMTP/Resend. While the logic checks for parameters, it previously lacked a strict check for authorization. If the function is deployed with "Allow Public Access" (common for webhooks), an attacker could abuse it to send spam.
 
-**Vulnerable Code:**
-```sql
-CREATE OR REPLACE FUNCTION get_analytics_overview(...) 
-RETURNS jsonb 
-LANGUAGE plpgsql 
-SECURITY DEFINER ...
--- No check for admin role inside function
+**Impact:**
+- Reputation damage (domain blacklisting).
+- Financial loss (email provider quota exhaustion).
+
+**Remediation (Applied):**
+- Updated `supabase/functions/send-email/index.ts` to verify the caller.
+- It now requires the caller to be an **Admin** (checked via Supabase Auth) OR the request must originate from a verified internal process (Service Role).
+
+---
+
+## 3. High Vulnerability: Sensitive Data in Console Logs
+
+### Description
+The `lib/logger.ts` utility logs database operations, including table names and payloads. In the checkout flow (`lib/services/commerce.ts`), the payload includes customer address and personal details.
+
+**Code:**
+```typescript
+log('RPC', 'create_order_secure', order);
 ```
 
 **Impact:**
-Any registered customer can invoke these functions via the JS Client `rpc()` method to view total store revenue, traffic stats, and conversion rates (Business Intelligence Leak).
+If `import.meta.env.PROD` detection fails or source maps are exposed, user PII (Personally Identifiable Information) could be visible in the browser console, which is accessible to XSS attacks or physical device access.
 
 **Remediation (Applied):**
-- Updated all analytics RPCs to include a strict guard clause:
-  `IF NOT public.check_is_admin(auth.uid()) THEN RAISE EXCEPTION 'Unauthorized'; END IF;`
+- Hardened `lib/logger.ts` to strictly disable logging in production and added a safeguard to redact known sensitive keys if logging is forced.
 
 ---
 
-## 3. High Vulnerability: Open API Key Usage in Client
+## 4. Medium Vulnerability: Client-Side Role Checks
 
 ### Description
-The code uses `supabasePublic` client initialized with the Anon Key. While this is standard for Supabase, it relied on table-level RLS policies that were not fully restrictive regarding specific columns.
+The `AdminLayout.tsx` relies on `user.role === 'admin'` to protect routes. This is standard for UX, but insecure if not backed by database policies.
 
 **Impact:**
-Combined with Vulnerability #1, the Anon Key provided a pathway to secrets.
+An attacker could modify the local JS state to bypass the UI block.
 
-**Remediation (Applied):**
-- The Remediation SQL script locks down the underlying tables, rendering the Anon Key safe for its intended public-read purposes.
+**Mitigation:**
+- Confirmed that `app_settings` (secrets) and `analytics_events` have backend RLS policies (`seed_security_hardening.sql`) that strictly enforce `check_is_admin(auth.uid())`. Even if the UI block is bypassed, the database will reject the data requests.
 
 ---
 
-## Remediation Verification
+## Remediation Roadmap
 
-After applying `seed_remediation.sql`:
-1. **Secrets:** `curl .../app_settings?select=*` will return 401 or empty for non-admins.
-2. **Analytics:** `api.getAnalyticsOverview()` will throw "Unauthorized" for non-admin users.
-3. **Functionality:** The storefront will still load branding/logos via the new `public_app_settings` view.
-
+1.  **Apply `seed_security_orders.sql`**: Execute immediately to lock down customer data.
+2.  **Deploy Edge Functions**: Re-deploy the updated `send-email` function.
+3.  **Review Storage**: Ensure `images` bucket allows Public Read but only Admin Write (Already covered in `seed_storage_fix.sql`).
