@@ -1,8 +1,11 @@
+
 import React, { useState } from 'react';
 import { AppSettings } from '../../../types';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
+import { Textarea } from '../../ui/Textarea';
 
 interface IdentitySectionProps {
   settings: AppSettings;
@@ -51,7 +54,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
         
         {/* LOGO SECTION */}
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-           <label className="block text-sm font-bold text-slate-800 mb-2">App Logo</label>
+           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">App Logo</label>
            <div className="flex flex-col sm:flex-row gap-4 items-center">
               {/* Expanded container for wide logos */}
               <div className="flex-shrink-0 min-w-[120px] max-w-[200px] h-20 bg-white rounded-lg border border-slate-200 flex items-center justify-center p-2 overflow-hidden">
@@ -62,13 +65,13 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                  )}
               </div>
               <div className="flex-1 w-full">
-                 <input 
+                 <Input 
                    type="text" 
                    name="logoImage" 
                    value={settings.logoImage || ''} 
                    onChange={onChange} 
                    placeholder="https://..."
-                   className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 text-sm focus:ring-brand-green" 
+                   fullWidth
                  />
               </div>
               <div className="relative">
@@ -79,7 +82,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                    disabled={uploading}
                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                  />
-                 <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-10 text-xs">
+                 <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-12 text-xs">
                    Upload
                  </Button>
               </div>
@@ -91,39 +94,50 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Primary Slogan</label>
-            <input type="text" name="slogan" value={settings.slogan} onChange={onChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Secondary Slogan</label>
-            <input type="text" name="secondarySlogan" value={settings.secondarySlogan} onChange={onChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" />
-          </div>
+          <Input 
+            label="Primary Slogan" 
+            name="slogan" 
+            value={settings.slogan} 
+            onChange={onChange} 
+          />
+          <Input 
+            label="Secondary Slogan" 
+            name="secondarySlogan" 
+            value={settings.secondarySlogan} 
+            onChange={onChange} 
+          />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Mission Statement</label>
-          <textarea name="mission" value={settings.mission} onChange={onChange} rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Vision</label>
-          <textarea name="vision" value={settings.vision} onChange={onChange} rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Core Values</label>
-          <input type="text" name="coreValues" value={settings.coreValues} onChange={onChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" />
-        </div>
+        <Textarea 
+          label="Mission Statement" 
+          name="mission" 
+          value={settings.mission} 
+          onChange={onChange} 
+          rows={3} 
+        />
+        <Textarea 
+          label="Vision" 
+          name="vision" 
+          value={settings.vision} 
+          onChange={onChange} 
+          rows={3} 
+        />
+        <Input 
+          label="Core Values" 
+          name="coreValues" 
+          value={settings.coreValues} 
+          onChange={onChange} 
+        />
         
         <div className="pt-4 border-t border-slate-100">
-          <label className="block text-sm font-bold text-slate-800 mb-2">Hero Banner Asset</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hero Banner Asset</label>
           <div className="flex flex-col sm:flex-row gap-4 items-start">
              <div className="flex-1 w-full space-y-2">
-                <input 
+                <Input 
                   type="text" 
                   name="heroBannerImage" 
                   value={settings.heroBannerImage || ''} 
                   onChange={onChange} 
                   placeholder="https://images.unsplash.com/..."
-                  className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green" 
                 />
                 <div className="relative group w-full sm:w-48 aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
                    {settings.heroBannerImage ? (
@@ -143,14 +157,18 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                   disabled={uploading}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                 />
-                <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap rounded-xl">
+                <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-12 rounded-xl">
                   {uploading ? 'Processing...' : 'Upload Hero Image'}
                 </Button>
              </div>
           </div>
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">Hero Text Overlay</label>
-            <input type="text" name="heroBannerText" value={settings.heroBannerText || ''} onChange={onChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green" />
+            <Input 
+              label="Hero Text Overlay" 
+              name="heroBannerText" 
+              value={settings.heroBannerText || ''} 
+              onChange={onChange} 
+            />
           </div>
         </div>
       </div>
@@ -160,54 +178,46 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
         <p className="text-sm text-gray-500 mb-4">Manage the content displayed in the "A Word from Our Founder" section on the About Us page.</p>
         
         <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Founder Name</label>
-            <input 
-              type="text" 
-              name="founderName" 
-              value={settings.founderName || ''} 
-              onChange={onChange} 
-              placeholder="e.g. Linah Makembu"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" 
-            />
-          </div>
+          <Input 
+            label="Founder Name" 
+            name="founderName" 
+            value={settings.founderName || ''} 
+            onChange={onChange} 
+            placeholder="e.g. Linah Makembu"
+          />
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Founder Bio</label>
-            <textarea 
-              name="founderBio" 
-              value={settings.founderBio || ''} 
-              onChange={onChange} 
-              rows={6} 
-              placeholder="Enter the founder's biography..."
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" 
-            />
-          </div>
+          <Textarea 
+            label="Founder Bio" 
+            name="founderBio" 
+            value={settings.founderBio || ''} 
+            onChange={onChange} 
+            rows={6} 
+            placeholder="Enter the founder's biography..."
+          />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Founder Quote</label>
-            <textarea 
+            <Textarea 
+              label="Founder Quote" 
               name="founderQuote" 
               value={settings.founderQuote || ''} 
               onChange={onChange} 
               rows={2} 
               placeholder="Guided by honesty..."
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green italic" 
+              className="italic"
             />
             <p className="text-xs text-gray-500 mt-1">Displayed as a highlighted quote under the bio.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Founder Image</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Founder Image</label>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
                <div className="flex-1 w-full space-y-2">
-                  <input 
+                  <Input 
                     type="text" 
                     name="founderImage" 
                     value={settings.founderImage || ''} 
                     onChange={onChange} 
                     placeholder="https://..."
-                    className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green" 
                   />
                   <div className="relative group w-32 aspect-[4/5] rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
                      {settings.founderImage ? (
@@ -227,7 +237,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                     disabled={uploading}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                   />
-                  <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap rounded-xl">
+                  <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-12 rounded-xl">
                     {uploading ? 'Processing...' : 'Upload Image'}
                   </Button>
                </div>
@@ -245,27 +255,24 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
         
         <div className="grid grid-cols-1 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">SEO Meta Title</label>
-            <input 
-              type="text" 
+            <Input 
+              label="SEO Meta Title" 
               name="seoTitle" 
               value={settings.seoTitle || ''} 
               onChange={onChange} 
               placeholder={defaultTitle}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" 
             />
             <p className="text-[10px] text-gray-400 mt-1 italic">The headline shown in browser tabs and search results. Optimal length: 50-60 characters.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">SEO Meta Description</label>
-            <textarea 
+            <Textarea 
+              label="SEO Meta Description" 
               name="seoDescription" 
               value={settings.seoDescription || ''} 
               onChange={onChange} 
               rows={2} 
               placeholder={defaultDesc}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white text-gray-900 focus:ring-brand-green" 
             />
             <p className="text-[10px] text-gray-400 mt-1 italic">The text snippet under the link. Optimal length: 150-160 characters.</p>
           </div>

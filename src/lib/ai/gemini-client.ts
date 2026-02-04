@@ -1,31 +1,55 @@
 
-import { GoogleGenAI, Chat } from "@google/genai";
+import { GoogleGenAI, Chat, Content } from "@google/genai";
 import { functionDeclarations } from './tools';
 
-// Using gemini-3-pro-preview for higher reasoning quality and nuance handling in admin tasks
-const MODEL_NAME = 'gemini-3-pro-preview';
+export const AVAILABLE_MODELS = [
+  'gemini-3-pro-preview',
+  'gemini-2.5-flash-preview',
+  'gemini-2.5-flash-lite-preview'
+];
 
 export class GeminiClient {
   constructor() {}
 
-  isAvailable(): boolean {
-    return !!process.env.API_KEY;
+  isAvailable(apiKey?: string): boolean {
+    return !!(apiKey || process.env.API_KEY);
   }
 
-  createChat(systemInstruction: string): Chat | null {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) return null;
+  getFallbackModel(currentModel: string): string | null {
+    const index = AVAILABLE_MODELS.indexOf(currentModel);
+    if (index === -1 || index === AVAILABLE_MODELS.length - 1) {
+      return null;
+    }
+    return AVAILABLE_MODELS[index + 1];
+  }
 
-    // FIX: Instantiate GoogleGenAI right before making an API call to ensure it always uses the most up-to-date API key
-    const ai = new GoogleGenAI({ apiKey });
+  createChat(
+    systemInstruction: string, 
+    apiKey?: string, 
+    model: string = AVAILABLE_MODELS[0],
+    history: Content[] = []
+  ): Chat | null {
+    const key = apiKey || process.env.API_KEY;
+    if (!key) {
+      console.warn("Gemini API Key is missing. Copilot will be disabled.");
+      return null;
+    }
+
+    const ai = new GoogleGenAI({ apiKey: key });
     
+    // Configure thinking budget based on model capability
+    let thinkingConfig = undefined;
+    if (model.includes('gemini-3') || model.includes('pro')) {
+        thinkingConfig = { thinkingBudget: 2048 };
+    }
+
     return ai.chats.create({
-      model: MODEL_NAME,
+      model: model,
+      history: history,
       config: {
         systemInstruction: systemInstruction,
         tools: [{ functionDeclarations }],
-        // Thinking budget added for gemini-3 series to improve planning and reasoning
-        thinkingConfig: { thinkingBudget: 4000 }
+        thinkingConfig
       }
     });
   }

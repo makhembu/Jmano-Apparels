@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -138,6 +137,18 @@ export class CategoryService {
       seo_title: category.seoTitle,
       seo_description: category.seoDescription
     });
+    if (error) throw error;
+  }
+
+  async update(key: string, category: Partial<Category>): Promise<void> {
+    log('UPDATE', 'categories', key);
+    const { error } = await supabase.from('categories').update({
+      label: category.label,
+      color: category.color,
+      bg_class: category.bgColorClass,
+      seo_title: category.seoTitle,
+      seo_description: category.seoDescription
+    }).eq('key', key);
     if (error) throw error;
   }
 

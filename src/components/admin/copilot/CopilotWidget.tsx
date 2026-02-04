@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useCopilot } from '../../../contexts/CopilotContext';
+import { useCopilot } from '../../../context/CopilotContext';
 
 export const CopilotWidget: React.FC = () => {
   const { toggleDrawer, isOpen } = useCopilot();

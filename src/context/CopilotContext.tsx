@@ -6,7 +6,7 @@ import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { Chat, Content } from '@google/genai';
-import { useShop } from '../context/ShopContext';
+import { useShop } from './ShopContext';
 import { api } from '../lib/db';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);

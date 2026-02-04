@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
+import { Input } from '../../ui/Input';
 
 interface SocialSectionProps {
   settings: AppSettings;
@@ -30,8 +31,13 @@ export const SocialSection: React.FC<SocialSectionProps> = ({ settings, onSocial
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {['facebook', 'instagram', 'twitter', 'tiktok', 'linkedin'].map(platform => (
           <div key={platform}>
-            <label className="block text-sm font-medium text-gray-700 capitalize">{platform} URL</label>
-            <input type="text" name={platform} value={socials[platform]} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900" />
+            <Input 
+              label={`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`}
+              type="text" 
+              name={platform} 
+              value={socials[platform]} 
+              onChange={handleChange} 
+            />
           </div>
         ))}
       </div>

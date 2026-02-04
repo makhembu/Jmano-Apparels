@@ -1,4 +1,3 @@
-
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -46,7 +45,7 @@ export const Mappers = {
 
   toCategory: (c: any): Category => ({
     key: c.key,
-    label: c.key, // Enforcing the compressed KEY as the UI LABEL (e.g. HOPEHOODIES)
+    label: c.label || c.key, 
     color: c.color,
     bgColorClass: c.bg_class,
     seoTitle: c.seo_title || undefined,

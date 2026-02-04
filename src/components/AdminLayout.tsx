@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
-// FIX: Ensuring standard v6 components/hooks are correctly imported from react-router-dom
 import { Link, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from './ui/LoadingSpinner';
-import { CopilotProvider } from '../contexts/CopilotContext';
+import { CopilotProvider } from '../context/CopilotContext';
 import { CopilotWidget } from './admin/copilot/CopilotWidget';
 import { CopilotDrawer } from './admin/copilot/CopilotDrawer';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { BottomAdminNav } from './admin/mobile/BottomAdminNav';
 
 // Icons components
 const Icons = {
-  Dashboard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  Dashboard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  Analytics: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Products: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
   Orders: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
   Payments: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
@@ -27,11 +29,12 @@ const Icons = {
 }
 
 export const AdminLayout: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthReady } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
-  if (loading) {
+  if (!isAuthReady || loading) {
     return <LoadingSpinner fullScreen />;
   }
 
@@ -61,48 +64,55 @@ export const AdminLayout: React.FC = () => {
   return (
     <CopilotProvider>
       <div className="flex min-h-screen bg-gray-100">
-        <aside 
-          className={`bg-brand-dark text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}
-        >
-          <div className="p-4 flex items-center justify-between h-16">
-            {!isCollapsed && <h2 className="text-xl font-bold font-serif truncate">Admin</h2>}
-            <button 
-              onClick={() => setIsCollapsed(!isCollapsed)} 
-              className="p-1 rounded-lg hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
-            >
-              {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
-            </button>
-          </div>
+        {/* DESKTOP SIDEBAR */}
+        {!isMobile && (
+          <aside 
+            className={`bg-brand-dark text-white flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out fixed left-0 top-0 h-full z-40 ${isCollapsed ? 'w-20' : 'w-64'}`}
+          >
+            <div className="p-4 flex items-center justify-between h-16">
+              {!isCollapsed && <h2 className="text-xl font-bold font-serif truncate">Admin</h2>}
+              <button 
+                onClick={() => setIsCollapsed(!isCollapsed)} 
+                className="p-1 rounded-lg hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
+              >
+                {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
+              </button>
+            </div>
 
-          <nav className="flex-1 overflow-y-auto mt-2 px-2 space-y-1">
-            <NavItem to="/admin" label="Dashboard" icon={Icons.Dashboard} />
-            
-            <SectionTitle title="Commerce" />
-            <NavItem to="/admin/products" label="Products" icon={Icons.Products} />
-            <NavItem to="/admin/orders" label="Orders" icon={Icons.Orders} />
-            <NavItem to="/admin/payments" label="Payments" icon={Icons.Payments} />
-            <NavItem to="/admin/shop-settings" label="Shop Settings" icon={Icons.ShopSettings} />
-            
-            <SectionTitle title="Communications" />
-            <NavItem to="/admin/newsletter" label="Newsletters" icon={Icons.Newsletter} />
-            <NavItem to="/admin/contact" label="Contact Forms" icon={Icons.Contact} />
-            
-            <SectionTitle title="Content" />
-            <NavItem to="/admin/blog" label="Blog" icon={Icons.Blog} />
-            <NavItem to="/admin/users" label="Users" icon={Icons.Users} />
-            <NavItem to="/admin/app-settings" label="App Settings" icon={Icons.AppSettings} />
+            <nav className="flex-1 overflow-y-auto mt-2 px-2 space-y-1 custom-scrollbar">
+              <NavItem to="/admin" label="Dashboard" icon={Icons.Dashboard} />
+              <NavItem to="/admin/analytics" label="Analytics" icon={Icons.Analytics} />
+              
+              <SectionTitle title="Commerce" />
+              <NavItem to="/admin/products" label="Products" icon={Icons.Products} />
+              <NavItem to="/admin/orders" label="Orders" icon={Icons.Orders} />
+              <NavItem to="/admin/payments" label="Payments" icon={Icons.Payments} />
+              <NavItem to="/admin/shop-settings" label="Shop Settings" icon={Icons.ShopSettings} />
+              
+              <SectionTitle title="Communications" />
+              <NavItem to="/admin/newsletter" label="Newsletters" icon={Icons.Newsletter} />
+              <NavItem to="/admin/contact" label="Contact Forms" icon={Icons.Contact} />
+              
+              <SectionTitle title="Content" />
+              <NavItem to="/admin/blog" label="Blog" icon={Icons.Blog} />
+              <NavItem to="/admin/users" label="Users" icon={Icons.Users} />
+              <NavItem to="/admin/app-settings" label="App Settings" icon={Icons.AppSettings} />
 
-            <SectionTitle title="Account" />
-            <NavItem to="/admin/profile" label="My Profile" icon={Icons.Profile} />
-          </nav>
+              <SectionTitle title="Account" />
+              <NavItem to="/admin/profile" label="My Profile" icon={Icons.Profile} />
+            </nav>
 
-          <div className="p-2 border-t border-green-800">
-             <NavItem to="/" label="Back to Shop" icon={Icons.Back} />
-          </div>
-        </aside>
+            <div className="p-2 border-t border-green-800">
+               <NavItem to="/" label="Back to Shop" icon={Icons.Back} />
+            </div>
+          </aside>
+        )}
 
-        {/* Main Content */}
-        <div className="flex-grow p-4 md:p-8 overflow-auto h-screen w-full relative">
+        {/* MOBILE BOTTOM NAV */}
+        {isMobile && <BottomAdminNav />}
+
+        {/* MAIN CONTENT */}
+        <div className={`flex-grow p-4 md:p-8 overflow-auto min-h-screen w-full relative transition-all duration-300 ${isMobile ? 'pb-24' : (isCollapsed ? 'ml-20' : 'ml-64')}`}>
           <Outlet />
           <CopilotWidget />
           <CopilotDrawer />

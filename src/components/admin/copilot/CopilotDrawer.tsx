@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useCopilot } from '../../../contexts/CopilotContext';
+import { useCopilot } from '../../../context/CopilotContext';
 import { useCopilotShortcuts } from '../../../hooks/useCopilotShortcuts';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -8,7 +8,8 @@ import { MessageInput } from './MessageInput';
 export const CopilotDrawer: React.FC = () => {
   const { 
     isOpen, messages, sendMessage, isLoading, 
-    toggleDrawer, clearHistory
+    toggleDrawer, clearHistory, 
+    currentModel, availableModels, setModel
   } = useCopilot();
   
   useCopilotShortcuts(toggleDrawer);
@@ -21,14 +22,27 @@ export const CopilotDrawer: React.FC = () => {
       className="fixed bottom-36 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 w-[95vw] md:w-96 h-[60vh] md:h-[600px] max-h-[80vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-fade-in z-[9999]"
     >
       {/* Header */}
-      <div className="bg-brand-dark px-5 py-4 flex justify-between items-center text-white relative">
+      <div className="bg-brand-dark px-5 py-4 flex justify-between items-start text-white relative">
         <div className="flex items-center gap-3 relative z-10">
-           <div className="w-8 h-8 rounded-xl bg-brand-testament flex items-center justify-center text-white shadow-lg">
+           <div className="w-8 h-8 rounded-xl bg-brand-testament flex items-center justify-center text-white shadow-lg flex-shrink-0">
              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1-8.313-12.454z" /></svg>
            </div>
-           <div>
-              <span className="font-serif font-bold tracking-tight text-base block">Jambo Copilot</span>
-              <span className="text-[9px] font-black uppercase tracking-widest text-brand-hope opacity-80">Administrative Partner</span>
+           <div className="flex flex-col min-w-0">
+              <span className="font-serif font-bold tracking-tight text-base block leading-none mb-1">Jambo Copilot</span>
+              
+              {/* Model Selector */}
+              <div className="relative inline-block group">
+                <select 
+                  value={currentModel} 
+                  onChange={(e) => setModel(e.target.value)}
+                  className="appearance-none bg-transparent text-[9px] font-black uppercase tracking-widest text-brand-hope opacity-80 hover:opacity-100 cursor-pointer focus:outline-none pr-3"
+                >
+                  {availableModels.map(m => (
+                    <option key={m} value={m} className="text-slate-900">{m.replace('gemini-', '').replace('-preview', '')}</option>
+                  ))}
+                </select>
+                <svg className="w-2 h-2 text-brand-hope absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+              </div>
            </div>
         </div>
         <div className="flex items-center gap-2 relative z-10">

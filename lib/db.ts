@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
@@ -54,6 +53,7 @@ export const api = {
 
   getCategories: () => categoryService.getAll(),
   createCategory: (c: Category) => categoryService.create(c),
+  updateCategory: (key: string, c: Partial<Category>) => categoryService.update(key, c),
   deleteCategory: (key: string) => categoryService.delete(key),
 
   getProductReviews: (productId: string) => reviewService.getByProduct(productId),
