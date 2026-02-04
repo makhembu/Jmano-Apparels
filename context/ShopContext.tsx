@@ -4,6 +4,7 @@ import { Product, Category, BlogPost, AppSettings, ProductReview } from '../type
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 import { ProductFilters } from '../lib/services/catalog';
+import { SettingsService } from '../lib/services/content';
 import { isAbortError } from '../lib/utils';
 
 interface ShopContextType {
@@ -37,6 +38,7 @@ const defaultSettings: AppSettings = {
 };
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
+const settingsService = new SettingsService();
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
@@ -84,8 +86,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("[Shop] Initializing data...");
 
     try {
+        // Use the SECURE get() method which filters out secrets
         const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
-          api.getAppSettings().catch(() => null),
+          settingsService.get().catch(() => null),
           api.getCategories().catch(() => []),
           api.getBlogPosts().catch(() => []),
           api.getRecentReviews(6).catch(() => [])

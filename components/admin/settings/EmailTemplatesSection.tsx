@@ -259,6 +259,7 @@ export const EmailTemplatesSection: React.FC = () => {
                           srcDoc={generatePreview(selectedTemplate.bodyHtml)}
                           className="w-full h-full border-0 block"
                           title="Preview"
+                          sandbox="allow-same-origin" // SECURITY: Restrict scripts in preview
                        />
                     </div>
                  </div>

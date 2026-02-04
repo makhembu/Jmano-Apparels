@@ -13,21 +13,43 @@ import { NotificationSection } from '../../components/admin/settings/Notificatio
 import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemplatesSection';
 import { PaymentSection } from '../../components/admin/settings/PaymentSection';
 import { SeoSection } from '../../components/admin/settings/SeoSection';
+import { SettingsService } from '../../lib/services/content';
 
 type SettingsTab = 'brand' | 'seo' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
 
+const settingsService = new SettingsService();
+
 export const AdminAppSettings: React.FC = () => {
-  const { settings, updateSettings } = useApp();
+  const { settings: globalSettings, updateSettings } = useApp();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [formData, setFormData] = useState(settings);
+  const [formData, setFormData] = useState(globalSettings);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const currentTab = (searchParams.get('tab') as SettingsTab) || 'brand';
 
   useEffect(() => {
-    setFormData(settings);
-  }, [settings]);
+    // SECURITY: The global settings context only has public data.
+    // We must fetch the full admin settings (with secrets) securely when mounting this admin page.
+    const fetchAdminSettings = async () => {
+        setLoading(true);
+        try {
+            const adminSettings = await settingsService.getAdminSettings();
+            if (adminSettings) {
+                setFormData(adminSettings);
+            } else {
+                setFormData(globalSettings); // Fallback if admin fetch fails (should not happen if logged in)
+            }
+        } catch (e) {
+            console.error("Failed to load admin settings", e);
+            showToast("Failed to load secure settings", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchAdminSettings();
+  }, []); // Run once on mount
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -77,7 +99,7 @@ export const AdminAppSettings: React.FC = () => {
     <div className="max-w-6xl pb-20 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
          <h1 className="text-2xl font-bold font-serif text-brand-dark">App Configuration</h1>
-         <Button id="btn-save-settings" data-copilot-id="btn-save-settings" type="submit" form="app-settings-form" isLoading={saving} variant="primary">Save Configuration</Button>
+         <Button id="btn-save-settings" data-copilot-id="btn-save-settings" type="submit" form="app-settings-form" isLoading={saving} disabled={loading} variant="primary">Save Configuration</Button>
       </div>
       
       <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
@@ -90,28 +112,32 @@ export const AdminAppSettings: React.FC = () => {
         <TabButton id="system" label="System" />
       </div>
       
-      <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
-        {currentTab === 'brand' && <IdentitySection settings={formData} onChange={handleChange} />}
-        {currentTab === 'seo' && <SeoSection settings={formData} onChange={handleChange} />}
-        {currentTab === 'payments' && <PaymentSection settings={formData} onChange={handleChange} />}
-        {currentTab === 'emails' && (
-          <div className="space-y-8 animate-fade-in">
-             <NotificationSection settings={formData} onChange={handleChange} />
-             <div className="border-t border-gray-100 pt-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 px-1">Message Templates</h3>
-                <EmailTemplatesSection />
-             </div>
-          </div>
-        )}
-        {currentTab === 'contact' && (
-          <div className="space-y-6 animate-fade-in">
-            <ContactSection settings={formData} onChange={handleChange} onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} />
-            <SocialSection settings={formData} onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} />
-          </div>
-        )}
-        {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
-        {currentTab === 'system' && <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />}
-      </form>
+      {loading ? (
+          <div className="py-20 text-center text-slate-500">Loading secure configuration...</div>
+      ) : (
+          <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
+            {currentTab === 'brand' && <IdentitySection settings={formData} onChange={handleChange} />}
+            {currentTab === 'seo' && <SeoSection settings={formData} onChange={handleChange} />}
+            {currentTab === 'payments' && <PaymentSection settings={formData} onChange={handleChange} />}
+            {currentTab === 'emails' && (
+              <div className="space-y-8 animate-fade-in">
+                 <NotificationSection settings={formData} onChange={handleChange} />
+                 <div className="border-t border-gray-100 pt-8">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 px-1">Message Templates</h3>
+                    <EmailTemplatesSection />
+                 </div>
+              </div>
+            )}
+            {currentTab === 'contact' && (
+              <div className="space-y-6 animate-fade-in">
+                <ContactSection settings={formData} onChange={handleChange} onHoursChange={(hours) => setFormData(prev => ({ ...prev, businessHours: hours }))} />
+                <SocialSection settings={formData} onSocialChange={(socials) => setFormData(prev => ({ ...prev, socialLinks: socials }))} />
+              </div>
+            )}
+            {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
+            {currentTab === 'system' && <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />}
+          </form>
+      )}
     </div>
   );
 };

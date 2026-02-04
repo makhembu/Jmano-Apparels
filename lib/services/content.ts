@@ -68,15 +68,8 @@ export class BlogService {
 
   async incrementViewCount(id: string): Promise<void> {
     log('RPC/UPDATE', 'blog_posts', `increment views for ${id}`);
-    // Use public client for select, but write needs proper perms. 
-    // Usually view count increment is an RPC or public write policy.
-    // For now we'll stick to supabase (auth) or supabasePublic depending on policy.
-    // Assuming anyone can increment views:
     const { data } = await supabasePublic.from('blog_posts').select('view_count').eq('id', id).single();
     if (data) {
-       // Since this is a write, and often RLS allows only auth users or admins to UPDATE, 
-       // but view counts are special. If this fails due to RLS, an RPC is better.
-       // We'll leave this as 'supabase' (legacy client) which might be anon or auth.
        await supabase.from('blog_posts').update({ view_count: (data.view_count || 0) + 1 }).eq('id', id);
     }
   }
@@ -106,17 +99,40 @@ export class BlogService {
 }
 
 export class SettingsService {
+  /**
+   * Fetch Public Settings via Secure View.
+   * Reads from 'public_app_settings' view which omits secrets.
+   */
   async get(): Promise<AppSettings | null> {
-    log('SELECT', 'app_settings');
-    // Use public client
-    const { data, error } = await supabasePublic.from('app_settings').select('*').single();
+    log('SELECT', 'public_app_settings (VIEW)');
+    
+    const { data, error } = await supabasePublic
+      .from('public_app_settings') // USE SECURE VIEW
+      .select('*')
+      .single();
+      
+    if (error) return null;
+    return Mappers.toAppSettings(data as DbAppSettings);
+  }
+
+  /**
+   * Fetch Admin Settings (Including Secrets).
+   * Protected by Auth Client and RLS.
+   */
+  async getAdminSettings(): Promise<AppSettings | null> {
+    log('SELECT', 'app_settings (ADMIN)');
+    // Use Authenticated Client to access the locked-down table
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('*') // RLS ensures only admins can read this
+      .single();
+      
     if (error) return null;
     return Mappers.toAppSettings(data as DbAppSettings);
   }
 
   async getPublicPaymentSettings(): Promise<{ paypalClientId: string; paypalMode: string; paymentGatewayEnabled: boolean; currency: string } | null> {
     log('RPC', 'get_public_payment_settings');
-    // Use public client for this RPC which is specifically granted to anon
     const { data, error } = await supabasePublic.rpc('get_public_payment_settings');
     if (error) {
       console.error(error);
@@ -133,6 +149,9 @@ export class SettingsService {
 
   async update(id: number, settings: Partial<AppSettings>): Promise<void> {
     log('UPDATE', 'app_settings', { id });
+    
+    // Security: Only allow updates via authenticated client (supabase, not supabasePublic)
+    
     const dbSettings: any = {
       slogan: settings.slogan,
       secondary_slogan: settings.secondarySlogan,

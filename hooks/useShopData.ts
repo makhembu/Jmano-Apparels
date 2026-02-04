@@ -1,7 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Product, Category, BlogPost, AppSettings } from '../types';
 import { api } from '../lib/db';
 import { useToast } from '../context/ToastContext';
+import { SettingsService } from '../lib/services/content';
 
 const defaultSettings: AppSettings = {
   id: 0,
@@ -12,6 +14,8 @@ const defaultSettings: AppSettings = {
   coreValues: "Loading..."
 };
 
+const settingsService = new SettingsService();
+
 export const useShopData = () => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -21,15 +25,26 @@ export const useShopData = () => {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (includeSecrets = false) => {
     try {
       setLoading(true);
-      const [fetchedSettings, fetchedCats, fetchedProds, fetchedPosts] = await Promise.all([
-        api.getAppSettings(),
+      
+      const [fetchedCats, fetchedProds, fetchedPosts] = await Promise.all([
         api.getCategories(),
         api.getProducts(),
         api.getBlogPosts()
       ]);
+
+      // Secure Settings Fetch
+      // If we are in an admin context (checked implicitly by where this is used, or parameter)
+      // For general shop use, we use the SAFE get() method.
+      // Admin pages should call settingsService.getAdminSettings() directly.
+      let fetchedSettings;
+      if (includeSecrets) {
+          fetchedSettings = await settingsService.getAdminSettings();
+      } else {
+          fetchedSettings = await settingsService.get();
+      }
 
       if (fetchedSettings) setSettings(fetchedSettings);
       if (fetchedCats) setCategories(fetchedCats);
