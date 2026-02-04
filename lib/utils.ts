@@ -3,26 +3,51 @@ import { useEffect, RefObject } from 'react';
 import { Product } from '../types';
 
 /**
- * Helper to check if an error is a fetch AbortError (cancelled request).
- * This allows us to silently ignore errors caused by component unmounting.
+ * ClassName utility to merge conditional classes
+ */
+export function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
+/**
+ * Format number as GBP Currency
+ */
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+  }).format(amount);
+};
+
+/**
+ * Format date string
+ */
+export const formatDate = (dateString: string | undefined) => {
+  if (!dateString) return '-';
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+/**
+ * Helper to check if an error is a fetch AbortError
  */
 export const isAbortError = (error: any): boolean => {
   return (
     error?.name === 'AbortError' || 
     error?.message?.includes('aborted') || 
-    error?.code === 20 // DOMException code for ABORT_ERR
+    error?.code === 20 
   );
 };
 
 /**
  * A custom hook to detect clicks outside a specified element.
- * @param ref - The RefObject of the element to monitor.
- * @param handler - The callback function to execute on an outside click.
  */
 export const useClickOutside = (ref: RefObject<HTMLElement>, handler: (event: MouseEvent) => void) => {
   useEffect(() => {
     const listener = (event: MouseEvent) => {
-      // Do nothing if clicking ref's element or descendent elements
       if (!ref.current || ref.current.contains(event.target as Node)) {
         return;
       }
@@ -36,27 +61,12 @@ export const useClickOutside = (ref: RefObject<HTMLElement>, handler: (event: Mo
   }, [ref, handler]);
 };
 
-/**
- * Filters an array of products to return only those that are published.
- * @param products - The array of products to filter.
- * @returns A new array containing only published products.
- */
 export const getVisibleProducts = (products: Product[]): Product[] => {
   return products.filter(p => p.isPublished !== false);
 };
 
-/**
- * Searches an array of products based on a query string, checking title and tags.
- * Returns an empty array if the query is empty.
- * This is specific to the Navbar's search preview functionality.
- * @param products - The array of products to search within.
- * @param query - The search term.
- * @returns A new array of products matching the query.
- */
 export const searchProducts = (products: Product[], query: string): Product[] => {
-  if (!query.trim()) {
-    return [];
-  }
+  if (!query.trim()) return [];
   const lowercasedQuery = query.toLowerCase();
   return products.filter(p => 
     p.title.toLowerCase().includes(lowercasedQuery) || 

@@ -11,6 +11,7 @@ interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Product, size: string, quantity: number, color?: string) => void;
   removeFromCart: (productId: string, size: string, color?: string) => void;
+  updateQuantity: (productId: string, size: string, color: string | undefined, newQuantity: number) => void;
   clearCart: () => void;
   refreshCart: (userId: string) => Promise<void>;
   cartTotal: number;
@@ -52,12 +53,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const serverCart = await api.fetchCart(userId);
       
       setCart(currentLocalCart => {
-        // Simple merge strategy: If local is empty, take server.
-        // If local has items, we prefer local changes (assuming recent action), 
-        // but typically you'd merge. For safety, we'll append new server items to local.
-        
         if (currentLocalCart.length === 0) {
-            // Avoid state update if identical
             if (JSON.stringify(serverCart) === JSON.stringify(currentLocalCart)) return currentLocalCart;
             return serverCart;
         }
@@ -96,7 +92,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
 
       syncTimeoutRef.current = setTimeout(() => {
-        console.log(`[Cart] Syncing ${cart.length} items to DB...`);
         api.syncCart(currentUser.id, cart).catch(err => {
           if (!isAbortError(err)) console.error("DB Sync failed", err);
         });
@@ -139,6 +134,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(`Added ${product.title}`, 'success');
   }, [showToast]);
 
+  const updateQuantity = useCallback((productId: string, size: string, color: string | undefined, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setCart(prev => prev.map(item => {
+      if (item.id === productId && item.selectedSize === size && item.selectedColor === color) {
+        // Optional: Check stock limit here if we had access to product object easily, 
+        // but typically cart items snapshot essential data. 
+        // For strict checking, we'd need to re-fetch or store maxStock on the item.
+        return { ...item, quantity: newQuantity };
+      }
+      return item;
+    }));
+  }, []);
+
   const removeFromCart = useCallback((productId: string, size: string, color?: string) => {
     setCart(prev => prev.filter(item => 
       !(item.id === productId && 
@@ -162,8 +170,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const value = useMemo(() => ({ 
-      cart, addToCart, removeFromCart, clearCart, refreshCart, cartTotal, cartCount 
-  }), [cart, addToCart, removeFromCart, clearCart, refreshCart, cartTotal, cartCount]);
+      cart, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartTotal, cartCount 
+  }), [cart, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartTotal, cartCount]);
 
   return (
     <CartContext.Provider value={value}>

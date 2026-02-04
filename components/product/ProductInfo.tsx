@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product, Category } from '../../types';
@@ -8,34 +9,31 @@ interface ProductInfoProps {
 }
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product, category }) => {
-  // Extract theme color from category bg_class (e.g. bg-brand-hope -> brand-hope)
-  // Default to brand-green if undefined
   const themeClass = category?.bgColorClass ? category.bgColorClass.replace('bg-', 'text-') : 'text-brand-green';
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
-        <div>
-          <nav className="flex mb-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]" aria-label="Breadcrumb">
-            <Link to="/shop" className={`hover:${themeClass} transition-colors`}>Shop</Link>
-            <span className="mx-2 opacity-30">/</span>
-            <span className={`${themeClass}`}>{category?.label || 'Collection'}</span>
-          </nav>
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-[1.1]">{product.title}</h1>
-        </div>
-        <div className="flex flex-col items-start sm:items-end">
-          <p className={`text-4xl font-bold font-serif ${themeClass}`}>£{product.price.toFixed(2)}</p>
+      <div className="mb-6">
+        <Link to={`/shop?cat=${product.categoryKey}`} className={`text-xs font-black uppercase tracking-[0.2em] mb-3 block ${themeClass} opacity-80 hover:opacity-100 transition-opacity`}>
+           {category?.label || 'Collection'}
+        </Link>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-900 leading-tight mb-4">
+          {product.title}
+        </h1>
+        
+        <div className="flex items-baseline gap-4 mt-4">
+          <p className="text-3xl font-serif font-bold text-gray-900">£{product.price.toFixed(2)}</p>
           {product.isOnSale && product.salePrice && (
-            <p className="text-sm text-slate-400 line-through mt-1">Originally £{product.price.toFixed(2)}</p>
+            <div className="flex items-center gap-2">
+               <span className="text-lg text-gray-400 line-through decoration-1">£{product.salePrice.toFixed(2)}</span>
+               <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Sale</span>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="mb-10 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Spiritually Threaded</h3>
-        <div className="text-base text-slate-700 font-light leading-relaxed">
-          <p>{product.description}</p>
-        </div>
+      <div className="prose prose-slate prose-sm max-w-none text-gray-600 font-light leading-relaxed mb-8">
+        <p>{product.description}</p>
       </div>
     </>
   );

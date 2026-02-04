@@ -29,7 +29,6 @@ export const ProductDetails: React.FC = () => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   
-  // FIX: Lookup product by ID OR Slug to support SEO-friendly URLs
   const product = products.find(p => p.id === id || p.slug === id);
   const category = categories.find(c => c.key === product?.categoryKey);
 
@@ -57,7 +56,9 @@ export const ProductDetails: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       if (buySectionRef.current) {
-        setShowStickyBar(buySectionRef.current.getBoundingClientRect().bottom < 0);
+        // Show sticky bar when the buy section scrolls out of view at the top
+        const rect = buySectionRef.current.getBoundingClientRect();
+        setShowStickyBar(rect.bottom < 0);
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -66,7 +67,6 @@ export const ProductDetails: React.FC = () => {
 
   useEffect(() => {
     if (!loading && location.hash === '#reviews' && reviewsRef.current) {
-      // Small tick to allow layout to settle
       requestAnimationFrame(() => {
         reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -96,14 +96,12 @@ export const ProductDetails: React.FC = () => {
     if (redirect) setIsOrderingNow(true);
     else setIsAdding(true);
 
-    // REMOVED: Artificial 400ms delay. Action should be instant.
     addToCart(product, selectedSize, quantity, selectedColor);
     
     if (redirect) {
       navigate('/cart');
     } else {
       setIsAdding(false);
-      // Optional: Add a small visual feedback logic here if needed, but not blocking.
       showToast(`Added to cart: ${product.title}`, 'success', {
          label: 'GO TO CART',
          onClick: () => navigate('/cart')
@@ -121,15 +119,15 @@ export const ProductDetails: React.FC = () => {
     return products.filter(p => p.categoryKey === product.categoryKey && p.id !== product.id && p.isPublished !== false).slice(0, 4);
   }, [products, product]);
 
-  // Calculate dynamic top position for sticky gallery based on header height
   const hasAnnouncement = settings.isAnnouncementEnabled && settings.announcementText;
-  const galleryTopClass = hasAnnouncement ? 'lg:top-[8.5rem]' : 'lg:top-24';
+  // Increased top spacing for desktop sticky behavior
+  const galleryTopClass = hasAnnouncement ? 'lg:top-[10rem]' : 'lg:top-32';
 
   if (loading) return <LoadingSpinner fullScreen />;
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
 
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       <SEO 
         title={product.seoTitle || product.title}
         description={product.seoDescription || product.description.substring(0, 160)}
@@ -153,12 +151,7 @@ export const ProductDetails: React.FC = () => {
             "price": product.isOnSale ? product.salePrice : product.price,
             "availability": (product.stockQuantity || 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             "itemCondition": "https://schema.org/NewCondition"
-          },
-          "aggregateRating": product.reviewCount && product.reviewCount > 0 ? {
-            "@type": "AggregateRating",
-            "ratingValue": product.averageRating,
-            "reviewCount": product.reviewCount
-          } : undefined
+          }
         }}
       />
 
@@ -168,34 +161,29 @@ export const ProductDetails: React.FC = () => {
         onAddToCart={() => handleAddToCart(false)}
       />
 
-      <header className="relative bg-brand-dark pt-12 pb-32 md:pt-24 md:pb-40 overflow-hidden text-center border-b border-brand-green/20">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-           <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-green/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+      {/* Breadcrumb Navigation - Desktop Only */}
+      <div className="hidden lg:block border-b border-gray-100 bg-white">
+        <div className="max-w-7xl mx-auto px-8 py-4">
+           <nav className="flex text-xs font-medium text-gray-500 uppercase tracking-widest">
+              <Link to="/" className="hover:text-brand-dark">Home</Link>
+              <span className="mx-2">/</span>
+              <Link to="/shop" className="hover:text-brand-dark">Shop</Link>
+              <span className="mx-2">/</span>
+              <span className="text-brand-green font-bold">{product.title}</span>
+           </nav>
         </div>
-        <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <Link to="/shop" className="inline-block">
-            <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-6 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg hover:bg-white transition-colors cursor-pointer">
-              Back to Collection
-            </span>
-          </Link>
-          <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6 leading-tight">
-            {category?.label || 'Ethically Threaded'}
-          </h1>
-          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
-            "{settings.secondarySlogan}"
-          </p>
-        </div>
-      </header>
+      </div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-20 pb-20 animate-fade-in">
-        <div className="mb-8 hidden md:block">
-          <BackButton className="text-white hover:text-brand-hope" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16 relative z-20 animate-fade-in">
+        {/* Mobile Back Button */}
+        <div className="lg:hidden mb-6">
+           <BackButton to="/shop" />
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
-          {/* Dynamic sticky class for Desktop Gallery */}
-          <div className={`lg:col-span-6 lg:sticky ${galleryTopClass} transition-all duration-300`}>
+          
+          {/* Left Column: Gallery (Sticky on Desktop) */}
+          <div className={`lg:col-span-7 lg:sticky ${galleryTopClass} self-start transition-all duration-300`}>
             <ProductImageGallery 
               product={product}
               isWishlisted={isWishlisted}
@@ -204,9 +192,13 @@ export const ProductDetails: React.FC = () => {
             />
           </div>
           
-          <div className="lg:col-span-6 mt-12 lg:mt-0">
-            <div className="bg-white lg:p-10 p-6 rounded-[2.5rem] lg:border border-slate-100 lg:shadow-xl lg:shadow-slate-200/40">
+          {/* Right Column: Details */}
+          <div className="lg:col-span-5 mt-12 lg:mt-0">
+            <div className="relative">
               <ProductInfo product={product} category={category} />
+              
+              <div className="my-10 h-px bg-gray-100"></div>
+
               <ProductPurchaseForm 
                 product={product}
                 category={category}
@@ -222,12 +214,14 @@ export const ProductDetails: React.FC = () => {
                 isAdding={isAdding}
                 isOrderingNow={isOrderingNow}
               />
+              
               <ProductDetailsSection />
+              
+              <ProductShare product={product} />
             </div>
           </div>
         </div>
 
-        <ProductShare product={product} />
         <SimilarProducts similarProducts={similarProducts} />
         {settings.enableReviews && (
           <ProductReviews productId={product.id} user={user} reviewsRef={reviewsRef} />

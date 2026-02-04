@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,37 @@ import { Button } from '../components/ui/Button';
 import { BackButton } from '../components/ui/BackButton';
 import { SEO } from '../components/SEO';
 
+// --- Reading Progress Component ---
+const ReadingProgress = () => {
+  const [width, setWidth] = useState(0);
+
+  const scrollHeight = () => {
+    const el = document.documentElement;
+    const ScrollTop = el.scrollTop || document.body.scrollTop;
+    const ScrollHeight = el.scrollHeight || document.body.scrollHeight;
+    const clientHeight = el.clientHeight || document.body.clientHeight; // window height
+    
+    // Total scrollable height
+    const height = ScrollHeight - clientHeight;
+    const percent = (ScrollTop / height) * 100;
+    setWidth(percent);
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', scrollHeight);
+    return () => window.removeEventListener('scroll', scrollHeight);
+  });
+
+  return (
+    <div className="fixed top-0 left-0 h-1.5 bg-gray-100 w-full z-[100]">
+      <div 
+        className="h-full bg-brand-green transition-all duration-150 ease-out" 
+        style={{ width: `${width}%` }} 
+      />
+    </div>
+  );
+};
+
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -19,19 +50,20 @@ export const BlogPost: React.FC = () => {
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const category = categories.find(c => c.key === post?.categoryId) || categories.find(c => c.id === post?.categoryId);
+
+  // Fetch recommended products based on category
   const recommendedProducts = products
     .filter(p => p.isPublished !== false)
-    .filter(p => p.categoryKey === post?.categoryId || p.isFeatured)
-    .sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0))
-    .slice(0, 4);
+    .filter(p => (category && p.categoryKey === category.key) || p.isFeatured)
+    .slice(0, 3);
 
+  // Determine Next Post
   const publishedPosts = blogPosts.filter(p => p.status === 'published');
   const currentIndex = publishedPosts.findIndex(p => p.slug === slug);
   const nextPost = currentIndex !== -1 && publishedPosts.length > 1
     ? publishedPosts[(currentIndex + 1) % publishedPosts.length]
     : null;
-
-  const category = categories.find(c => c.key === post?.categoryId);
 
   useEffect(() => {
     if (slug) {
@@ -54,8 +86,13 @@ export const BlogPost: React.FC = () => {
   if (loading) return <LoadingSpinner fullScreen />;
   if (!post) return <div className="p-32 text-center"><h1 className="text-4xl font-serif font-bold text-brand-dark mb-6">Entry Not Found</h1><Link to="/blog"><Button>Back to Journal</Button></Link></div>;
 
+  // Social Share URLs
+  const shareUrl = encodeURIComponent(window.location.href);
+  const shareTitle = encodeURIComponent(post.title);
+
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen font-sans">
+      <ReadingProgress />
       <SEO 
         title={post.seoTitle || post.title}
         description={post.seoDescription || post.summary}
@@ -69,128 +106,160 @@ export const BlogPost: React.FC = () => {
           "@type": "BlogPosting",
           "headline": post.title,
           "image": post.featuredImage,
-          "author": {
-            "@type": "Person",
-            "name": post.author
-          },
+          "author": { "@type": "Person", "name": post.author },
           "publisher": {
             "@type": "Organization",
             "name": "Jambo Apparels",
-            "logo": {
-              "@type": "ImageObject",
-              "url": "https://i.imgur.com/pkaScEv.png"
-            }
+            "logo": { "@type": "ImageObject", "url": "https://i.imgur.com/pkaScEv.png" }
           },
           "datePublished": post.createdAt,
           "articleBody": post.content ? post.content.replace(/<[^>]*>?/gm, '').substring(0, 160) : ""
         }}
       />
 
-      <header className="relative bg-brand-dark pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden border-b border-brand-green/20">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-green/20 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-4xl mx-auto px-4 relative z-10">
-          <div className="mb-12">
-            <BackButton to="/blog" className="inline-flex items-center text-[10px] font-black uppercase tracking-[0.3em] text-white bg-white/10 px-5 py-2 rounded-full shadow-sm border border-white/10 hover:bg-white/20 transition-all" />
+      {/* --- Editorial Header --- */}
+      <header className="relative pt-24 pb-12 md:pt-32 md:pb-16 px-4">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
+          <div className="flex justify-center items-center gap-3">
+             <Link to="/blog" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand-green transition-colors">The Journal</Link>
+             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-green bg-brand-light/30 px-3 py-1 rounded-full">
+                {category?.label || category?.name || 'Testimony'}
+             </span>
           </div>
-          
-          <div className="space-y-8 text-center md:text-left">
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
-              <span className="bg-brand-hope text-brand-dark px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.3em]">
-                {category?.label || 'The Testimony'}
-              </span>
-              <span className="text-brand-light text-[10px] font-black uppercase tracking-[0.2em]">
-                {post.readingTime} Min Read
-              </span>
-            </div>
-            
-            <h1 className="text-4xl md:text-7xl font-serif font-bold text-white leading-[1.05] tracking-tight">
-              {post.title}
-            </h1>
-            
-            <div className="flex flex-col md:flex-row items-center gap-6 pt-10 border-t border-white/10">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-brand-green text-white flex items-center justify-center font-serif font-black text-xl shadow-lg shadow-black/20 border border-white/10">
-                  {post.author?.[0]}
+
+          <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-[1.1] tracking-tight">
+            {post.title}
+          </h1>
+
+          <div className="flex items-center justify-center gap-6 text-sm text-slate-500 border-t border-b border-slate-100 py-4 w-fit mx-auto px-8 mt-8">
+             <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-brand-dark text-white flex items-center justify-center font-serif font-bold text-xs">
+                   {post.author?.[0]}
                 </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-black text-brand-light/60 uppercase tracking-widest">Authored By</p>
-                  <p className="font-bold text-white">{post.author}</p>
-                </div>
-              </div>
-              <div className="hidden md:block w-px h-8 bg-white/20"></div>
-              <div className="text-left">
-                 <p className="text-[10px] font-black text-brand-light/60 uppercase tracking-widest">Journalled On</p>
-                 <p className="font-bold text-white">{new Date(post.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
-              </div>
-            </div>
+                <span className="font-medium text-slate-900">{post.author}</span>
+             </div>
+             <span className="w-px h-4 bg-slate-200"></span>
+             <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+             <span className="w-px h-4 bg-slate-200 hidden sm:block"></span>
+             <span className="hidden sm:block">{post.readingTime} min read</span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 -mt-16 md:-mt-24 mb-20 relative z-20">
-        <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl border-[12px] border-white ring-1 ring-slate-100">
-           <img src={post.featuredImage} alt="" className="w-full h-full object-cover" />
+      {/* --- Featured Image --- */}
+      <div className="max-w-5xl mx-auto px-4 mb-16">
+        <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden shadow-2xl">
+           <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
         </div>
+        {/* Optional Caption could go here */}
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pb-32">
-        <article className="prose prose-lg md:prose-2xl max-w-none text-slate-700 font-light leading-relaxed 
-          prose-headings:font-serif prose-headings:text-brand-dark prose-headings:font-bold prose-headings:tracking-tight 
-          prose-a:text-brand-green prose-a:font-black prose-a:no-underline prose-a:border-b-2 prose-a:border-brand-green/20 hover:prose-a:border-brand-green
-          prose-blockquote:border-brand-hope prose-blockquote:bg-brand-light/20 prose-blockquote:p-10 prose-blockquote:rounded-2xl prose-blockquote:not-italic prose-blockquote:text-brand-dark prose-blockquote:font-serif">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
-        </article>
+      <div className="max-w-7xl mx-auto px-4 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* --- Main Content Column --- */}
+          <div className="lg:col-span-8 lg:col-start-2">
+            <article className="prose prose-lg prose-slate max-w-none 
+              font-serif text-slate-700 leading-8
+              prose-p:mb-6 prose-p:text-[1.1rem] prose-p:font-light 
+              prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900
+              prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+              prose-a:text-brand-green prose-a:font-bold prose-a:no-underline prose-a:border-b-2 prose-a:border-brand-green/20 hover:prose-a:border-brand-green hover:prose-a:bg-brand-light/20 prose-a:transition-all
+              prose-blockquote:border-l-4 prose-blockquote:border-brand-hope prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:text-slate-800
+              prose-img:rounded-xl prose-img:shadow-lg
+              prose-strong:font-black prose-strong:text-slate-900
+              first-letter:float-left first-letter:text-6xl first-letter:pr-3 first-letter:font-black first-letter:text-slate-900 first-letter:mt-[-4px]
+            ">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
+            </article>
 
-        <div className="mt-24 pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
-           <div className="flex flex-col items-center md:items-start gap-4">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Share the Message</span>
-              <div className="flex gap-3">
-                 <button className="bg-slate-100 p-4 rounded-xl text-slate-500 hover:bg-brand-green hover:text-white transition-all shadow-sm">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
-                 </button>
-                 <button className="bg-slate-100 p-4 rounded-xl text-slate-500 hover:bg-brand-green hover:text-white transition-all shadow-sm">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
-                 </button>
-              </div>
-           </div>
-           <Link to="/blog" className="text-brand-green font-black text-xs uppercase tracking-widest border-b-2 border-brand-green/20 hover:border-brand-green pb-1">Back to Journal</Link>
-        </div>
-      </div>
+            {/* --- Mobile Share (Bottom) --- */}
+            <div className="lg:hidden mt-12 pt-8 border-t border-slate-100">
+               <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 text-center">Share this story</p>
+               <div className="flex justify-center gap-4">
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noreferrer" className="p-3 rounded-full bg-slate-50 text-slate-600 hover:bg-[#1877F2] hover:text-white transition-colors"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+                  <a href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`} target="_blank" rel="noreferrer" className="p-3 rounded-full bg-slate-50 text-slate-600 hover:bg-[#1DA1F2] hover:text-white transition-colors"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg></a>
+               </div>
+            </div>
+          </div>
 
-      {nextPost && (
-        <section className="bg-brand-testament py-24 md:py-32 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-white/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
-           <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-              <span className="text-brand-light text-[10px] font-black uppercase tracking-[0.4em] mb-6 inline-block">Continuing the Faith</span>
-              <h2 className="text-xs font-black text-brand-hope uppercase tracking-[0.3em] mb-4">Up Next</h2>
-              <Link to={`/blog/${nextPost.slug}`} className="group block">
-                <h3 className="text-3xl md:text-6xl font-serif font-bold text-white mb-10 leading-tight group-hover:text-brand-hope transition-colors">{nextPost.title}</h3>
-                <div className="inline-flex items-center gap-4 bg-white/10 px-10 py-5 rounded-xl text-white font-black text-[10px] uppercase tracking-widest border border-white/20 group-hover:bg-white/20 transition-all">
-                  Read Next Story <span className="text-xl">&rarr;</span>
+          {/* --- Sticky Sidebar (Desktop) --- */}
+          <aside className="hidden lg:block lg:col-span-3">
+             <div className="sticky top-32 space-y-12">
+                
+                {/* About Author */}
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                   <h4 className="font-sans font-bold text-sm text-slate-900 mb-3">About the Author</h4>
+                   <p className="font-serif text-sm text-slate-600 leading-relaxed italic mb-4">
+                      "{post.author} is a dedicated contributor to the Jambo mission, sharing insights on faith, lifestyle, and the modern believer's walk."
+                   </p>
+                   <Link to="/about" className="text-xs font-black uppercase tracking-widest text-brand-green hover:underline">Read our Story</Link>
                 </div>
-              </Link>
-           </div>
-        </section>
-      )}
 
-      <section className="bg-slate-50 py-32 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4">
-           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-              <div>
-                 <h2 className="text-xs font-black text-brand-green uppercase tracking-[0.4em] mb-4">Inspired by this read</h2>
-                 <h3 className="text-3xl md:text-6xl font-serif font-bold text-brand-dark">Shop the Story</h3>
-              </div>
-              <Link to="/shop" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-green transition-all">Entire Collection &rarr;</Link>
-           </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {recommendedProducts.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
-              ))}
-           </div>
+                {/* Share Tools */}
+                <div>
+                   <h4 className="font-sans font-bold text-xs text-slate-400 uppercase tracking-widest mb-4">Share this Entry</h4>
+                   <div className="flex gap-2">
+                      <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noreferrer" className="flex-1 py-2 rounded-lg border border-slate-200 text-center text-slate-600 hover:border-[#1877F2] hover:text-[#1877F2] transition-colors"><span className="text-xs font-bold">Facebook</span></a>
+                      <a href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`} target="_blank" rel="noreferrer" className="flex-1 py-2 rounded-lg border border-slate-200 text-center text-slate-600 hover:border-[#1DA1F2] hover:text-[#1DA1F2] transition-colors"><span className="text-xs font-bold">Twitter</span></a>
+                   </div>
+                </div>
+
+                {/* Contextual CTA */}
+                <div className="bg-brand-dark text-white p-6 rounded-2xl shadow-xl shadow-brand-dark/20 text-center relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-brand-hope/30 transition-colors"></div>
+                   <div className="relative z-10">
+                      <h4 className="font-serif font-bold text-xl mb-2">Inspired?</h4>
+                      <p className="text-brand-light text-sm mb-6 leading-relaxed">Wear the message. Explore our collection of scripture-threaded apparel.</p>
+                      <Link to="/shop">
+                         <Button variant="secondary" className="w-full text-xs h-10 shadow-none">Visit Shop</Button>
+                      </Link>
+                   </div>
+                </div>
+
+             </div>
+          </aside>
+
         </div>
-      </section>
+      </div>
+
+      {/* --- Footer: Up Next & Related Products --- */}
+      <div className="bg-slate-50 border-t border-slate-200">
+         <div className="max-w-7xl mx-auto px-4 py-20">
+            
+            {/* Next Post */}
+            {nextPost && (
+               <div className="mb-20 text-center max-w-2xl mx-auto">
+                  <span className="text-brand-green text-[10px] font-black uppercase tracking-[0.3em] mb-4 block">Continue Reading</span>
+                  <Link to={`/blog/${nextPost.slug}`} className="group block">
+                     <h3 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark mb-4 group-hover:text-brand-green transition-colors leading-tight">
+                        {nextPost.title}
+                     </h3>
+                     <p className="text-slate-500 font-serif italic mb-6">Read next &rarr;</p>
+                  </Link>
+               </div>
+            )}
+
+            {/* Related Products */}
+            {recommendedProducts.length > 0 && (
+               <div>
+                  <div className="flex justify-between items-end mb-10 border-b border-slate-200 pb-4">
+                     <h3 className="text-2xl font-serif font-bold text-slate-900">Curated for this Story</h3>
+                     <Link to="/shop" className="text-xs font-bold text-brand-green hover:underline">View All</Link>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                     {recommendedProducts.map((product, idx) => (
+                        <ProductCard key={product.id} product={product} index={idx} />
+                     ))}
+                  </div>
+               </div>
+            )}
+         </div>
+      </div>
     </div>
   );
 };

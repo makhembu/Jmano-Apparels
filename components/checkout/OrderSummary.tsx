@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { CartItem, ShippingAddress, DiscountCode } from '../../types';
+import { useCart } from '../../context/CartContext';
 
 interface OrderSummaryProps {
   cart: CartItem[];
@@ -27,6 +28,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   address,
   orderNotes
 }) => {
+  const { updateQuantity, removeFromCart } = useCart();
+
   return (
     <>
       <h2 className="text-2xl font-serif font-bold text-brand-dark mb-6">Order Summary</h2>
@@ -35,16 +38,44 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar mb-6">
         <ul className="divide-y divide-gray-100">
           {cart.map(item => (
-            <li key={`${item.id}-${item.selectedSize}`} className="py-4 flex gap-4">
-              <div className="h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-50">
+            <li key={`${item.id}-${item.selectedSize}-${item.selectedColor || 'none'}`} className="py-4 flex gap-4 group">
+              <div className="h-20 w-20 flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                 <img src={item.images[0]} alt={item.title} className="h-full w-full object-cover" />
               </div>
-              <div className="flex-grow flex flex-col justify-center">
-                <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
-                <p className="text-xs text-gray-500 mt-0.5">Size: {item.selectedSize} {item.selectedColor ? `| ${item.selectedColor}` : ''}</p>
+              <div className="flex-grow flex flex-col justify-between">
+                <div>
+                    <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">
+                        Size: {item.selectedSize} {item.selectedColor ? `• ${item.selectedColor}` : ''}
+                    </p>
+                </div>
+                
                 <div className="flex justify-between items-end mt-2">
-                  <span className="text-xs font-medium text-gray-400">Qty: {item.quantity}</span>
-                  <span className="text-sm font-bold text-brand-dark">£{(item.price * item.quantity).toFixed(2)}</span>
+                  <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 h-8">
+                    <button 
+                        onClick={() => updateQuantity(item.id, item.selectedSize, item.selectedColor, item.quantity - 1)}
+                        className="px-2.5 h-full text-gray-500 hover:text-brand-dark hover:bg-gray-100 rounded-l-lg transition-colors disabled:opacity-50"
+                        disabled={item.quantity <= 1}
+                    >
+                        -
+                    </button>
+                    <span className="px-2 text-xs font-bold text-gray-900 w-6 text-center">{item.quantity}</span>
+                    <button 
+                        onClick={() => updateQuantity(item.id, item.selectedSize, item.selectedColor, item.quantity + 1)}
+                        className="px-2.5 h-full text-gray-500 hover:text-brand-dark hover:bg-gray-100 rounded-r-lg transition-colors"
+                    >
+                        +
+                    </button>
+                  </div>
+                  <div className="text-right">
+                      <span className="block text-sm font-bold text-brand-dark">£{(item.price * item.quantity).toFixed(2)}</span>
+                      <button 
+                        onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)}
+                        className="text-[10px] text-red-400 hover:text-red-600 underline decoration-red-200 underline-offset-2"
+                      >
+                        Remove
+                      </button>
+                  </div>
                 </div>
               </div>
             </li>

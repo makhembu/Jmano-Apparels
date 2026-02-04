@@ -8,19 +8,13 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { SEO } from '../components/SEO';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 
 export const Shop: React.FC = () => {
   const { 
-    products, 
-    categories, 
-    settings, 
-    loading, // Global app loading (Auth+Shop)
-    productsLoading, // Shop filter loading
-    loadMore, 
-    hasMore, 
-    isLoadingMore, 
-    updateFilters,
-    filters 
+    products, categories, settings, loading, productsLoading, 
+    loadMore, hasMore, isLoadingMore, updateFilters, filters 
   } = useShop();
   
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,7 +30,6 @@ export const Shop: React.FC = () => {
          sortBy: filters.sortBy 
      };
      
-     // Only update if actually different to prevent loops
      if (newFilters.categoryKey !== filters.categoryKey || newFilters.search !== filters.search) {
          updateFilters(newFilters);
      }
@@ -49,6 +42,7 @@ export const Shop: React.FC = () => {
     if (key !== 'ALL') newParams.cat = key;
     if (filters.search) newParams.search = filters.search;
     setSearchParams(newParams);
+    // Don't auto-close filters on desktop
     if (window.innerWidth < 768) setShowFilters(false);
   };
 
@@ -64,54 +58,111 @@ export const Shop: React.FC = () => {
       updateFilters({ sortBy: e.target.value as any });
   };
 
-  const handlePriceChange = (min: number, max: number) => {
-      updateFilters({ minPrice: min, maxPrice: max });
-  };
-
   const activeCategory = categories.find(c => c.key === filters.categoryKey);
   const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
-  const seoDesc = activeCategory?.seoDescription || settings.shopSeoDescription;
 
-  // Show full screen spinner ONLY if we have NO products AND we are loading.
-  // This prevents blocking when Auth check is running but public Shop data is already available.
   if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO 
         title={seoTitle}
-        description={seoDesc}
+        description={activeCategory?.seoDescription || settings.shopSeoDescription}
         type="website"
         canonical={activeCategory?.canonicalUrl}
         noindex={activeCategory?.isNoIndex}
       />
 
-      <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
+      {/* --- DESKTOP HERO (Hidden on Mobile) --- */}
+      <header className="hidden md:block relative bg-brand-dark pt-20 pb-28 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
           <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
             The Collection
           </span>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
+          <h1 className="text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
             Ethically <span className="text-brand-humility">Threaded</span>
           </h1>
-          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
+          <p className="text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
             "{settings.secondarySlogan}"
           </p>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-16 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
-          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+      {/* --- MOBILE STICKY CONTROL BAR --- */}
+      <div className="md:hidden sticky top-16 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm transition-all duration-300">
+        <div className="px-4 py-3 space-y-3">
+          {/* Row 1: Search & Filter Toggle */}
+          <div className="flex gap-3">
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                value={filters.search || ''}
+                onChange={handleSearchChange}
+                placeholder="Search..."
+                className="w-full bg-slate-100 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-green/20"
+              />
+              <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-5 h-11 border rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${showFilters ? 'bg-brand-green text-white border-brand-green shadow-lg shadow-brand-green/20' : 'bg-white text-slate-700 border-slate-200 hover:border-brand-green'}`}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border transition-colors ${showFilters ? 'bg-brand-dark text-white border-brand-dark' : 'bg-white border-slate-200 text-slate-600'}`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-              <span>{showFilters ? 'Hide Filters' : 'Filters'}</span>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
             </button>
+          </div>
+
+          {/* Row 2: Horizontal Categories Scroll */}
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar -mx-4 px-4">
+             <button
+                onClick={() => handleCategoryChange('ALL')}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${!filters.categoryKey ? 'bg-brand-dark text-white border-brand-dark' : 'bg-white text-slate-500 border-slate-200'}`}
+             >
+                All Pieces
+             </button>
+             {categories.map(cat => (
+                <button
+                  key={cat.key}
+                  onClick={() => handleCategoryChange(cat.key)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${filters.categoryKey === cat.key ? 'bg-brand-green text-white border-brand-green' : 'bg-white text-slate-500 border-slate-200'}`}
+                >
+                  {cat.label}
+                </button>
+             ))}
+          </div>
+        </div>
+        
+        {/* Mobile Filter Expandable (Sort/Advanced) */}
+        <div className={`overflow-hidden transition-all duration-300 bg-slate-50 border-t border-slate-100 ${showFilters ? 'max-h-40 p-4' : 'max-h-0'}`}>
+           <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Sort By</label>
+           <select 
+              value={filters.sortBy} 
+              onChange={handleSortChange}
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none"
+           >
+              <option value="newest">Newest Arrivals</option>
+              <option value="low-high">Price: Low to High</option>
+              <option value="high-low">Price: High to Low</option>
+           </select>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:-mt-12 relative z-20 pt-6 md:pt-0">
+        
+        {/* --- DESKTOP TOOLBAR (Hidden on Mobile) --- */}
+        <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-24 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+            <Button 
+              variant={showFilters ? "primary" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              size="sm"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+              }
+            >
+              {showFilters ? 'Hide Filters' : 'Filters'}
+            </Button>
             
             <div className="hidden sm:block text-[10px] text-slate-400 font-black uppercase tracking-widest ml-2">
                Showing {products.length} <span className="hidden xs:inline">Pieces</span>
@@ -119,31 +170,37 @@ export const Shop: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <input 
-                type="text" 
+            <div className="w-full sm:w-64">
+              <Input 
                 value={filters.search || ''} 
                 onChange={handleSearchChange}
                 placeholder="Search treasures..."
-                className="w-full pl-11 pr-4 h-11 text-sm border-none bg-slate-100 rounded-2xl focus:ring-2 focus:ring-brand-green/20 text-slate-900 font-medium transition-all"
+                fullWidth
+                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white"
               />
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
             </div>
             
-            <select value={filters.sortBy} onChange={handleSortChange} className="hidden sm:block bg-slate-100 border-none rounded-2xl h-11 px-4 text-xs font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-brand-green/20 outline-none cursor-pointer">
-              <option value="newest">Latest</option>
-              <option value="low-high">£ Low-High</option>
-              <option value="high-low">£ High-Low</option>
-            </select>
+            <div className="hidden sm:block w-40">
+              <Select 
+                value={filters.sortBy} 
+                onChange={handleSortChange} 
+                options={[
+                  { value: 'newest', label: 'Latest' },
+                  { value: 'low-high', label: '£ Low-High' },
+                  { value: 'high-low', label: '£ High-Low' }
+                ]}
+                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white"
+              />
+            </div>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-0 md:gap-12 items-start relative pb-24">
-          <div className={`flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-full md:w-72 opacity-100 mb-8 md:mb-0' : 'w-full md:w-0 h-0 md:h-auto opacity-0'}`}>
-            <aside className="w-full md:w-72">
-              <div className="md:sticky md:top-40 space-y-10 bg-white p-8 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
+          
+          {/* --- DESKTOP SIDEBAR --- */}
+          <div className={`hidden md:block flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-72 opacity-100' : 'w-0 opacity-0'}`}>
+            <aside className="w-72">
+              <div className="sticky top-40 space-y-10 bg-white p-8 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
                 <div>
                   <button 
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
@@ -178,46 +235,19 @@ export const Shop: React.FC = () => {
                     })}
                   </ul>
                 </div>
-                
-                <div className="border-t border-slate-100 pt-10">
-                   <h3 className="text-xs font-black text-brand-dark uppercase tracking-[0.2em] mb-6">Investment Range</h3>
-                   <div className="flex items-center gap-3">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[10px]">£</span>
-                        <input 
-                            type="number" 
-                            placeholder="0"
-                            onChange={e => handlePriceChange(+e.target.value, filters.maxPrice || 1000)} 
-                            className="pl-6 w-full h-10 border border-slate-200 bg-slate-50 rounded-xl text-xs font-black text-slate-900 focus:ring-2 focus:ring-brand-green/20 outline-none" 
-                        />
-                      </div>
-                      <span className="text-slate-300 font-bold text-xs">to</span>
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[10px]">£</span>
-                        <input 
-                            type="number" 
-                            placeholder="Max"
-                            onChange={e => handlePriceChange(filters.minPrice || 0, +e.target.value)} 
-                            className="pl-6 w-full h-10 border border-slate-200 bg-slate-50 rounded-xl text-xs font-black text-slate-900 focus:ring-2 focus:ring-brand-green/20 outline-none" 
-                        />
-                      </div>
-                   </div>
-                </div>
               </div>
             </aside>
           </div>
 
           <div className="flex-grow min-w-0 relative">
-            
-            {/* Local Loading Overlay for Filtering */}
             {productsLoading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center pt-20 rounded-3xl transition-opacity">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div>
-                    <p className="mt-4 text-xs font-bold text-brand-dark uppercase tracking-widest animate-pulse">Updating Collection...</p>
+                    <LoadingSpinner />
                 </div>
             )}
 
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 transition-opacity duration-300 ${productsLoading ? 'opacity-20' : 'opacity-100'}`}>
+            {/* PRODUCT GRID: 2 Columns on Mobile, 3 on Desktop */}
+            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10 transition-opacity duration-300 ${productsLoading ? 'opacity-20' : 'opacity-100'}`}>
               {products.length > 0 ? (
                 products.map((product, idx) => (
                   <ProductCard key={product.id} product={product} index={idx} />
@@ -241,7 +271,8 @@ export const Shop: React.FC = () => {
                     <Button 
                         onClick={loadMore} 
                         isLoading={isLoadingMore}
-                        className="px-12 h-14 rounded-2xl shadow-xl shadow-brand-green/20 text-xs font-black uppercase tracking-widest"
+                        size="lg"
+                        className="shadow-xl shadow-brand-green/20"
                     >
                         Load More Treasures
                     </Button>

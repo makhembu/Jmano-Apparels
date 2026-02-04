@@ -95,30 +95,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
            />
         )}
       </div>
-      <div className="p-5 flex flex-col flex-grow">
+      {/* Updated padding for mobile grid (p-3 on small screens, p-5 on desktop) */}
+      <div className="p-3 md:p-5 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-2 gap-2">
            <p 
-             className={`text-[10px] font-bold uppercase tracking-widest ${index !== undefined ? style.muted : ''}`}
+             className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${index !== undefined ? style.muted : ''}`}
              style={index === undefined ? { color: categoryColor } : {}}
            >
              {category?.label || product.categoryKey}
            </p>
            {product.stockQuantity !== undefined && product.stockQuantity <= 5 && product.stockQuantity > 0 && (
-             <span className="flex-shrink-0 text-[9px] text-red-500 font-bold bg-white/90 px-1.5 py-0.5 rounded shadow-sm">Low Stock</span>
+             <span className="flex-shrink-0 text-[8px] md:text-[9px] text-red-500 font-bold bg-white/90 px-1.5 py-0.5 rounded shadow-sm">Low Stock</span>
            )}
         </div>
-        <h3 className={`text-lg font-serif font-bold ${style.text} leading-tight transition-colors mb-auto`}>
+        <h3 className={`text-sm md:text-lg font-serif font-bold ${style.text} leading-tight transition-colors mb-auto`}>
           {product.title}
         </h3>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-3 md:mt-4 flex items-center justify-between">
            <p 
-             className={`text-xl font-bold ${index !== undefined ? style.price : ''}`}
+             className={`text-sm md:text-xl font-bold ${index !== undefined ? style.price : ''}`}
              style={index === undefined ? { color: categoryColor } : {}}
            >
              £{product.price.toFixed(2)}
            </p>
            {product.isOnSale && (
-             <span className={`text-sm line-through ${index !== undefined ? style.muted : 'text-gray-400'}`}>
+             <span className={`text-[10px] md:text-sm line-through ${index !== undefined ? style.muted : 'text-gray-400'}`}>
                 £{product.salePrice?.toFixed(2)}
              </span>
            )}
