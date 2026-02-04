@@ -100,18 +100,21 @@ export class BlogService {
 
 export class SettingsService {
   /**
-   * Fetch Public Settings via Secure View.
-   * Reads from 'public_app_settings' view which omits secrets.
+   * Fetch Public Settings via Secure RPC.
+   * Uses 'get_public_site_settings' to bypass table RLS safely.
    */
   async get(): Promise<AppSettings | null> {
-    log('SELECT', 'public_app_settings (VIEW)');
+    log('RPC', 'get_public_site_settings');
     
-    const { data, error } = await supabasePublic
-      .from('public_app_settings') // USE SECURE VIEW
-      .select('*')
-      .single();
+    // Use the RPC instead of direct view selection to ensure access even with strict table policies
+    const { data, error } = await supabasePublic.rpc('get_public_site_settings');
       
-    if (error) return null;
+    if (error) {
+        console.error("Failed to load settings via RPC", error);
+        return null;
+    }
+    
+    // RPC returns the JSON object directly
     return Mappers.toAppSettings(data as DbAppSettings);
   }
 
