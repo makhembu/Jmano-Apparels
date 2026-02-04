@@ -37,12 +37,13 @@ export const Blog: React.FC = () => {
   }, [blogPosts, activeCategory]);
 
   const getCardColorStyles = (index: number) => {
+    // Most text set to text-brand-dark per user request
     const colors = [
-      { bg: 'bg-brand-hope', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-hope' },
-      { bg: 'bg-brand-testament', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-testament' },
-      { bg: 'bg-brand-humility', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-white text-brand-green', border: 'border-brand-humility' },
+      { bg: 'bg-brand-hope', text: 'text-brand-dark', muted: 'text-slate-800/80', accent: 'bg-brand-dark text-white', border: 'border-brand-hope' },
+      { bg: 'bg-brand-testament', text: 'text-brand-dark', muted: 'text-slate-800/80', accent: 'bg-brand-dark text-white', border: 'border-brand-testament' },
+      { bg: 'bg-brand-humility', text: 'text-brand-dark', muted: 'text-slate-800/80', accent: 'bg-white text-brand-green', border: 'border-brand-humility' },
       { bg: 'bg-brand-patience', text: 'text-white', muted: 'text-white/90', accent: 'bg-white text-brand-patience', border: 'border-brand-patience' },
-      { bg: 'bg-brand-triumph', text: 'text-slate-900', muted: 'text-slate-800/80', accent: 'bg-slate-900 text-white', border: 'border-brand-triumph' },
+      { bg: 'bg-brand-triumph', text: 'text-brand-dark', muted: 'text-slate-800/80', accent: 'bg-brand-dark text-white', border: 'border-brand-triumph' },
     ];
     return colors[index % colors.length];
   };

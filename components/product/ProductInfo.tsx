@@ -17,12 +17,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product, category }) =
         <Link to={`/shop?cat=${product.categoryKey}`} className={`text-xs font-black uppercase tracking-[0.2em] mb-3 block ${themeClass} opacity-80 hover:opacity-100 transition-opacity`}>
            {category?.label || 'Collection'}
         </Link>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-900 leading-tight mb-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">
           {product.title}
         </h1>
         
         <div className="flex items-baseline gap-4 mt-4">
-          <p className="text-3xl font-serif font-bold text-gray-900">£{product.price.toFixed(2)}</p>
+          <p className="text-3xl font-serif font-bold text-brand-dark">£{product.price.toFixed(2)}</p>
           {product.isOnSale && product.salePrice && (
             <div className="flex items-center gap-2">
                <span className="text-lg text-gray-400 line-through decoration-1">£{product.salePrice.toFixed(2)}</span>

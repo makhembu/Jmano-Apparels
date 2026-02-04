@@ -16,34 +16,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const category = categories.find(c => c.key === product.categoryKey);
   
   // Define color rotation palette with Accessible Contrast Ratios
+  // Most text updated to text-brand-dark per user request for "green" titles
   const colors = [
     { 
       bg: 'bg-brand-hope', 
-      text: 'text-slate-900', 
-      price: 'text-slate-900', 
+      text: 'text-brand-dark', 
+      price: 'text-brand-dark', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-hope', 
       hover: 'hover:shadow-brand-hope/30' 
     }, 
     { 
       bg: 'bg-brand-testament', 
-      text: 'text-slate-900', 
-      price: 'text-slate-900', 
+      text: 'text-brand-dark', 
+      price: 'text-brand-dark', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-testament', 
       hover: 'hover:shadow-brand-testament/30' 
     }, 
     { 
       bg: 'bg-brand-humility', 
-      text: 'text-slate-900', 
-      price: 'text-slate-900', 
+      text: 'text-brand-dark', 
+      price: 'text-brand-dark', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-humility', 
       hover: 'hover:shadow-brand-humility/30' 
     }, 
     { 
       bg: 'bg-brand-patience', 
-      text: 'text-white', 
+      text: 'text-white', // Keep white for contrast on red
       price: 'text-white', 
       muted: 'text-white/90', 
       border: 'border-brand-patience', 
@@ -51,8 +52,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
     }, 
     { 
       bg: 'bg-brand-triumph', 
-      text: 'text-slate-900', 
-      price: 'text-slate-900', 
+      text: 'text-brand-dark', 
+      price: 'text-brand-dark', 
       muted: 'text-slate-800/80', 
       border: 'border-brand-triumph', 
       hover: 'hover:shadow-brand-triumph/30' 
@@ -61,7 +62,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 
   const defaultStyle = { 
     bg: 'bg-white', 
-    text: 'text-gray-900', 
+    text: 'text-brand-dark', 
     price: category?.color || 'text-brand-green', 
     muted: 'text-gray-500', 
     border: 'border-gray-100',

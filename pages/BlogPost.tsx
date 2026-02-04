@@ -128,7 +128,7 @@ export const BlogPost: React.FC = () => {
              </span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-[1.1] tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-serif font-bold text-brand-dark leading-[1.1] tracking-tight">
             {post.title}
           </h1>
 
@@ -164,13 +164,13 @@ export const BlogPost: React.FC = () => {
             <article className="prose prose-lg prose-slate max-w-none 
               font-serif text-slate-700 leading-8
               prose-p:mb-6 prose-p:text-[1.1rem] prose-p:font-light 
-              prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900
+              prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-brand-dark
               prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
               prose-a:text-brand-green prose-a:font-bold prose-a:no-underline prose-a:border-b-2 prose-a:border-brand-green/20 hover:prose-a:border-brand-green hover:prose-a:bg-brand-light/20 prose-a:transition-all
               prose-blockquote:border-l-4 prose-blockquote:border-brand-hope prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:text-slate-800
               prose-img:rounded-xl prose-img:shadow-lg
               prose-strong:font-black prose-strong:text-slate-900
-              first-letter:float-left first-letter:text-6xl first-letter:pr-3 first-letter:font-black first-letter:text-slate-900 first-letter:mt-[-4px]
+              first-letter:float-left first-letter:text-6xl first-letter:pr-3 first-letter:font-black first-letter:text-brand-dark first-letter:mt-[-4px]
             ">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {post.content}
@@ -193,7 +193,7 @@ export const BlogPost: React.FC = () => {
                 
                 {/* About Author */}
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                   <h4 className="font-sans font-bold text-sm text-slate-900 mb-3">About the Author</h4>
+                   <h4 className="font-sans font-bold text-sm text-brand-dark mb-3">About the Author</h4>
                    <p className="font-serif text-sm text-slate-600 leading-relaxed italic mb-4">
                       "{post.author} is a dedicated contributor to the Jambo mission, sharing insights on faith, lifestyle, and the modern believer's walk."
                    </p>
@@ -248,7 +248,7 @@ export const BlogPost: React.FC = () => {
             {recommendedProducts.length > 0 && (
                <div>
                   <div className="flex justify-between items-end mb-10 border-b border-slate-200 pb-4">
-                     <h3 className="text-2xl font-serif font-bold text-slate-900">Curated for this Story</h3>
+                     <h3 className="text-2xl font-serif font-bold text-brand-dark">Curated for this Story</h3>
                      <Link to="/shop" className="text-xs font-bold text-brand-green hover:underline">View All</Link>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">

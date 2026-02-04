@@ -171,7 +171,7 @@ export const Home: React.FC = () => {
                          <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                       <Link to={`/blog/${post.slug}`}>
-                        <h3 className="text-xl font-serif font-bold text-slate-900 leading-tight mb-3 group-hover:text-brand-green transition-colors">
+                        <h3 className="text-xl font-serif font-bold text-brand-dark leading-tight mb-3 group-hover:text-brand-green transition-colors">
                           {post.title}
                         </h3>
                       </Link>
