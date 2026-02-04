@@ -6,6 +6,8 @@ import { LoadingSpinner } from './ui/LoadingSpinner';
 import { CopilotProvider } from '../context/CopilotContext';
 import { CopilotWidget } from './admin/copilot/CopilotWidget';
 import { CopilotDrawer } from './admin/copilot/CopilotDrawer';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { BottomAdminNav } from './admin/mobile/BottomAdminNav';
 
 // Icons components
 const Icons = {
@@ -30,14 +32,12 @@ export const AdminLayout: React.FC = () => {
   const { user, loading, isAuthReady } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // STRICT ORDER:
-  // 1. Wait for Auth Check to complete
   if (!isAuthReady || loading) {
     return <LoadingSpinner fullScreen />;
   }
 
-  // 2. Check if user is logged in AND is admin
   if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
@@ -64,49 +64,55 @@ export const AdminLayout: React.FC = () => {
   return (
     <CopilotProvider>
       <div className="flex min-h-screen bg-gray-100">
-        <aside 
-          className={`bg-brand-dark text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}
-        >
-          <div className="p-4 flex items-center justify-between h-16">
-            {!isCollapsed && <h2 className="text-xl font-bold font-serif truncate">Admin</h2>}
-            <button 
-              onClick={() => setIsCollapsed(!isCollapsed)} 
-              className="p-1 rounded-lg hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
-            >
-              {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
-            </button>
-          </div>
+        {/* DESKTOP SIDEBAR */}
+        {!isMobile && (
+          <aside 
+            className={`bg-brand-dark text-white flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out fixed left-0 top-0 h-full z-40 ${isCollapsed ? 'w-20' : 'w-64'}`}
+          >
+            <div className="p-4 flex items-center justify-between h-16">
+              {!isCollapsed && <h2 className="text-xl font-bold font-serif truncate">Admin</h2>}
+              <button 
+                onClick={() => setIsCollapsed(!isCollapsed)} 
+                className="p-1 rounded-lg hover:bg-green-800 focus:outline-none text-gray-300 hover:text-white mx-auto"
+              >
+                {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
+              </button>
+            </div>
 
-          <nav className="flex-1 overflow-y-auto mt-2 px-2 space-y-1">
-            <NavItem to="/admin" label="Dashboard" icon={Icons.Dashboard} />
-            <NavItem to="/admin/analytics" label="Analytics" icon={Icons.Analytics} />
-            
-            <SectionTitle title="Commerce" />
-            <NavItem to="/admin/products" label="Products" icon={Icons.Products} />
-            <NavItem to="/admin/orders" label="Orders" icon={Icons.Orders} />
-            <NavItem to="/admin/payments" label="Payments" icon={Icons.Payments} />
-            <NavItem to="/admin/shop-settings" label="Shop Settings" icon={Icons.ShopSettings} />
-            
-            <SectionTitle title="Communications" />
-            <NavItem to="/admin/newsletter" label="Newsletters" icon={Icons.Newsletter} />
-            <NavItem to="/admin/contact" label="Contact Forms" icon={Icons.Contact} />
-            
-            <SectionTitle title="Content" />
-            <NavItem to="/admin/blog" label="Blog" icon={Icons.Blog} />
-            <NavItem to="/admin/users" label="Users" icon={Icons.Users} />
-            <NavItem to="/admin/app-settings" label="App Settings" icon={Icons.AppSettings} />
+            <nav className="flex-1 overflow-y-auto mt-2 px-2 space-y-1 custom-scrollbar">
+              <NavItem to="/admin" label="Dashboard" icon={Icons.Dashboard} />
+              <NavItem to="/admin/analytics" label="Analytics" icon={Icons.Analytics} />
+              
+              <SectionTitle title="Commerce" />
+              <NavItem to="/admin/products" label="Products" icon={Icons.Products} />
+              <NavItem to="/admin/orders" label="Orders" icon={Icons.Orders} />
+              <NavItem to="/admin/payments" label="Payments" icon={Icons.Payments} />
+              <NavItem to="/admin/shop-settings" label="Shop Settings" icon={Icons.ShopSettings} />
+              
+              <SectionTitle title="Communications" />
+              <NavItem to="/admin/newsletter" label="Newsletters" icon={Icons.Newsletter} />
+              <NavItem to="/admin/contact" label="Contact Forms" icon={Icons.Contact} />
+              
+              <SectionTitle title="Content" />
+              <NavItem to="/admin/blog" label="Blog" icon={Icons.Blog} />
+              <NavItem to="/admin/users" label="Users" icon={Icons.Users} />
+              <NavItem to="/admin/app-settings" label="App Settings" icon={Icons.AppSettings} />
 
-            <SectionTitle title="Account" />
-            <NavItem to="/admin/profile" label="My Profile" icon={Icons.Profile} />
-          </nav>
+              <SectionTitle title="Account" />
+              <NavItem to="/admin/profile" label="My Profile" icon={Icons.Profile} />
+            </nav>
 
-          <div className="p-2 border-t border-green-800">
-             <NavItem to="/" label="Back to Shop" icon={Icons.Back} />
-          </div>
-        </aside>
+            <div className="p-2 border-t border-green-800">
+               <NavItem to="/" label="Back to Shop" icon={Icons.Back} />
+            </div>
+          </aside>
+        )}
 
-        {/* Main Content */}
-        <div className="flex-grow p-4 md:p-8 overflow-auto h-screen w-full relative">
+        {/* MOBILE BOTTOM NAV */}
+        {isMobile && <BottomAdminNav />}
+
+        {/* MAIN CONTENT */}
+        <div className={`flex-grow p-4 md:p-8 overflow-auto min-h-screen w-full relative transition-all duration-300 ${isMobile ? 'pb-24' : (isCollapsed ? 'ml-20' : 'ml-64')}`}>
           <Outlet />
           <CopilotWidget />
           <CopilotDrawer />

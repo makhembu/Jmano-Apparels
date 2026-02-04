@@ -18,7 +18,7 @@ export const CopilotDrawer: React.FC = () => {
   return (
     <div 
       id="copilot-drawer" 
-      className="fixed bottom-24 right-6 w-96 h-[600px] max-h-[80vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-fade-in z-[9999]"
+      className="fixed bottom-36 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 w-[95vw] md:w-96 h-[60vh] md:h-[600px] max-h-[80vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-fade-in z-[9999]"
     >
       {/* Header */}
       <div className="bg-brand-dark px-5 py-4 flex justify-between items-center text-white relative">
@@ -35,8 +35,8 @@ export const CopilotDrawer: React.FC = () => {
            <button onClick={clearHistory} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="Clear Chat">
              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
            </button>
-           <button onClick={toggleDrawer} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors">
-             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+           <button onClick={toggleDrawer} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors" title="Minimize">
+             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
            </button>
         </div>
       </div>
@@ -44,7 +44,7 @@ export const CopilotDrawer: React.FC = () => {
       <MessageList messages={messages} isLoading={isLoading} />
       <MessageInput onSend={sendMessage} isLoading={isLoading} />
       
-      <div className="bg-slate-50 border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400 text-center font-medium">
+      <div className="bg-slate-50 border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400 text-center font-medium hidden md:block">
          Cmd+K to toggle Copilot
       </div>
     </div>

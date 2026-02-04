@@ -11,7 +11,7 @@ export const CopilotWidget: React.FC = () => {
     <button
       id="copilot-widget"
       onClick={toggleDrawer}
-      className="fixed bottom-8 right-8 w-16 h-16 rounded-2xl shadow-[0_20px_50px_rgba(185,106,217,0.35)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 z-[9995] bg-gradient-to-br from-brand-testament via-[#9D50BB] to-[#6E48AA] text-white group border border-white/20 overflow-hidden"
+      className="fixed bottom-36 right-4 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-2xl shadow-[0_20px_50px_rgba(185,106,217,0.35)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 z-[9995] bg-gradient-to-br from-brand-testament via-[#9D50BB] to-[#6E48AA] text-white group border border-white/20 overflow-hidden"
       aria-label="Open Jambo Copilot"
     >
       {/* Glossy overlay effect */}
@@ -19,7 +19,7 @@ export const CopilotWidget: React.FC = () => {
       
       <div className="relative">
         <svg 
-          className="w-8 h-8 transition-transform duration-500 group-hover:rotate-[15deg] drop-shadow-md" 
+          className="w-6 h-6 md:w-8 md:h-8 transition-transform duration-500 group-hover:rotate-[15deg] drop-shadow-md" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke="currentColor" 

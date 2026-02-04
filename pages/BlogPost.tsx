@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { api } from '../lib/db';
-import { BlogPost as BlogPostType } from '../types';
+import { BlogPost as BlogPostType, BlogCategory } from '../types';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useShop } from '../context/ShopContext';
 import { ProductCard } from '../components/ProductCard';
@@ -49,13 +49,21 @@ export const BlogPost: React.FC = () => {
   const { products, blogPosts, categories } = useShop();
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blogCategories, setBlogCategories] = useState<BlogCategory[]>([]);
 
-  const category = categories.find(c => c.key === post?.categoryId) || categories.find(c => c.id === post?.categoryId);
+  useEffect(() => {
+    api.getBlogCategories().then(setBlogCategories).catch(() => {});
+  }, []);
+
+  const productCategory = categories.find(c => c.key === post?.categoryId);
+  const blogCategory = blogCategories.find(c => c.id === post?.categoryId);
+  
+  const categoryLabel = productCategory?.label || blogCategory?.name || 'Testimony';
 
   // Fetch recommended products based on category
   const recommendedProducts = products
     .filter(p => p.isPublished !== false)
-    .filter(p => (category && p.categoryKey === category.key) || p.isFeatured)
+    .filter(p => (productCategory && p.categoryKey === productCategory.key) || p.isFeatured)
     .slice(0, 3);
 
   // Determine Next Post
@@ -124,7 +132,7 @@ export const BlogPost: React.FC = () => {
              <Link to="/blog" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand-green transition-colors">The Journal</Link>
              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-green bg-brand-light/30 px-3 py-1 rounded-full">
-                {category?.label || category?.name || 'Testimony'}
+                {categoryLabel}
              </span>
           </div>
 

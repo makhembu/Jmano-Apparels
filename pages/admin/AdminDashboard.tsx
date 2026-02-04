@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-// @ts-ignore
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useShop } from '../../context/ShopContext';
@@ -62,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
     .slice(0, 5);
 
   const StatCard = ({ id, title, value, subtext, icon, colorClass }: any) => (
-    <div id={id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between transition-all">
+    <div id={id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between">
       <div>
         <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
         <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
@@ -76,21 +75,21 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold font-serif text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">Overview of your shop's performance</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-           <div id="btn-refresh-data">
-             <Button onClick={handleRefresh} isLoading={refreshing} variant="outline" className="text-xs">
+        <div className="w-full md:w-auto grid grid-cols-2 gap-2 md:flex">
+           <div id="btn-refresh-data" className="col-span-1">
+             <Button onClick={handleRefresh} isLoading={refreshing} variant="outline" className="w-full justify-center bg-white border-slate-200 text-xs h-10">
                 Refresh Data
              </Button>
            </div>
-           <Link to="/admin/products/new" className="bg-brand-green text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-dark transition flex items-center">
+           <Link to="/admin/products/new" className="col-span-1 bg-brand-green text-white rounded-2xl text-xs font-bold hover:bg-brand-dark transition flex items-center justify-center h-10 shadow-sm uppercase tracking-wider">
              + Add Product
            </Link>
-           <Link to="/admin/blog/new" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-50 transition flex items-center">
+           <Link to="/admin/blog/new" className="col-span-2 md:col-span-1 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center h-10 uppercase tracking-wider">
              Write Post
            </Link>
         </div>
@@ -145,7 +144,7 @@ export const AdminDashboard: React.FC = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   </tr>
                 </thead>
@@ -169,7 +168,7 @@ export const AdminDashboard: React.FC = () => {
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
