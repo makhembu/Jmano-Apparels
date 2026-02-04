@@ -86,7 +86,7 @@ export const Login: React.FC = () => {
               )}
               
               <Input
-                label="Email Address"
+                label="Email"
                 type="email"
                 name="email"
                 value={formData.email}

@@ -52,7 +52,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 placeholder="e.g. John Doe"
               />
               <Input 
-                label="Email Address"
+                label="Email"
                 type="email" 
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}

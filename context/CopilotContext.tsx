@@ -38,6 +38,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     else if (path.includes('/products')) name = 'Products';
     else if (path.includes('/app-settings')) name = 'App Settings';
     else if (path.includes('/shop-settings')) name = 'Shop Settings';
+    else if (path.includes('/analytics')) name = 'Analytics';
 
     setPageContext(prev => ({
         ...prev,
@@ -47,11 +48,13 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
-  // Handle Session Initialization - Prioritizing DB Key
+  // Handle Session Initialization - Prioritizing DB Key with Env Fallback
   useEffect(() => {
     if (settingsLoading) return;
 
-    const apiKey = settings.geminiApiKey || undefined;
+    // Use DB key if available, otherwise fall back to environment variable
+    const apiKey = settings.geminiApiKey || process.env.API_KEY;
+    
     if (geminiClient.isAvailable(apiKey)) {
         const prompt = generateSystemPrompt(pageContext);
         chatSession.current = geminiClient.createChat(prompt, apiKey);
@@ -61,11 +64,22 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = settings.geminiApiKey || undefined;
+    const apiKey = settings.geminiApiKey || process.env.API_KEY;
     
     if (!chatSession.current) {
-      const prompt = generateSystemPrompt(pageContext);
-      chatSession.current = geminiClient.createChat(prompt, apiKey);
+      if (geminiClient.isAvailable(apiKey)) {
+        const prompt = generateSystemPrompt(pageContext);
+        chatSession.current = geminiClient.createChat(prompt, apiKey);
+      } else {
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'model',
+            content: "Copilot is not configured. Please add a Gemini API Key in App Settings.",
+            timestamp: new Date(),
+            isError: true
+        }]);
+        return;
+      }
     }
     
     if (!chatSession.current || !content.trim()) return;
@@ -125,7 +139,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const clearHistory = () => {
       setMessages([]);
-      const apiKey = settings.geminiApiKey || undefined;
+      const apiKey = settings.geminiApiKey || process.env.API_KEY;
       if (geminiClient.isAvailable(apiKey)) {
         chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
       }

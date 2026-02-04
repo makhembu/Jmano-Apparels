@@ -181,7 +181,7 @@ export const AdminProductEditor: React.FC = () => {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="md:col-span-2">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Product Title*</label>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Product Name*</label>
                                 <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-brand-green/10 outline-none transition-all" />
                             </div>
                             <div>

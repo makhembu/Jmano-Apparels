@@ -46,7 +46,7 @@ export const Mappers = {
 
   toCategory: (c: any): Category => ({
     key: c.key,
-    label: c.label,
+    label: c.key, // Enforcing the compressed KEY as the UI LABEL (e.g. HOPEHOODIES)
     color: c.color,
     bgColorClass: c.bg_class,
     seoTitle: c.seo_title || undefined,
