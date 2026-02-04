@@ -7,6 +7,7 @@ import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { Chat } from '@google/genai';
 import { useShop } from './ShopContext';
+import { api } from '../lib/db';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -16,8 +17,11 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { settings, loading: settingsLoading } = useShop();
+  const { settings } = useShop();
   
+  // Store the key retrieved from DB
+  const [dbApiKey, setDbApiKey] = useState<string | undefined>(undefined);
+
   const [pageContext, setPageContext] = useState<PageContext>({
     route: location.pathname,
     pageName: 'Dashboard',
@@ -48,23 +52,39 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
-  // Handle Session Initialization - Prioritizing DB Key with Env Fallback
+  // Securely fetch Admin settings (with secrets) on mount
   useEffect(() => {
-    if (settingsLoading) return;
+    const fetchSecureSettings = async () => {
+      try {
+        // Attempt to fetch full admin settings (only works if user is admin)
+        const adminSettings = await api.getAdminSettings();
+        if (adminSettings?.geminiApiKey) {
+          setDbApiKey(adminSettings.geminiApiKey);
+        }
+      } catch (e) {
+        console.warn("Copilot: Could not fetch secure settings (User might not be admin).");
+      }
+    };
+    fetchSecureSettings();
+  }, []);
 
-    // Use DB key if available, otherwise fall back to environment variable
-    const apiKey = settings.geminiApiKey || process.env.API_KEY;
+  // Handle Session Initialization - Prioritizing DB Key > Shop Context > Env
+  useEffect(() => {
+    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
     
     if (geminiClient.isAvailable(apiKey)) {
         const prompt = generateSystemPrompt(pageContext);
-        chatSession.current = geminiClient.createChat(prompt, apiKey);
+        // Only recreate if key changed or session missing
+        if (!chatSession.current) {
+            chatSession.current = geminiClient.createChat(prompt, apiKey);
+        }
     }
-  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading]); 
+  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, dbApiKey]); 
 
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = settings.geminiApiKey || process.env.API_KEY;
+    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
     
     if (!chatSession.current) {
       if (geminiClient.isAvailable(apiKey)) {
@@ -126,20 +146,20 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            content: "I'm having trouble processing that right now. Please try again.", 
+            content: "I'm having trouble processing that right now. Please try again later.", 
             timestamp: new Date(), 
             isError: true 
         }]);
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors, settings.geminiApiKey]);
+  }, [pageContext, executors, settings.geminiApiKey, dbApiKey]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
   const clearHistory = () => {
       setMessages([]);
-      const apiKey = settings.geminiApiKey || process.env.API_KEY;
+      const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
       if (geminiClient.isAvailable(apiKey)) {
         chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
       }

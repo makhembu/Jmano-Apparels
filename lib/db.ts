@@ -95,6 +95,7 @@ export const api = {
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
 
   getAppSettings: () => settingsService.get(),
+  getAdminSettings: () => settingsService.getAdminSettings(), // Exposed for Copilot
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
@@ -136,7 +137,6 @@ export const api = {
   
   // GDPR: User Self-Deletion
   deleteUserAccount: async (userId: string) => {
-    // Calls the secure RPC to scrub data and delete auth user
     return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
   },
 
