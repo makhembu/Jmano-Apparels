@@ -71,10 +71,19 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       });
     } catch (e: any) {
       console.error("PayPal Create Error:", e);
-      // We do NOT show toast here for user cancellation, but for errors we do
-      if (!e.message?.includes('detected')) { // Filter out some PayPal internal noise if necessary
-          showToast(e.message || "Failed to initialize payment.", 'error');
+      
+      const errMsg = e.message || '';
+      
+      // Friendly Error Handling
+      if (errMsg.includes('Insufficient stock')) {
+          // The new SQL returns format "Insufficient stock for "Product Name" (Only X left)"
+          // We can strip the extra SQL formatting if needed, but the raw message is usually readable enough now
+          const cleanMsg = errMsg.replace('P0001:', '').trim(); 
+          showToast(`Stock Alert: ${cleanMsg}`, 'error');
+      } else if (!errMsg.includes('detected')) { // Filter out internal PayPal cancellation noise
+          showToast(errMsg || "Failed to initialize payment.", 'error');
       }
+      
       throw e;
     }
   }, [settings.currency, showToast]);
@@ -145,7 +154,13 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       }
     } catch (e: any) {
       console.error(e);
-      showToast('Something went wrong. Please check your connection.', 'error');
+      const errMsg = e.message || '';
+      if (errMsg.includes('Insufficient stock')) {
+          const cleanMsg = errMsg.replace('P0001:', '').trim();
+          showToast(`Stock Alert: ${cleanMsg}`, 'error');
+      } else {
+          showToast('Something went wrong. Please check your connection.', 'error');
+      }
     } finally {
       setIsProcessing(false);
     }
