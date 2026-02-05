@@ -16,7 +16,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   const { showToast } = useToast();
   
   // Local state for the configuration object
-  const [smtpConfig, setSmtpConfig] = useState<Record<string, any>>(settings.smtpSettings || { mode: 'custom' });
+  const [smtpConfig, setSmtpConfig] = useState<Record<string, any>>(settings.smtpSettings || {});
   const [provider, setProvider] = useState<'smtp' | 'resend'>(settings.emailProvider || 'smtp');
   
   // UI States
@@ -32,18 +32,22 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   useEffect(() => {
     if (settings.emailProvider) setProvider(settings.emailProvider);
     if (settings.smtpSettings) {
-      setSmtpConfig({ ...settings.smtpSettings, mode: 'custom' });
+      setSmtpConfig(settings.smtpSettings);
     }
   }, [settings]);
 
   const updateParent = (newConfig: Record<string, any>, newProvider?: string) => {
+    // We explicitly strip any 'mode' property if it existed previously
+    const cleanConfig = { ...newConfig };
+    delete cleanConfig.mode;
+
     const syntheticEvent = {
       target: {
         name: 'smtpSettings',
-        value: { ...newConfig, mode: 'custom' }
+        value: cleanConfig
       }
     };
-    setSmtpConfig(newConfig);
+    setSmtpConfig(cleanConfig);
     if (newProvider) {
       onChange({ target: { name: 'emailProvider', value: newProvider } } as any);
     }
@@ -85,7 +89,6 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     try {
       // Construct config for testing
       const configPayload = {
-        mode: 'custom',
         provider: provider,
         ...smtpConfig,
         port: smtpConfig.port ? parseInt(String(smtpConfig.port), 10) : 465
@@ -130,7 +133,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
         <div className="border-b pb-4 flex justify-between items-center">
           <div>
             <h3 className="text-lg font-medium text-brand-green">Email Infrastructure</h3>
-            <p className="text-sm text-gray-500 mt-1">Configure how your shop sends emails.</p>
+            <p className="text-sm text-gray-500 mt-1">Configure your SMTP settings directly in the database.</p>
           </div>
           <div className="flex items-center gap-2">
             {healthStatus === 'ok' && (
@@ -146,35 +149,26 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
           </div>
         </div>
 
-        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-          <div className="flex items-start gap-3">
-             <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-             <p className="text-xs text-blue-800 leading-relaxed">
-                SMTP credentials are stored securely in your database. <br/>
-                We have removed support for Environment Variables to ensure reliability and ease of configuration.
-             </p>
-          </div>
-        </div>
-
         <div className="space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Service Provider</label>
               <select value={provider} onChange={handleProviderChange} className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-brand-green/20 outline-none">
                 <option value="smtp">Custom SMTP</option>
-                <option value="resend">Resend.com</option>
+                <option value="resend">Resend (via API Key)</option>
               </select>
             </div>
 
             {provider === 'resend' ? (
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4 animate-fade-in">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">API Key</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Resend API Key</label>
                   <div className="relative">
                     <input type={showPassword ? "text" : "password"} name="apiKey" value={smtpConfig.apiKey || ''} onChange={handleConfigInput} placeholder="re_..." className="w-full border border-gray-300 rounded-lg p-2 pr-10 text-sm font-mono" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                       {showPassword ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
                     </button>
                   </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Stored securely in the database.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">From Address</label>
@@ -182,7 +176,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Host</label>
@@ -224,7 +218,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
             onClick={openHealthCheckModal} 
             className="w-full sm:w-auto text-xs font-bold uppercase tracking-wide"
           >
-            Test Email Configuration
+            Test Configuration
           </Button>
           {errorMsg && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
@@ -285,7 +279,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 />
               </div>
               <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700 leading-relaxed border border-blue-100">
-                This will attempt to send a generic test email using the credentials entered above. 
+                This will send a generic test email using the credentials you entered above (unsaved changes included).
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={checking}>
