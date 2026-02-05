@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
 import { SettingsService } from '../../../lib/services/content';
+import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { Switch } from '../../ui/Switch';
 
@@ -10,8 +11,6 @@ interface NotificationSectionProps {
   settings: AppSettings;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
 }
-
-const settingsService = new SettingsService();
 
 export const NotificationSection: React.FC<NotificationSectionProps> = ({ settings, onChange }) => {
   const { showToast } = useToast();
@@ -66,7 +65,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setErrorMsg('');
 
     try {
-      const result = await settingsService.checkEmailHealth(testEmailInput, resendApiKey, resendFromEmail);
+      // Pass the CURRENT local values (resendApiKey, resendFromEmail) to test BEFORE saving
+      const result = await api.checkEmailHealth(testEmailInput, resendApiKey, resendFromEmail);
       
       if (result.success) {
         setHealthStatus('ok');

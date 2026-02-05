@@ -127,6 +127,7 @@ export const EmailTemplatesSection: React.FC = () => {
       const populatedHtml = generatePreview(selectedTemplate.bodyHtml);
       const subject = generatePreview(selectedTemplate.subject);
 
+      // Uses api.sendTestEmail which hits the Vercel Function via lib/db.ts
       const result = await api.sendTestEmail(testEmailInput, subject, populatedHtml);
       
       if (result.success) {

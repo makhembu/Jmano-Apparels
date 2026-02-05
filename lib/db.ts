@@ -146,8 +146,10 @@ export const api = {
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
+  
+  // Updated: Pass candidate credentials for testing
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  checkEmailHealth: (email: string) => settingsService.checkEmailHealth(email),
+  checkEmailHealth: (email: string, candidateKey?: string, candidateFrom?: string) => settingsService.checkEmailHealth(email, candidateKey, candidateFrom),
 
   // Support / Marketing
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
@@ -220,7 +222,6 @@ export const api = {
   // System Logs
   persistSystemLogs: async (logs: any[]) => {
     if (logs.length === 0) return;
-    // Map internal log format to DB schema
     const rows = logs.map(l => ({
         timestamp: l.timestamp,
         operation: l.operation,
@@ -228,8 +229,6 @@ export const api = {
         details: l.details,
         level: l.level
     }));
-    
-    // Batch insert
     const { error } = await supabase.from('system_logs').insert(rows);
     if (error) throw error;
   },

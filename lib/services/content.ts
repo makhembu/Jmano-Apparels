@@ -207,7 +207,7 @@ export class SettingsService {
   }
   
   async checkEmailHealth(testEmail: string, candidateKey?: string, candidateFrom?: string): Promise<{ success: boolean; message?: string }> {
-    console.log("[SettingsService] Invoking send-email for health check...");
+    console.log("[SettingsService] Invoking send-email via API...");
     try {
       const payload: any = {
         to: testEmail,
@@ -216,7 +216,6 @@ export class SettingsService {
         testMode: true
       };
 
-      // Optional: Pass unsaved config for testing before commit
       if (candidateKey) {
           payload.providerConfig = {
               apiKey: candidateKey,
@@ -224,23 +223,24 @@ export class SettingsService {
           };
       }
 
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: payload
+      // Use local Vercel API function instead of Supabase Edge Function
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+
+      const data = await response.json();
       
-      if (error) {
-          console.log("[SettingsService] Response error:", error);
-          if (error instanceof Error && error.message.includes("FunctionsFetchError")) {
-             return { success: false, message: "Server unreachable. The 'send-email' Edge Function may not be deployed." };
-          }
-          return { success: false, message: error.message || "Unknown server error." };
-      }
-      
-      if (data && data.success === false) {
+      if (!response.ok) {
           return { success: false, message: data.error || 'Provider rejected credentials' };
       }
       
-      return { success: true };
+      if (data && data.success) {
+          return { success: true };
+      }
+
+      return { success: false, message: "Invalid response from email server." };
     } catch (e: any) {
       console.error("[SettingsService] Health check Exception:", e);
       return { success: false, message: e.message || 'Unknown error during test' };
@@ -249,15 +249,21 @@ export class SettingsService {
 
   async sendTestTemplate(to: string, subject: string, htmlBody: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
+      // Use local Vercel API function
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           to: to,
           subject: subject,
           htmlBody: htmlBody,
           testMode: false
-        }
+        })
       });
-      if (error) throw error;
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Server error');
       if (data && data.success === false) throw new Error(data.error || 'Unknown error');
       return { success: true };
     } catch (e: any) {
