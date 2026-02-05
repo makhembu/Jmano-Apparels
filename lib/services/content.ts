@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -181,7 +182,6 @@ export class SettingsService {
       paypal_client_id: settings.paypalClientId,
       paypal_secret_key: settings.paypalSecretKey,
       paypal_mode: settings.paypalMode,
-      // Fix: Property 'payment_gateway_enabled' does not exist on type 'Partial<AppSettings>'. Corrected property name from settings.payment_gateway_enabled to settings.paymentGatewayEnabled.
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
@@ -218,9 +218,14 @@ export class SettingsService {
         }
       });
       
+      console.log("[SettingsService] Response data:", data);
+      
       if (error) {
-          console.error("[SettingsService] RPC error:", error);
-          throw error;
+          console.log("[SettingsService] Response error:", error);
+          if (error instanceof Error && error.message.includes("FunctionsFetchError")) {
+             return { success: false, message: "Server unreachable. The 'send-email' Edge Function may not be deployed." };
+          }
+          return { success: false, message: error.message || "Unknown server error." };
       }
       
       if (data && data.success === false) {
@@ -233,7 +238,7 @@ export class SettingsService {
       
       const msg = e.message || "";
       if (msg.includes("Failed to send a request") || msg.includes("Relay Error") || msg.includes("fetch")) {
-          return { success: false, message: "Server connection failed. Ensure Edge Functions are deployed and Vercel env vars match Supabase." };
+          return { success: false, message: "Server connection failed. Ensure Edge Functions are deployed." };
       }
 
       return { success: false, message: msg || 'Unknown error during test' };

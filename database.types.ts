@@ -544,6 +544,105 @@ export type Database = {
         }
         Returns: Json
       }
+      get_orders_paginated: {
+        Args: {
+          page_num: number
+          page_size: number
+          status_filter?: string | null
+        }
+        Returns: Json
+      }
+      get_users_paginated: {
+        Args: {
+          page_num: number
+          page_size: number
+          search_term?: string | null
+        }
+        Returns: Json
+      }
+      anonymize_and_delete_user: {
+        Args: {
+          target_user_id: string
+        }
+        Returns: void
+      }
+      get_analytics_overview: {
+        Args: {
+          time_range_start: string
+          time_range_end: string
+        }
+        Returns: Json
+      }
+      get_admin_stats: {
+        Args: {}
+        Returns: Json
+      }
+      get_daily_analytics: {
+        Args: {
+          days_lookback: number
+        }
+        Returns: Json
+      }
+      get_product_analytics: {
+        Args: {
+          limit_count: number
+          days_lookback: number
+        }
+        Returns: Json
+      }
+      get_traffic_sources: {
+        Args: {
+          days_lookback: number
+        }
+        Returns: Json
+      }
+      get_geo_stats: {
+        Args: {
+          days_lookback: number
+        }
+        Returns: Json
+      }
+      get_page_analytics: {
+        Args: {
+          days_lookback: number
+        }
+        Returns: Json
+      }
+      get_live_visitors: {
+        Args: {
+          lookback_minutes: number
+        }
+        Returns: Json
+      }
+      create_order_secure: {
+        Args: {
+          p_user_id?: string | null
+          p_customer_email?: string | null
+          p_customer_name?: string | null
+          p_items: Json
+          p_shipping_address: Json
+          p_discount_code?: string | null
+          p_notes?: string | null
+          p_payment_status?: string | null
+          p_payment_intent_id?: string | null
+        }
+        Returns: Json
+      }
+      validate_discount_code: {
+        Args: {
+          code_input: string
+          order_total: number
+        }
+        Returns: Json
+      }
+      get_public_site_settings: {
+        Args: {}
+        Returns: Json
+      }
+      get_public_payment_settings: {
+        Args: {}
+        Returns: Json
+      }
     }
   }
 }

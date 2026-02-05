@@ -2,7 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from './ui/Button';
 
 interface Props {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 interface State {
@@ -18,8 +18,6 @@ export class ErrorBoundary extends Component<Props, State> {
       error: null,
     };
   }
-
-  public state: State;
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };

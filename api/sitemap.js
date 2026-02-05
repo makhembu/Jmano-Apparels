@@ -3,8 +3,9 @@ export default async function handler(req, res) {
   // Prioritize standard backend env vars (SUPABASE_URL), fallback to VITE_ prefixed ones for dev
   let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   
-  // Update key lookup to include the publishable default key
+  // Update key lookup to include the publishable default key and standard anon key
   const key = process.env.SUPABASE_ANON_KEY || 
+              process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
               process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
               process.env.VITE_SUPABASE_ANON_KEY;
   
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
     
     return res.status(500).json({ 
       error: 'Configuration Error: Supabase credentials missing.',
-      message: 'Please set SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY in your Vercel Project Settings.'
+      message: 'Please set SUPABASE_URL and SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_DEFAULT_KEY) in your Vercel Project Settings.'
     });
   }
 

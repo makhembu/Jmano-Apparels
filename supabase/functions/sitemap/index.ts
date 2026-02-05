@@ -7,87 +7,63 @@ declare const Deno: any;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
 };
 
 serve(async (req) => {
+  // Fix: Explicitly return 200 OK for OPTIONS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders, status: 200 });
+  }
+
   try {
-    // 1. Initialize Client
+    const sbUrl = Deno.env.get('SUPABASE_URL');
+    const sbAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_DEFAULT_KEY');
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      sbUrl ?? '',
+      sbAnonKey ?? ''
     );
 
     const BASE_URL = 'https://jamboapparels.com';
 
-    // 2. Fetch Data Parallel
     const [products, posts, categories] = await Promise.all([
         supabaseClient.from('products').select('id, slug, created_at, is_published').eq('is_published', true),
         supabaseClient.from('blog_posts').select('slug, created_at, status').eq('status', 'published'),
         supabaseClient.from('categories').select('key')
     ]);
 
-    // 3. Build XML
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
-    // Static Routes
     const staticRoutes = ['', '/shop', '/about', '/blog', '/terms', '/privacy', '/returns', '/cookies', '/contact'];
     const currentDate = new Date().toISOString().split('T')[0];
 
     staticRoutes.forEach(route => {
-       xml += `
-  <url>
-    <loc>${BASE_URL}${route}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${route === '' ? '1.0' : '0.8'}</priority>
-  </url>`;
+       xml += `\n  <url>\n    <loc>${BASE_URL}${route}</loc>\n    <lastmod>${currentDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${route === '' ? '1.0' : '0.8'}</priority>\n  </url>`;
     });
 
-    // Dynamic Products
     products.data?.forEach((p: any) => {
        const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : currentDate;
        const identifier = p.slug || p.id;
-       xml += `
-  <url>
-    <loc>${BASE_URL}/product/${identifier}</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>`;
+       xml += `\n  <url>\n    <loc>${BASE_URL}/product/${identifier}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>`;
     });
 
-    // Dynamic Blog Posts
     posts.data?.forEach((p: any) => {
        const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : currentDate;
-       xml += `
-  <url>
-    <loc>${BASE_URL}/blog/${p.slug}</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
+       xml += `\n  <url>\n    <loc>${BASE_URL}/blog/${p.slug}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`;
     });
 
-    // Categories
     categories.data?.forEach((c: any) => {
-       xml += `
-  <url>
-    <loc>${BASE_URL}/shop?cat=${c.key}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
+       xml += `\n  <url>\n    <loc>${BASE_URL}/shop?cat=${c.key}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
     });
 
-    xml += `
-</urlset>`;
+    xml += `\n</urlset>`;
 
-    // 4. Return XML Response
     return new Response(xml, {
       headers: { 
         ...corsHeaders,
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600' // Cache for 1 hour
+        'Cache-Control': 'public, max-age=3600'
       },
       status: 200,
     });

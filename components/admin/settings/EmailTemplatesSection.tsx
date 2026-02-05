@@ -14,6 +14,10 @@ export const EmailTemplatesSection: React.FC = () => {
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
   
+  // Modal States
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testEmailInput, setTestEmailInput] = useState('');
+
   const { showToast } = useToast();
   const { settings } = useApp();
 
@@ -107,11 +111,15 @@ export const EmailTemplatesSection: React.FC = () => {
     return preview; 
   };
 
-  const handleSendTest = async () => {
+  const openTestModal = () => {
     if (!selectedTemplate) return;
-    
-    const targetEmail = window.prompt("Send test email to:", settings.contactEmail || "");
-    if (!targetEmail) return;
+    setTestEmailInput(settings.contactEmail || '');
+    setShowTestModal(true);
+  };
+
+  const executeSendTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTemplate || !testEmailInput) return;
 
     setIsSendingTest(true);
     try {
@@ -119,10 +127,11 @@ export const EmailTemplatesSection: React.FC = () => {
       const populatedHtml = generatePreview(selectedTemplate.bodyHtml);
       const subject = generatePreview(selectedTemplate.subject);
 
-      const result = await api.sendTestEmail(targetEmail, subject, populatedHtml);
+      const result = await api.sendTestEmail(testEmailInput, subject, populatedHtml);
       
       if (result.success) {
-        showToast(result.message || `Test email sent to ${targetEmail}`, 'success');
+        showToast(result.message || `Test email sent to ${testEmailInput}`, 'success');
+        setShowTestModal(false);
       } else {
         showToast(result.message || 'Failed to send test email', 'error');
       }
@@ -134,7 +143,7 @@ export const EmailTemplatesSection: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 overflow-hidden flex flex-col h-[800px] md:h-[900px]">
+    <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 overflow-hidden flex flex-col h-[800px] md:h-[900px] relative">
       {/* 1. Header with Template Tabs */}
       <div className="bg-slate-50 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-4 gap-4">
@@ -143,7 +152,7 @@ export const EmailTemplatesSection: React.FC = () => {
               <p className="text-xs text-slate-500 mt-1">Manage automated customer notifications.</p>
            </div>
            <div className="flex gap-3 w-full sm:w-auto">
-               <Button type="button" variant="outline" onClick={handleSendTest} isLoading={isSendingTest} className="bg-white border-slate-300 text-slate-700 hover:border-brand-green hover:text-brand-green">
+               <Button type="button" variant="outline" onClick={openTestModal} className="bg-white border-slate-300 text-slate-700 hover:border-brand-green hover:text-brand-green">
                   Send Test
                </Button>
                <Button type="button" onClick={handleSave} isLoading={saving} className="shadow-lg shadow-brand-green/20">
@@ -269,6 +278,44 @@ export const EmailTemplatesSection: React.FC = () => {
       ) : (
         <div className="flex-1 flex items-center justify-center text-slate-400 bg-slate-50">
            {loading ? <div className="animate-spin h-6 w-6 border-2 border-brand-green rounded-full border-t-transparent"></div> : 'No templates found.'}
+        </div>
+      )}
+
+      {/* Test Email Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-brand-dark">Send Test Email</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Sending preview of <strong>{getTemplateLabel(selectedTemplate?.name || '')}</strong>
+              </p>
+            </div>
+            <form onSubmit={executeSendTest} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient</label>
+                <input
+                  type="email"
+                  required
+                  value={testEmailInput}
+                  onChange={(e) => setTestEmailInput(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 leading-relaxed border border-gray-100">
+                The email will be populated with placeholder data (e.g. Order #ORD-2026...) to show you the layout.
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={isSendingTest}>
+                  Cancel
+                </Button>
+                <Button type="submit" isLoading={isSendingTest}>
+                  Send Now
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

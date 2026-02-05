@@ -27,6 +27,10 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Modal State
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+
   useEffect(() => {
     if (settings.emailProvider) setProvider(settings.emailProvider);
     if (settings.smtpSettings) {
@@ -75,41 +79,46 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setHealthStatus('idle');
   };
 
-  const checkHealth = async () => {
+  const openHealthCheckModal = () => {
+    setTestEmail(settings.contactEmail || '');
+    setShowTestModal(true);
+    setErrorMsg('');
+    setHealthStatus('idle');
+  };
+
+  const executeHealthCheck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testEmail) {
+      showToast('Please enter a recipient email', 'error');
+      return;
+    }
+
     console.log("[NotificationSection] Health check initiated...");
     setChecking(true);
     setHealthStatus('idle');
     setErrorMsg('');
 
     try {
-      // Avoid window.prompt if possible as it blocks and can be suppressed
-      let targetEmail = settings.contactEmail || "test@example.com";
+      // Determine effective mode
+      const isCustom = smtpConfig.mode === 'custom';
       
-      // Attempt to prompt but handle suppression/cancellation
-      try {
-        const promptRes = window.prompt("Email to receive test message:", targetEmail);
-        if (promptRes === null) {
-          setChecking(false);
-          return; // User cancelled
-        }
-        if (promptRes) targetEmail = promptRes;
-      } catch (promptError) {
-        console.warn("Prompt blocked, using default target.");
-      }
-
       const configPayload = {
-        mode: smtpConfig.mode === 'custom' ? 'custom' : 'env',
+        mode: isCustom ? 'custom' : 'env',
         provider: provider,
-        ...smtpConfig,
-        port: smtpConfig.port ? parseInt(String(smtpConfig.port), 10) : undefined
+        // Only include custom fields if in custom mode to avoid pollution
+        ...(isCustom ? {
+            ...smtpConfig,
+            port: smtpConfig.port ? parseInt(String(smtpConfig.port), 10) : 465
+        } : {})
       };
 
-      console.log("[NotificationSection] Sending test to:", targetEmail);
-      const result = await settingsService.checkEmailHealth(targetEmail, configPayload);
+      console.log("[NotificationSection] Sending test payload:", JSON.stringify(configPayload, null, 2));
+      const result = await settingsService.checkEmailHealth(testEmail, configPayload);
       
       if (result.success) {
         setHealthStatus('ok');
         showToast(result.message || 'System is healthy! Test email sent.', 'success');
+        setShowTestModal(false);
       } else {
         setHealthStatus('error');
         setErrorMsg(result.message || 'Configuration failed.');
@@ -140,7 +149,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
         <div className="border-b pb-4 flex justify-between items-center">
           <div>
@@ -280,7 +289,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                       <div className="relative">
                         <input type={showPassword ? "text" : "password"} name="pass" value={smtpConfig.pass || ''} onChange={handleConfigInput} disabled={!riskAccepted} className="w-full border border-gray-300 rounded p-2 pr-10 text-sm" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                          {showPassword ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
+                          {showPassword ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
                         </button>
                       </div>
                     </div>
@@ -300,11 +309,10 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
             id="btn-test-config"
             type="button" 
             variant="secondary" 
-            onClick={checkHealth} 
-            isLoading={checking} 
+            onClick={openHealthCheckModal} 
             className="w-full sm:w-auto text-xs font-bold uppercase tracking-wide"
           >
-            {checking ? 'Testing...' : (isCustomMode ? 'Test Configuration' : 'Test Environment Connection')}
+            {isCustomMode ? 'Test Configuration' : 'Test Environment Connection'}
           </Button>
           {errorMsg && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
@@ -343,6 +351,43 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
         </div>
         <Switch label="Show Newsletter Signup in Footer" description="Display the email subscription form in the website footer." checked={!!settings.enableNewsletterSignup} onChange={(val) => handleSwitchChange('enableNewsletterSignup', val)} />
       </div>
+
+      {/* Health Check Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-brand-dark">Test Email Configuration</h3>
+              <p className="text-sm text-slate-500 mt-1">Verify that your email settings are working correctly.</p>
+            </div>
+            <form onSubmit={executeHealthCheck} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient Email</label>
+                <input
+                  type="email"
+                  required
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700 leading-relaxed border border-blue-100">
+                This will attempt to send a generic test email using the credentials provided above. 
+                {isCustomMode ? " It will use the custom values you've entered." : " It will use the server-side Environment Variables."}
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={checking}>
+                  Cancel
+                </Button>
+                <Button type="submit" isLoading={checking}>
+                  Send Test Email
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -7,30 +7,33 @@ declare const Deno: any;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
+  // Fix: Explicitly return 200 OK for OPTIONS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders, status: 200 });
   }
 
   try {
-    // 1. Validate Admin Authorization
-    // Create a client with the user's JWT to verify they are actually logged in
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error("Missing Authorization header");
 
+    const sbUrl = Deno.env.get('SUPABASE_URL');
+    const sbAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_DEFAULT_KEY');
+
+    if (!sbUrl || !sbAnonKey) throw new Error("Server configuration missing (URL or Anon Key)");
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      sbUrl,
+      sbAnonKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) throw new Error("Unauthorized");
 
-    // CRITICAL SECURITY CHECK: Verify the requester is an Admin
-    // We check the public.users table for the role.
     const { data: userProfile, error: profileError } = await supabaseClient
       .from('users')
       .select('role')
@@ -38,36 +41,26 @@ serve(async (req: Request) => {
       .single();
 
     if (profileError || !userProfile || userProfile.role !== 'admin') {
-      console.error(`Unauthorized access attempt by user ${user.id} (${user.email})`);
       throw new Error("Forbidden: Admin privileges required.");
     }
 
     const { email, password, name, role } = await req.json();
-
     if (!email || !password) throw new Error("Email and password are required.");
 
-    // 2. Initialize Supabase Admin Client (Service Role) for privileged actions
     const sbServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const sbUrl = Deno.env.get('SUPABASE_URL');
-
-    if (!sbUrl || !sbServiceKey) {
-      throw new Error("Missing server configuration (SUPABASE_SERVICE_ROLE_KEY)");
-    }
+    if (!sbServiceKey) throw new Error("Server configuration missing (Service Key).");
 
     const supabaseAdmin = createClient(sbUrl, sbServiceKey);
 
-    // 3. Create Auth User
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
-      email_confirm: true, // Auto-confirm so they can login immediately
+      email_confirm: true,
       user_metadata: { name: name }
     });
 
     if (authError) throw authError;
-    if (!authData.user) throw new Error("Failed to create auth user");
 
-    // 4. Create Public Profile
     const { error: insertError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -79,8 +72,6 @@ serve(async (req: Request) => {
       });
 
     if (insertError) {
-        // Rollback: Delete the Auth user if profile creation fails to keep data clean
-        console.error("Profile creation failed, rolling back auth user:", insertError);
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         throw insertError;
     }
@@ -92,7 +83,7 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     console.error("Edge Function Error:", error);
-    const status = error.message.includes("Forbidden") || error.message.includes("Unauthorized") ? 403 : 400;
+    const status = error.message.includes("Forbidden") ? 403 : 400;
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: status,
