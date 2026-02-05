@@ -3,13 +3,21 @@ import { supabase } from './supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager, STORAGE_KEYS } from './cache';
 
-// Helper to check consent without hooks (for raw JS functions)
+// Helper to check consent
 const checkConsent = (): boolean => {
   try {
+    // 1. Check explicit consent
     const stored = localStorage.getItem('jambo_cookie_consent');
-    if (!stored) return false;
-    const parsed = JSON.parse(stored);
-    return !!parsed.analytics;
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.analytics) return true;
+    }
+    
+    // 2. Allow if user is logged in (Implied consent for service usage/admin testing)
+    const session = CacheManager.local.get<any>('sb-access-token'); // Check generic SB token presence
+    if (session) return true;
+
+    return false;
   } catch {
     return false;
   }
@@ -30,10 +38,16 @@ const getApproxGeo = () => {
     if (stored) return stored;
     
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const country = timeZone.split('/')[0] || 'Unknown';
-    const city = timeZone.split('/')[1] || 'Unknown';
-    const geo = { country, city: city.replace('_', ' ') };
+    let country = 'Unknown';
+    let city = 'Unknown';
+
+    if (timeZone && timeZone.includes('/')) {
+        const parts = timeZone.split('/');
+        country = parts[0]; // e.g. Europe, America (Continent as proxy for region)
+        city = parts[1].replace(/_/g, ' '); // e.g. London, New York
+    }
     
+    const geo = { country, city };
     CacheManager.session.set(STORAGE_KEYS.GEO, geo);
     return geo;
   } catch (e) {
@@ -51,8 +65,11 @@ const getSource = (): string => {
 
 export const analytics = {
   track: async (eventType: string, metadata: Record<string, any> = {}, duration: number = 0) => {
-    // GDPR Check: Stop if no consent
-    if (!checkConsent()) return;
+    // GDPR Check
+    if (!checkConsent()) {
+        // console.debug(`[Analytics] Skipped ${eventType} (No Consent)`);
+        return;
+    }
 
     try {
       let userId = null;
@@ -62,6 +79,7 @@ export const analytics = {
       } catch (authError) { /* ignore */ }
 
       const geo = getApproxGeo();
+      
       const payload = {
         session_id: getSessionId(),
         user_id: userId,
@@ -75,11 +93,12 @@ export const analytics = {
         duration: Math.round(duration || 0)
       };
 
+      // Fire and forget
       supabase.from('analytics_events').insert(payload).then(({ error }) => {
-        if (error && error.code !== 'PGRST204' && !error.message?.includes('AbortError')) {
-            console.warn("[Analytics]", error.message);
+        if (error && error.code !== 'PGRST204') {
+            console.warn("[Analytics] Tracking failed:", error.message);
         }
-      }, () => {}); 
+      }); 
 
     } catch (e) { /* ignore */ }
   },

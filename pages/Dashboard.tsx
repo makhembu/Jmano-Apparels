@@ -162,7 +162,7 @@ export const Dashboard: React.FC = () => {
                       }`}
                     >
                       <span className={activeTab === item.id ? 'text-brand-hope' : 'text-slate-400'}>
-                          {React.cloneElement(item.icon as React.ReactElement, { className: 'w-4 h-4' })}
+                          {React.cloneElement(item.icon as React.ReactElement<any>, { className: 'w-4 h-4' })}
                       </span>
                       <span className="md:hidden">{item.mobileLabel}</span>
                       <span className="hidden md:inline">{item.label}</span>
