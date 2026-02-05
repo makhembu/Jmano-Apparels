@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { Order, Product } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -13,9 +13,10 @@ import { ProductCard } from '../../components/ProductCard';
 
 export const UserOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user, refreshOrders, products, addToCart } = useApp();
+  const { user, refreshOrders, products, addToCart, settings } = useApp();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,16 @@ export const UserOrderDetails: React.FC = () => {
       fetchOrder();
     }
   }, [user, fetchOrder]);
+
+  // Auto-print logic for when user clicks link in email
+  useEffect(() => {
+    if (!loading && order && searchParams.get('print') === 'true') {
+        // Small delay to ensure DOM is fully painted including images
+        setTimeout(() => {
+            window.print();
+        }, 800);
+    }
+  }, [loading, order, searchParams]);
   
   const handleCancel = async () => {
     if (!order || !user) return;
@@ -152,18 +163,135 @@ export const UserOrderDetails: React.FC = () => {
   const canCancel = ['Pending', 'Processing', 'Pending Payment'].includes(order.status);
   const canReturn = order.status === 'Delivered';
   const canReorder = !['Cancelled', 'Refunded'].includes(order.status);
+  const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
-      <BackButton to="/dashboard" className="mb-6" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in relative">
+      
+      {/* --- INVOICE PRINT VIEW (Hidden on Screen) --- */}
+      <div id="invoice-container" className="hidden print:block bg-white text-slate-900 p-8 font-sans max-w-[210mm] mx-auto h-full relative">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-12 border-b-2 border-slate-900 pb-8">
+          <div className="w-1/2">
+             <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} alt="Jambo Apparels" className="h-16 w-auto object-contain mb-4" />
+             <div className="text-sm text-gray-600 leading-relaxed font-medium">
+                <p className="font-bold text-slate-900">Jambo Apparels</p>
+                <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
+                <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
+                <p>{settings.contactPhone}</p>
+             </div>
+          </div>
+          <div className="w-1/2 text-right">
+             <h1 className="text-4xl font-black text-slate-900 uppercase tracking-widest mb-4">Invoice</h1>
+             <div className="space-y-1">
+                <p className="text-base font-bold text-slate-900"><span className="text-slate-500 font-normal mr-2">Order ID:</span>#{order.orderNumber || order.id.slice(0,8)}</p>
+                <p className="text-base font-bold text-slate-900"><span className="text-slate-500 font-normal mr-2">Date:</span>{invoiceDate}</p>
+                <p className="text-base font-bold text-slate-900"><span className="text-slate-500 font-normal mr-2">Status:</span>{order.status}</p>
+             </div>
+          </div>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        {/* Addresses */}
+        <div className="grid grid-cols-2 gap-8 mb-12">
+            <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-1">Bill To</h3>
+                <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                <p className="text-sm text-slate-600">{user.email}</p>
+            </div>
+            <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-1">Ship To</h3>
+                {order.shippingAddress ? (
+                   <address className="not-italic text-sm text-slate-600 leading-relaxed">
+                      <p className="font-bold text-slate-900">{user.name}</p>
+                      {order.shippingAddress.address1}<br/>
+                      {order.shippingAddress.address2 && <>{order.shippingAddress.address2}<br/></>}
+                      {order.shippingAddress.city}, {order.shippingAddress.postcode}<br/>
+                      {order.shippingAddress.country}
+                   </address>
+                ) : (
+                   <p className="text-sm text-slate-400 italic">No shipping address provided.</p>
+                )}
+            </div>
+        </div>
+
+        {/* Items */}
+        <div className="mb-12">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b-2 border-slate-900">
+                        <th className="text-left py-3 font-black text-slate-900 uppercase tracking-wider">Item</th>
+                        <th className="text-center py-3 font-black text-slate-900 uppercase tracking-wider">Qty</th>
+                        <th className="text-right py-3 font-black text-slate-900 uppercase tracking-wider">Price</th>
+                        <th className="text-right py-3 font-black text-slate-900 uppercase tracking-wider">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {order.products.map((item, idx) => (
+                        <tr key={idx} className="border-b border-slate-200">
+                            <td className="py-4">
+                                <p className="font-bold text-slate-900">{item.title}</p>
+                                <p className="text-xs text-slate-500">Size: {item.size} {item.selectedColor ? `| ${item.selectedColor}` : ''}</p>
+                            </td>
+                            <td className="py-4 text-center text-slate-900">{item.quantity}</td>
+                            <td className="py-4 text-right text-slate-900">£{item.price.toFixed(2)}</td>
+                            <td className="py-4 text-right font-bold text-slate-900">£{(item.price * item.quantity).toFixed(2)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+
+        {/* Totals */}
+        <div className="flex justify-end mb-16">
+            <div className="w-1/2 lg:w-1/3 space-y-3">
+                <div className="flex justify-between text-sm text-slate-600">
+                    <span>Subtotal</span>
+                    <span>£{order.subtotal?.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-600">
+                    <span>Shipping</span>
+                    <span>£{order.shippingCost?.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-600">
+                    <span>Tax (VAT Included)</span>
+                    <span>£{order.taxAmount?.toFixed(2)}</span>
+                </div>
+                {order.discountAmount && order.discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600 font-bold">
+                        <span>Discount</span>
+                        <span>-£{order.discountAmount.toFixed(2)}</span>
+                    </div>
+                )}
+                <div className="flex justify-between text-xl font-black text-slate-900 border-t-2 border-slate-900 pt-3">
+                    <span>Total</span>
+                    <span>£{order.total.toFixed(2)}</span>
+                </div>
+            </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center border-t border-slate-200 pt-8 text-sm text-slate-500">
+            <p className="font-serif font-bold text-slate-900 mb-2">Thank you for your business!</p>
+            <p>For any questions, please contact {settings.contactEmail || 'support@jamboapparels.com'}</p>
+            <p className="text-xs mt-4">Jambo Apparels &copy; {new Date().getFullYear()}</p>
+        </div>
+      </div>
+
+      <BackButton to="/dashboard" className="mb-6 no-print" />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 no-print">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-2xl font-bold font-serif text-gray-900">Order #{order.orderNumber}</h1>
             <p className="text-sm text-gray-500">Placed on {new Date(order.createdAt).toLocaleDateString('en-GB', { dateStyle: 'long' })}</p>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">£{order.total.toFixed(2)}</p>
+          <div className="flex items-center gap-4">
+             <p className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">£{order.total.toFixed(2)}</p>
+             <Button variant="outline" onClick={() => window.print()} className="hidden md:flex">
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                Print Invoice
+             </Button>
+          </div>
         </div>
         <div className="mt-8">
           <OrderStatusTracker 
@@ -175,7 +303,7 @@ export const UserOrderDetails: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-print">
         <div className="lg:col-span-2 space-y-8">
           {/* Items List */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -228,6 +356,12 @@ export const UserOrderDetails: React.FC = () => {
           {/* Actions */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-3">
              <h3 className="text-lg font-bold mb-2">Order Actions</h3>
+             
+             {/* Mobile-only Print Button */}
+             <Button variant="outline" fullWidth onClick={() => window.print()} className="md:hidden">
+                Print / Download Invoice
+             </Button>
+
              {canReorder && (
                 <Button onClick={handleReorder} isLoading={reordering} variant="primary" fullWidth>Reorder Items</Button>
              )}
@@ -266,7 +400,7 @@ export const UserOrderDetails: React.FC = () => {
 
       {/* Recommended Products */}
       {recommendedProducts.length > 0 && (
-        <section className="mt-24 border-t border-slate-100 pt-16">
+        <section className="mt-24 border-t border-slate-100 pt-16 no-print">
           <h2 className="text-3xl font-serif font-bold text-brand-dark mb-12">You May Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {recommendedProducts.map((prod: any) => (
