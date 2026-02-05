@@ -112,3 +112,6 @@ dist
 
 # Local Secrets (Hybrid Approach)
 src/secrets.ts
+
+# Supabase Edge Functions (Deprecated/Replaced by Vercel API)
+supabase/functions/

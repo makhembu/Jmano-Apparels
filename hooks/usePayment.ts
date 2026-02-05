@@ -91,13 +91,17 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       const dbOrderId = orderDetails.purchase_units[0].custom_id;
       const paypalOrderId = data.orderID;
 
-      // 2. Server-Side Capture via Edge Function
-      const { data: verifyData, error } = await supabase.functions.invoke('verify-paypal-payment', {
-        body: { orderId: dbOrderId, paypalOrderId: paypalOrderId }
+      // 2. Server-Side Capture via Vercel API
+      const response = await fetch('/api/paypal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: dbOrderId, paypalOrderId: paypalOrderId })
       });
+      
+      const verifyData = await response.json();
 
-      if (error || !verifyData?.success) {
-        console.error("Payment capture failed:", error || verifyData);
+      if (!response.ok || !verifyData?.success) {
+        console.error("Payment capture failed:", verifyData);
         throw new Error(verifyData?.message || "Payment verification failed.");
       }
 
