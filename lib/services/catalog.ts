@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -25,6 +26,19 @@ export class ProductService {
     log('SELECT', 'products', 'ALL');
     // Use public client for reading products
     const { data, error } = await supabasePublic.from('products').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return ((data || []) as DbProduct[]).map(Mappers.toProduct);
+  }
+
+  // New: Get Top Selling Products (Source of Truth: Products Table)
+  async getTopSellers(limit: number = 5): Promise<Product[]> {
+    log('SELECT', 'products', `ORDER BY total_sales DESC LIMIT ${limit}`);
+    const { data, error } = await supabasePublic
+      .from('products')
+      .select('*')
+      .order('total_sales', { ascending: false })
+      .limit(limit);
+    
     if (error) throw error;
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }

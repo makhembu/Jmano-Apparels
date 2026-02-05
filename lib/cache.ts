@@ -3,6 +3,19 @@
  * CENTRAL CACHE CONFIGURATION
  * Toggle these values to enable/disable specific caching layers globally.
  */
+
+const getAppVersion = () => {
+  try {
+    // Check if import.meta and import.meta.env exist before accessing
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+      return (import.meta as any).env.VITE_APP_VERSION;
+    }
+  } catch (e) {
+    // Ignore errors in environments where import.meta is not supported
+  }
+  return '1.0.0';
+};
+
 export const CACHE_CONFIG = {
   // 1. Service Workers: Handles offline capabilities and asset caching
   ENABLE_SERVICE_WORKER: false, 
@@ -19,7 +32,7 @@ export const CACHE_CONFIG = {
   
   // 5. Version Control: Current version of the app. Bumping this clears old cache.
   // Value is injected via vite.config.ts to avoid importing package.json in browser
-  APP_VERSION: (import.meta as any).env?.VITE_APP_VERSION || '1.0.0', 
+  APP_VERSION: getAppVersion(), 
 };
 
 // --- KEYS REGISTRY ---

@@ -14,6 +14,7 @@ import { EmailTemplatesSection } from '../../components/admin/settings/EmailTemp
 import { PaymentSection } from '../../components/admin/settings/PaymentSection';
 import { SeoSection } from '../../components/admin/settings/SeoSection';
 import { SettingsService } from '../../lib/services/content';
+import { SystemLogViewer } from '../../components/admin/system/SystemLogViewer';
 
 type SettingsTab = 'brand' | 'seo' | 'payments' | 'emails' | 'contact' | 'content' | 'system';
 
@@ -135,7 +136,16 @@ export const AdminAppSettings: React.FC = () => {
               </div>
             )}
             {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
-            {currentTab === 'system' && <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />}
+            {currentTab === 'system' && (
+                <div className="space-y-12 animate-fade-in">
+                    <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />
+                    
+                    <div className="border-t border-gray-200 pt-8">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Live System Monitor</h3>
+                        <SystemLogViewer />
+                    </div>
+                </div>
+            )}
           </form>
       )}
     </div>

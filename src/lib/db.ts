@@ -39,10 +39,6 @@ export const api = {
   getProducts: () => productService.getAll(),
   getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
-  
-  // NEW: Get Top Selling Products directly from Inventory DB (Reliable)
-  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
-
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
@@ -216,23 +212,6 @@ export const api = {
 
   // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
-
-  // System Logs
-  persistSystemLogs: async (logs: any[]) => {
-    if (logs.length === 0) return;
-    // Map internal log format to DB schema
-    const rows = logs.map(l => ({
-        timestamp: l.timestamp,
-        operation: l.operation,
-        context: l.context,
-        details: l.details,
-        level: l.level
-    }));
-    
-    // Batch insert
-    const { error } = await supabase.from('system_logs').insert(rows);
-    if (error) throw error;
-  },
 
   // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
