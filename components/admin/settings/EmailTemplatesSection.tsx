@@ -117,8 +117,11 @@ export const EmailTemplatesSection: React.FC = () => {
     setShowTestModal(true);
   };
 
-  const executeSendTest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSendTest = async (e?: React.SyntheticEvent) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     if (!selectedTemplate || !testEmailInput) return;
 
     setIsSendingTest(true);
@@ -292,7 +295,8 @@ export const EmailTemplatesSection: React.FC = () => {
                 Sending preview of <strong>{getTemplateLabel(selectedTemplate?.name || '')}</strong>
               </p>
             </div>
-            <form onSubmit={executeSendTest} className="p-6 space-y-4">
+            {/* Replaced form with div to avoid nested forms */}
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient</label>
                 <input
@@ -300,6 +304,12 @@ export const EmailTemplatesSection: React.FC = () => {
                   required
                   value={testEmailInput}
                   onChange={(e) => setTestEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeSendTest();
+                    }
+                  }}
                   className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
                   placeholder="you@example.com"
                 />
@@ -311,11 +321,11 @@ export const EmailTemplatesSection: React.FC = () => {
                 <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={isSendingTest}>
                   Cancel
                 </Button>
-                <Button type="submit" isLoading={isSendingTest}>
+                <Button type="button" onClick={executeSendTest} isLoading={isSendingTest}>
                   Send Now
                 </Button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
