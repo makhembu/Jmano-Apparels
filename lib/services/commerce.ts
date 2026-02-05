@@ -149,7 +149,8 @@ export class OrderService {
                             break;
                         case 'Shipped':
                             templateName = 'order_shipped';
-                            vars['{{tracking_number}}'] = updates.tracking_number || order.trackingNumber || 'N/A';
+                            // Fix: Use camelCase 'trackingNumber' from updates parameter
+                            vars['{{tracking_number}}'] = updates.trackingNumber || order.trackingNumber || 'N/A';
                             break;
                         case 'Delivered':
                             templateName = 'order_delivered';
@@ -356,9 +357,10 @@ export class DiscountService {
       discount_value: code.discountValue,
       description: code.description,
       minimum_purchase: code.minimumPurchase,
-      valid_from: code.valid_from || new Date().toISOString(),
-      valid_until: code.valid_until,
-      max_uses: code.max_uses,
+      // Fix: Use camelCase properties from Partial<DiscountCode> parameter
+      valid_from: code.validFrom || new Date().toISOString(),
+      valid_until: code.validUntil,
+      max_uses: code.maxUses,
       is_active: true
     } as any);
     if (error) throw error;

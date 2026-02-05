@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -47,17 +47,14 @@ export const Checkout: React.FC = () => {
     handleManualOrder 
   } = usePayment({ user, clearCart, settings });
 
-  // -- Initialization --
-  useEffect(() => {
-    if (settings.requireLoginForCheckout && !user) {
-        navigate('/login', { state: { from: '/checkout' } });
-        return;
-    }
-    api.getShippingZones().then(setZones);
-    
-    if (user) {
-      api.getUserAddresses(user.id).then(addresses => {
-        setSavedAddresses(addresses);
+  const fetchUserAddresses = useCallback(async () => {
+    if (!user) return;
+    try {
+      const addresses = await api.getUserAddresses(user.id);
+      setSavedAddresses(addresses);
+      
+      // Only set initial address if none selected or currently on 'new'
+      if (selectedAddressId === 'new' && addresses.length > 0) {
         const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
         if (defaultAddr) {
           setSelectedAddressId(defaultAddr.id);
@@ -70,9 +67,24 @@ export const Checkout: React.FC = () => {
             phone: defaultAddr.phone
           });
         }
-      });
+      }
+    } catch (e) {
+      console.error("Failed to fetch addresses", e);
     }
-  }, [user, settings, navigate]);
+  }, [user, selectedAddressId]);
+
+  // -- Initialization --
+  useEffect(() => {
+    if (settings.requireLoginForCheckout && !user) {
+        navigate('/login', { state: { from: '/checkout' } });
+        return;
+    }
+    api.getShippingZones().then(setZones);
+    
+    if (user) {
+      fetchUserAddresses();
+    }
+  }, [user, settings, navigate, fetchUserAddresses]);
 
   const handleAddressSelect = (id: string) => {
     setSelectedAddressId(id);
@@ -201,6 +213,7 @@ export const Checkout: React.FC = () => {
             guestEmail={guestEmail} setGuestEmail={setGuestEmail}
             savedAddresses={savedAddresses}
             selectedAddressId={selectedAddressId} onAddressSelect={handleAddressSelect}
+            refreshAddresses={fetchUserAddresses}
             address={address} setAddress={setAddress}
             saveThisAddress={saveThisAddress} setSaveThisAddress={setSaveThisAddress}
             orderNotes={orderNotes} setOrderNotes={setOrderNotes}
