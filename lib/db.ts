@@ -39,10 +39,7 @@ export const api = {
   getProducts: () => productService.getAll(),
   getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
-  
-  // NEW: Get Top Selling Products directly from Inventory DB (Reliable)
-  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
-
+  getTopSellingProducts: (limit: number) => productService.getTopSellers(limit),
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
@@ -146,10 +143,9 @@ export const api = {
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
-  
-  // Updated: Pass candidate credentials for testing
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  checkEmailHealth: (email: string, candidateKey?: string, candidateFrom?: string) => settingsService.checkEmailHealth(email, candidateKey, candidateFrom),
+  checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
+  sendTransactionalEmail: (tpl: string, to: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(tpl, to, vars),
 
   // Support / Marketing
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
@@ -218,20 +214,6 @@ export const api = {
 
   // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
-
-  // System Logs
-  persistSystemLogs: async (logs: any[]) => {
-    if (logs.length === 0) return;
-    const rows = logs.map(l => ({
-        timestamp: l.timestamp,
-        operation: l.operation,
-        context: l.context,
-        details: l.details,
-        level: l.level
-    }));
-    const { error } = await supabase.from('system_logs').insert(rows);
-    if (error) throw error;
-  },
 
   // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
@@ -303,5 +285,10 @@ export const api = {
     const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
+  },
+
+  persistSystemLogs: async (logs: any[]) => {
+    const { error } = await supabase.from('system_logs' as any).insert(logs);
+    if (error) throw error;
   }
 };

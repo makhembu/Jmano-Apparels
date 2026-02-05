@@ -207,7 +207,6 @@ export class SettingsService {
   }
   
   async checkEmailHealth(testEmail: string, candidateKey?: string, candidateFrom?: string): Promise<{ success: boolean; message?: string }> {
-    console.log("[SettingsService] Invoking send-email via API...");
     try {
       const payload: any = {
         to: testEmail,
@@ -223,7 +222,6 @@ export class SettingsService {
           };
       }
 
-      // Use local Vercel API function instead of Supabase Edge Function
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,20 +234,14 @@ export class SettingsService {
           return { success: false, message: data.error || 'Provider rejected credentials' };
       }
       
-      if (data && data.success) {
-          return { success: true };
-      }
-
-      return { success: false, message: "Invalid response from email server." };
+      return { success: true };
     } catch (e: any) {
-      console.error("[SettingsService] Health check Exception:", e);
       return { success: false, message: e.message || 'Unknown error during test' };
     }
   }
 
   async sendTestTemplate(to: string, subject: string, htmlBody: string): Promise<{ success: boolean; message?: string }> {
     try {
-      // Use local Vercel API function
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,9 +263,64 @@ export class SettingsService {
       return { success: false, message: e.message || 'Unknown error sending test email' };
     }
   }
+
+  // --- NEW: Universal Email Sender for App Logic ---
+  async sendTransactionalEmail(templateName: string, recipient: string, variables: Record<string, string>): Promise<void> {
+    try {
+        log('SEND_EMAIL', templateName, recipient);
+        
+        // 1. Fetch Template & Settings
+        const [templates, settings] = await Promise.all([
+            this.getEmailTemplates(),
+            this.get()
+        ]);
+
+        const template = templates.find(t => t.name === templateName);
+        if (!template || !settings) {
+            console.warn(`[Email] Template '${templateName}' or settings not found.`);
+            return;
+        }
+
+        // Check if notifications are globally enabled
+        if (settings.enableEmailNotifications === false) return;
+
+        // Check specific toggles
+        if (templateName === 'welcome_email' && !settings.enableEmailWelcome) return;
+        if (templateName === 'new_order_customer' && !settings.enableEmailNewOrder) return;
+        if (templateName === 'order_shipped' && !settings.enableEmailOrderShipped) return;
+        if (templateName === 'admin_new_order' && !settings.enableEmailAdminNewOrder) return;
+        if (templateName === 'contact_notification_admin' && !settings.enableEmailContactAdmin) return;
+
+        // 2. Prepare Variables (Merge with Globals)
+        const allVariables = {
+            ...variables,
+            '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png',
+            '{{shop_url}}': 'https://jamboapparels.com',
+            '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com'
+        };
+
+        // 3. Replace Placeholders
+        let subject = template.subject;
+        let body = template.bodyHtml;
+
+        Object.entries(allVariables).forEach(([key, value]) => {
+            const regex = new RegExp(key, 'g'); // Simple replacement, for robust use a library
+            subject = subject.replace(regex, value);
+            body = body.split(key).join(value);
+        });
+
+        // 4. Send via API
+        await this.sendTestTemplate(recipient, subject, body);
+
+    } catch (e) {
+        console.error(`[Email] Failed to send ${templateName}:`, e);
+    }
+  }
 }
 
 export class SupportService {
+  private settingsService = new SettingsService();
+
   async subscribeNewsletter(email: string, source: string = 'website'): Promise<void> {
     log('INSERT', 'newsletter_subscribers', email);
     const { error } = await supabase.from('newsletter_subscribers').upsert({ 
@@ -283,6 +330,11 @@ export class SupportService {
         is_subscribed: true 
     }, { onConflict: 'email' });
     if (error) throw error;
+
+    // Send Welcome Email
+    this.settingsService.sendTransactionalEmail('newsletter_welcome', email, {
+        '{{shop_link}}': 'https://jamboapparels.com/#/shop'
+    });
   }
 
   async submitContact(data: { name: string, email: string, message: string, subject?: string }): Promise<void> {
@@ -294,6 +346,23 @@ export class SupportService {
         subject: data.subject
     });
     if (error) throw error;
+
+    // 1. Send Admin Notification
+    const adminSettings = await this.settingsService.get();
+    if (adminSettings?.contactEmail) {
+        this.settingsService.sendTransactionalEmail('contact_notification_admin', adminSettings.contactEmail, {
+            '{{sender_name}}': data.name,
+            '{{sender_email}}': data.email,
+            '{{subject}}': data.subject || 'New Inquiry',
+            '{{message}}': data.message
+        });
+    }
+
+    // 2. Send User Auto-reply
+    this.settingsService.sendTransactionalEmail('contact_autoreply', data.email, {
+        '{{sender_name}}': data.name,
+        '{{subject}}': data.subject || 'Inquiry'
+    });
   }
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {

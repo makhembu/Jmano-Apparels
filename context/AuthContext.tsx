@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
+import { api } from '../lib/db';
 
 interface AuthContextType {
   user: User | null;
@@ -141,6 +142,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         throw error;
     }
+    
+    // Explicitly send welcome email via API (Client-side trigger)
+    try {
+        await api.sendTransactionalEmail('welcome_email', email, { '{{name}}': name });
+    } catch (e) {
+        console.error("Failed to send welcome email", e);
+    }
+
     // If auto-confirm is off, they won't be signed in yet.
     if (mountedRef.current) setLoading(false);
   }, []);

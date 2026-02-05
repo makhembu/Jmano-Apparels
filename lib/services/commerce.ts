@@ -3,6 +3,10 @@ import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
 import { Order, OrderItem, ShippingAddress, DbOrder, CartItem, ShippingZone, DiscountCode } from '../../types';
+import { SettingsService } from './content';
+
+// Instantiate settings service for email logic
+const settingsService = new SettingsService();
 
 export class OrderService {
   async getUserOrders(userId: string): Promise<Order[]> {
@@ -41,20 +45,56 @@ export class OrderService {
     }));
 
     const { data, error } = await supabase.rpc('create_order_secure', {
-      p_user_id: order.userId || null, // Allow null for guests
+      p_user_id: order.userId || null,
       p_customer_email: order.customerEmail || null,
       p_customer_name: order.customerName || null,
       p_items: itemsPayload,
       p_shipping_address: order.shippingAddress as any,
       p_discount_code: order.discountCode || null,
       p_notes: order.notes || null,
-      p_payment_status: order.paymentStatus || 'paid', // 'pending' for PayPal
+      p_payment_status: order.paymentStatus || 'paid',
       p_payment_intent_id: order.paymentIntentId || null
     });
 
     if (error) throw error;
     
-    return Mappers.toOrder(data as DbOrder);
+    const createdOrder = Mappers.toOrder(data as DbOrder);
+
+    // --- SEND EMAILS (Client-Side Logic) ---
+    // Only send for successful orders (paid/pending).
+    try {
+        const customerName = createdOrder.customerName || 'Customer';
+        const customerEmail = createdOrder.customerEmail || '';
+        const orderNumber = createdOrder.orderNumber;
+        const total = createdOrder.total.toFixed(2);
+
+        // 1. Send Customer Confirmation
+        if (customerEmail) {
+            settingsService.sendTransactionalEmail('new_order_customer', customerEmail, {
+                '{{name}}': customerName,
+                '{{order_number}}': orderNumber,
+                '{{total}}': total,
+                '{{order_link}}': `https://jamboapparels.com/#/order/${createdOrder.id}`
+            });
+        }
+
+        // 2. Send Admin Alert
+        const settings = await settingsService.get();
+        if (settings && settings.contactEmail) {
+             settingsService.sendTransactionalEmail('admin_new_order', settings.contactEmail, {
+                '{{customer_name}}': customerName,
+                '{{order_number}}': orderNumber,
+                '{{total}}': total,
+                '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${createdOrder.id}`
+             });
+        }
+
+    } catch (emailError) {
+        console.error("Failed to trigger order emails", emailError);
+        // Do not throw error, order was created successfully
+    }
+
+    return createdOrder;
   }
 
   async update(id: string, updates: { status?: string; trackingNumber?: string; paymentStatus?: string }): Promise<void> {
@@ -71,6 +111,65 @@ export class OrderService {
 
     const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
     if (error) throw error;
+
+    // --- SEND EMAILS (Status Updates) ---
+    try {
+        if (updates.status) {
+            // Re-fetch order to get customer details & settings
+            const [order, settings] = await Promise.all([
+                this.getById(id),
+                settingsService.get()
+            ]);
+
+            if (order && settings) {
+                // 1. Admin Alert
+                if (settings.contactEmail) {
+                     settingsService.sendTransactionalEmail('admin_order_status_update', settings.contactEmail, {
+                        '{{order_number}}': order.orderNumber,
+                        '{{status}}': updates.status,
+                        '{{customer_name}}': order.customerName || 'Guest',
+                        '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${id}`
+                     });
+                }
+
+                // 2. Customer Alert
+                if (order.customerEmail) {
+                    let templateName = '';
+                    const vars: any = {
+                        '{{name}}': order.customerName || 'Customer',
+                        '{{order_number}}': order.orderNumber,
+                        '{{status}}': updates.status
+                    };
+
+                    switch(updates.status) {
+                        case 'Processing':
+                            templateName = 'order_processing';
+                            break;
+                        case 'Shipped':
+                            templateName = 'order_shipped';
+                            vars['{{tracking_number}}'] = updates.trackingNumber || order.trackingNumber || 'N/A';
+                            break;
+                        case 'Delivered':
+                            templateName = 'order_delivered';
+                            // Link to first product for review
+                            const firstProduct = order.products?.[0];
+                            // Handle if productId is available
+                            vars['{{product_id}}'] = firstProduct?.productId || '';
+                            break;
+                        case 'Cancelled':
+                            templateName = 'order_cancelled';
+                            break;
+                    }
+
+                    if (templateName) {
+                        settingsService.sendTransactionalEmail(templateName, order.customerEmail, vars);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Email trigger failed for status update", e);
+    }
   }
   
   async cancelOrder(orderId: string, userId: string): Promise<void> {
@@ -79,7 +178,7 @@ export class OrderService {
     // Check if order is in a cancellable state first
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('status, total')
+      .select('*')
       .match({ id: orderId, user_id: userId })
       .single();
 
@@ -93,6 +192,33 @@ export class OrderService {
       .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), total: order.total })
       .match({ id: orderId, user_id: userId });
     if (error) throw error;
+
+    // Email Notification
+    try {
+        const settings = await settingsService.get();
+        const orderNum = (order as any).order_number;
+        const custName = (order as any).customer_name || 'Customer';
+        const custEmail = (order as any).customer_email;
+
+        // 1. Customer
+        if (custEmail) {
+            settingsService.sendTransactionalEmail('order_cancelled', custEmail, {
+                '{{name}}': custName,
+                '{{order_number}}': orderNum
+            });
+        }
+
+        // 2. Admin
+        if (settings?.contactEmail) {
+             settingsService.sendTransactionalEmail('admin_order_status_update', settings.contactEmail, {
+                '{{order_number}}': orderNum,
+                '{{status}}': 'Cancelled',
+                '{{customer_name}}': custName,
+                '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${orderId}`
+             });
+        }
+
+    } catch (e) {}
   }
 }
 
