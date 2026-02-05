@@ -19,7 +19,7 @@ interface EmailRequest {
     provider: 'resend' | 'smtp';
     apiKey?: string;
     host?: string;
-    port?: number;
+    port?: number | string; // Accept string from JSON, parse internally
     user?: string;
     pass?: string;
     from?: string;
@@ -34,29 +34,20 @@ serve(async (req) => {
 
   try {
     // 1. SECURITY CHECK: Validate Authorization
-    // We only allow this function to be called by Admins (JWT) or Service Role (Internal Triggers)
     const authHeader = req.headers.get('Authorization');
     const sbUrl = Deno.env.get('SUPABASE_URL');
     const sbAnon = Deno.env.get('SUPABASE_ANON_KEY');
 
-    if (!authHeader || !sbUrl || !sbAnon) {
-       // If internal trigger using ANON key, we need another way to trust it.
-       // However, securely, we should require Service Role.
-       // For this prototype/fix, we will assume requests MUST have a valid JWT.
-       // If called via Postgres Trigger (pg_net), it usually passes the key configured in the trigger function.
-       // We'll proceed but perform a User Role check if it's a user JWT.
+    if (!sbUrl || !sbAnon) {
+       throw new Error("Missing server configuration");
     }
 
-    // Initialize Client to check permissions
     const supabaseClient = createClient(sbUrl, sbAnon, { global: { headers: { Authorization: authHeader! } } });
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-    // If no user found, it might be a Service Role call (which bypasses RLS), or an Anon call.
-    // To distinguish, we check if the JWT has role 'service_role'.
-    // NOTE: This check is simplified. In high security, verify JWT signature.
+    // Check if user is Admin or Service Role
     const isServiceRole = authHeader?.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || 'INVALID_KEY');
     
-    // Check if user is Admin
     let isAdmin = false;
     if (user) {
         const { data: profile } = await supabaseClient.from('users').select('role').eq('id', user.id).single();
@@ -64,7 +55,6 @@ serve(async (req) => {
     }
 
     if (!isServiceRole && !isAdmin) {
-       // Only Admins or Internal System can send emails
        throw new Error("Unauthorized: Email service restricted.");
     }
 
@@ -85,7 +75,8 @@ serve(async (req) => {
         smtpHost = providerConfig?.host;
         smtpUser = providerConfig?.user;
         smtpPass = providerConfig?.pass;
-        smtpPort = providerConfig?.port || 465;
+        // Robust port parsing
+        smtpPort = providerConfig?.port ? parseInt(String(providerConfig.port), 10) : 465;
         fromEmail = providerConfig?.from || 'noreply@jamboapparels.com';
     } else {
         // Env Mode (Secrets)
@@ -138,11 +129,15 @@ serve(async (req) => {
       // SMTP
       if (!smtpHost) throw new Error(`SMTP Host missing.`);
 
+      // Only create auth object if credentials exist
       const auth = (smtpUser && smtpPass) ? { user: smtpUser, pass: smtpPass } : undefined;
+      
+      const isSecure = smtpPort === 465;
+
       const transporter = createTransport({
         host: smtpHost,
         port: smtpPort, 
-        secure: smtpPort === 465,
+        secure: isSecure, // True for 465, false for 587
         auth: auth,
       });
 
@@ -163,7 +158,7 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Email Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({ success: false, error: error.message || 'Unknown error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400, 
     });

@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -8,7 +7,6 @@ import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmi
 export class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
     log('SELECT', 'blog_posts');
-    // Use public client
     const { data, error } = await supabasePublic.from('blog_posts').select('*').order('date', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbBlogPost[]).map(Mappers.toBlogPost);
@@ -16,7 +14,6 @@ export class BlogService {
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
     log('SELECT', 'blog_posts', slug);
-    // Use public client
     const { data, error } = await supabasePublic.from('blog_posts').select('*').eq('slug', slug).single();
     if (error) return null;
     return Mappers.toBlogPost(data as DbBlogPost);
@@ -24,7 +21,6 @@ export class BlogService {
   
   async getCategories(): Promise<BlogCategory[]> {
     log('SELECT', 'blog_categories');
-    // Use public client
     const { data, error } = await supabasePublic.from('blog_categories').select('*');
     if (error) throw error;
     return ((data || []) as DbBlogCategory[]).map(Mappers.toBlogCategory);
@@ -86,8 +82,6 @@ export class BlogService {
       author: post.author,
       reading_time: post.readingTime,
       category_id: post.categoryId,
-      
-      // SEO
       seo_title: post.seoTitle,
       seo_description: post.seoDescription,
       canonical_url: post.canonicalUrl,
@@ -99,37 +93,19 @@ export class BlogService {
 }
 
 export class SettingsService {
-  /**
-   * Fetch Public Settings via Secure RPC.
-   * Uses 'get_public_site_settings' to bypass table RLS safely.
-   */
   async get(): Promise<AppSettings | null> {
     log('RPC', 'get_public_site_settings');
-    
-    // Use the RPC instead of direct view selection to ensure access even with strict table policies
     const { data, error } = await supabasePublic.rpc('get_public_site_settings');
-      
     if (error) {
         console.error("Failed to load settings via RPC", error);
         return null;
     }
-    
-    // RPC returns the JSON object directly
     return Mappers.toAppSettings(data as DbAppSettings);
   }
 
-  /**
-   * Fetch Admin Settings (Including Secrets).
-   * Protected by Auth Client and RLS.
-   */
   async getAdminSettings(): Promise<AppSettings | null> {
     log('SELECT', 'app_settings (ADMIN)');
-    // Use Authenticated Client to access the locked-down table
-    const { data, error } = await supabase
-      .from('app_settings')
-      .select('*') // RLS ensures only admins can read this
-      .single();
-      
+    const { data, error } = await supabase.from('app_settings').select('*').single();
     if (error) return null;
     return Mappers.toAppSettings(data as DbAppSettings);
   }
@@ -137,10 +113,7 @@ export class SettingsService {
   async getPublicPaymentSettings(): Promise<{ paypalClientId: string; paypalMode: string; paymentGatewayEnabled: boolean; currency: string } | null> {
     log('RPC', 'get_public_payment_settings');
     const { data, error } = await supabasePublic.rpc('get_public_payment_settings');
-    if (error) {
-      console.error(error);
-      return null;
-    }
+    if (error) return null;
     const settings = data as any;
     return {
       paypalClientId: settings.paypal_client_id,
@@ -152,9 +125,6 @@ export class SettingsService {
 
   async update(id: number, settings: Partial<AppSettings>): Promise<void> {
     log('UPDATE', 'app_settings', { id });
-    
-    // Security: Only allow updates via authenticated client (supabase, not supabasePublic)
-    
     const dbSettings: any = {
       slogan: settings.slogan,
       secondary_slogan: settings.secondarySlogan,
@@ -197,31 +167,24 @@ export class SettingsService {
       enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm,
       enable_reviews: settings.enableReviews,
-      
-      // Global SEO
       seo_title: settings.seoTitle,
       seo_description: settings.seoDescription,
       default_og_image: settings.defaultOgImage,
       google_analytics_id: settings.googleAnalyticsId,
       custom_head_scripts: settings.customHeadScripts,
-      
-      // Page Specific SEO
       shop_seo_title: settings.shopSeoTitle,
       shop_seo_description: settings.shopSeoDescription,
       blog_seo_title: settings.blogSeoTitle,
       blog_seo_description: settings.blogSeoDescription,
       about_seo_title: settings.aboutSeoTitle,
       about_seo_description: settings.aboutSeoDescription,
-      
-      // PayPal Settings Mapping
       paypal_client_id: settings.paypalClientId,
       paypal_secret_key: settings.paypalSecretKey,
       paypal_mode: settings.paypalMode,
+      // Fix: Property 'payment_gateway_enabled' does not exist on type 'Partial<AppSettings>'. Corrected property name from settings.payment_gateway_enabled to settings.paymentGatewayEnabled.
       payment_gateway_enabled: settings.paymentGatewayEnabled
     };
-    
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
-
     const { error } = await supabase.from('app_settings').update(dbSettings).eq('id', id);
     if (error) throw error;
   }
@@ -238,29 +201,42 @@ export class SettingsService {
     const payload: any = {};
     if (template.subject) payload.subject = template.subject;
     if (template.bodyHtml) payload.body_html = template.bodyHtml;
-    
     const { error } = await supabase.from('email_templates').update(payload).eq('id', id);
     if (error) throw error;
   }
   
-  async checkEmailHealth(testEmail: string): Promise<{ success: boolean; message?: string }> {
+  async checkEmailHealth(testEmail: string, providerConfig?: any): Promise<{ success: boolean; message?: string }> {
+    console.log("[SettingsService] Invoking send-email for health check...");
     try {
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: testEmail,
           subject: 'Jambo Apparels - System Test',
           htmlBody: '<p>This is a test email to verify your configuration settings.</p>',
-          testMode: true
+          testMode: true,
+          providerConfig: providerConfig
         }
       });
       
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (error) {
+          console.error("[SettingsService] RPC error:", error);
+          throw error;
+      }
+      
+      if (data && data.success === false) {
+          return { success: false, message: data.error || 'Provider rejected credentials' };
+      }
       
       return { success: true };
     } catch (e: any) {
-      console.error("Health check failed", e);
-      return { success: false, message: e.message || 'Unknown error during test' };
+      console.error("[SettingsService] Health check Exception:", e);
+      
+      const msg = e.message || "";
+      if (msg.includes("Failed to send a request") || msg.includes("Relay Error") || msg.includes("fetch")) {
+          return { success: false, message: "Server connection failed. Ensure Edge Functions are deployed and Vercel env vars match Supabase." };
+      }
+
+      return { success: false, message: msg || 'Unknown error during test' };
     }
   }
 
@@ -274,10 +250,8 @@ export class SettingsService {
           testMode: false
         }
       });
-      
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Unknown error');
-      
+      if (data && data.success === false) throw new Error(data.error || 'Unknown error');
       return { success: true };
     } catch (e: any) {
       console.error("Test email failed", e);

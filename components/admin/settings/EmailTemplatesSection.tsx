@@ -122,7 +122,7 @@ export const EmailTemplatesSection: React.FC = () => {
       const result = await api.sendTestEmail(targetEmail, subject, populatedHtml);
       
       if (result.success) {
-        showToast(`Test email sent to ${targetEmail}`, 'success');
+        showToast(result.message || `Test email sent to ${targetEmail}`, 'success');
       } else {
         showToast(result.message || 'Failed to send test email', 'error');
       }
