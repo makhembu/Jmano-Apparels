@@ -23,7 +23,8 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ apiKey, contextData }) => 
     setAnalyzing(true);
     try {
         const ai = new GoogleGenAI({ apiKey });
-        const model = 'gemini-2.5-flash';
+        // Standard model for text tasks
+        const model = 'gemini-3-flash-preview';
 
         const prompt = `
         You are a strict Data Analyst for "Jambo Apparels".

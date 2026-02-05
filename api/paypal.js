@@ -44,12 +44,10 @@ export default async function handler(req, res) {
     const clientId = (settings.paypal_client_id || '').trim();
     const secretKey = (settings.paypal_secret_key || '').trim();
     const mode = settings.paypal_mode || 'sandbox';
-    const currency = settings.currency || 'GBP';
+    const baseUrl = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
     // 2. Get Access Token
     const auth = Buffer.from(`${clientId}:${secretKey}`).toString('base64');
-    const baseUrl = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
-
     const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
@@ -60,7 +58,9 @@ export default async function handler(req, res) {
     });
 
     if (!tokenRes.ok) {
-        throw new Error("PayPal authentication failed. Check Client ID and Secret.");
+        const errData = await tokenRes.json();
+        console.error("[PayPal API] Auth Failed:", errData);
+        throw new Error("PayPal authentication failed. Check Client ID and Secret in Admin Settings.");
     }
     
     const { access_token } = await tokenRes.json();
@@ -72,26 +72,34 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
-      }
+      },
+      body: JSON.stringify({}) // Empty body to satisfy some parsers
     });
 
     const captureData = await captureRes.json();
+    let isAlreadyCaptured = false;
 
     if (!captureRes.ok) {
         const issue = captureData.details?.[0]?.issue;
+        
+        // Handle race condition where PayPal captures but response fails/timeouts
         if (issue === 'ORDER_ALREADY_CAPTURED') {
             console.log("[PayPal API] Order already captured, syncing DB.");
+            isAlreadyCaptured = true;
         } else {
-            console.error("[PayPal API] Capture Error:", captureData);
-            return res.status(captureRes.status).json({ 
+            console.error("[PayPal API] Capture Error Detail:", JSON.stringify(captureData, null, 2));
+            return res.status(422).json({ 
                 success: false, 
-                message: captureData.message || issue || "Capture failed at PayPal." 
+                issue: issue,
+                message: captureData.message || issue || "The requested action could not be performed by PayPal." 
             });
         }
     }
 
     // 4. Update DB
+    // If already captured, we won't have the full representation, use the order ID as fallback
     const transactionId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || paypalOrderId;
+    
     const { error: updateError } = await supabase
       .from('orders')
       .update({ 
@@ -102,13 +110,18 @@ export default async function handler(req, res) {
       .eq('id', orderId);
 
     if (updateError) {
-        throw new Error("Payment succeeded but DB update failed: " + updateError.message);
+        console.error("[PayPal API] DB Update Error:", updateError);
+        throw new Error("Payment succeeded but Jambo database update failed. Transaction ID: " + transactionId);
     }
 
-    return res.status(200).json({ success: true, transactionId });
+    return res.status(200).json({ 
+        success: true, 
+        transactionId, 
+        alreadyCaptured: isAlreadyCaptured 
+    });
 
   } catch (error) {
-    console.error("[PayPal API] Exception:", error.message);
+    console.error("[PayPal API] Server Exception:", error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 }

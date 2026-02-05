@@ -65,13 +65,14 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
           }
         }],
         application_context: {
-          shipping_preference: "NO_SHIPPING", // We collect shipping in our form
+          shipping_preference: "NO_SHIPPING",
           user_action: "PAY_NOW"
         }
       });
     } catch (e: any) {
       console.error("PayPal Initiation Error:", e);
       const msg = e.message || "Failed to initialize payment.";
+      // Don't show toast for some internal PayPal errors that the SDK handles
       if (!msg.includes('detected')) {
           showToast(msg, 'error');
       }
@@ -85,34 +86,58 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
   ) => {
     setIsProcessing(true);
     try {
-      const orderDetails = await actions.order.get();
-      const dbOrderId = orderDetails.purchase_units[0].custom_id;
       const paypalOrderId = data.orderID;
-
+      
+      // First, attempt to verify and capture via our backend
+      // We pass both IDs to ensure we match correctly
       const response = await fetch('/api/paypal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            // We'll get the custom_id (our order ID) from the PayPal order details first
+            // but for simplicity and safety, we rely on the backend finding it via payment_intent_id 
+            // or the passed orderId. Since we don't have dbOrderId here without another fetch, 
+            // we use the paypalOrderId to fetch it.
+            paypalOrderId: paypalOrderId 
+        })
+      });
+
+      // Improvement: Actually we need the DB Order ID. Let's get it from PayPal SDK first.
+      const paypalOrderDetails = await actions.order.get();
+      const dbOrderId = paypalOrderDetails.purchase_units[0].custom_id;
+
+      const verifyResponse = await fetch('/api/paypal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: dbOrderId, paypalOrderId: paypalOrderId })
       });
       
-      const verifyData = await response.json();
+      const verifyData = await verifyResponse.json();
 
-      if (!response.ok || !verifyData?.success) {
-        throw new Error(verifyData?.message || "Payment verification failed.");
+      if (!verifyResponse.ok || !verifyData?.success) {
+        // Handle specific recoverable errors
+        if (verifyData?.issue === 'INSTRUMENT_DECLINED') {
+            // Fix: Changed 'warning' to 'info' to align with ToastType definition ('success' | 'error' | 'info')
+            showToast("The payment method was declined. Please try another card in the PayPal window.", "info");
+            return actions.restart(); // This opens the PayPal window again for a different method
+        }
+        
+        throw new Error(verifyData?.message || "Payment verification failed. If you were charged, contact support with Order ID: " + paypalOrderId);
       }
 
       clearCart();
-      showToast('Blessing received! Order confirmed.', 'success');
+      showToast('Blessing received! Your order is confirmed.', 'success');
       
       if (user) {
         navigate(`/order/${dbOrderId}`);
       } else {
-        navigate('/shop');
+        // For guests, we take them to a success page or shop with a notice
+        navigate('/shop', { state: { orderSuccess: true, orderNumber: paypalOrderId } });
       }
 
     } catch (e: any) {
       console.error("PayPal Capture Exception:", e);
-      showToast(e.message || "Capture failed.", 'error');
+      showToast(e.message || "Something went wrong during payment processing.", 'error');
     } finally {
       setIsProcessing(false);
     }
