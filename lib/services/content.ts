@@ -205,9 +205,43 @@ export class SettingsService {
     if (error) throw error;
   }
   
+  private validateSmtpConfig(config: any): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!config) {
+      errors.push('No SMTP configuration provided');
+      return { valid: false, errors };
+    }
+
+    if (config.provider === 'resend') {
+      if (!config.apiKey) errors.push('Resend API Key is required');
+      if (!config.from) errors.push('From address is required');
+    } else if (config.provider === 'smtp') {
+      if (!config.host) errors.push('SMTP Host is required');
+      if (!config.port) errors.push('SMTP Port is required');
+      if (!config.user) errors.push('SMTP Username is required');
+      if (!config.pass) errors.push('SMTP Password is required');
+      if (!config.from) errors.push('From address is required');
+    } else {
+      errors.push('Unknown provider type');
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
   async checkEmailHealth(testEmail: string, providerConfig?: any): Promise<{ success: boolean; message?: string }> {
     console.log("[SettingsService] Invoking send-email for health check...");
     try {
+      // Validate config before sending
+      if (!providerConfig) {
+        return { success: false, message: 'SMTP settings not configured. Please configure settings first.' };
+      }
+
+      const validation = this.validateSmtpConfig(providerConfig);
+      if (!validation.valid) {
+        return { success: false, message: `Configuration errors: ${validation.errors.join(', ')}` };
+      }
+
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: testEmail,

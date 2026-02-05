@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createTransport } from "https://esm.sh/nodemailer@6.9.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -26,6 +25,25 @@ interface EmailRequest {
     from?: string;
   };
   testMode?: boolean;
+}
+
+function validateSmtpConfig(config: any): { valid: boolean; message?: string } {
+  if (!config) {
+    return { valid: false, message: 'SMTP configuration is required' };
+  }
+
+  if (config.provider === 'resend') {
+    if (!config.apiKey) return { valid: false, message: 'Resend API Key is missing' };
+    if (!config.from) return { valid: false, message: 'From address is missing' };
+  } else if (config.provider === 'smtp') {
+    if (!config.host) return { valid: false, message: 'SMTP Host is missing' };
+    if (!config.port) return { valid: false, message: 'SMTP Port is missing' };
+    if (!config.user) return { valid: false, message: 'SMTP Username is missing' };
+    if (!config.pass) return { valid: false, message: 'SMTP Password is missing' };
+    if (!config.from) return { valid: false, message: 'From address is missing' };
+  }
+
+  return { valid: true };
 }
 
 serve(async (req) => {
@@ -60,16 +78,12 @@ serve(async (req) => {
 
     const { to, subject, htmlBody, providerConfig, testMode }: EmailRequest = await req.json();
 
-    // --- CONFIGURATION RESOLUTION STRATEGY ---
-    // 1. Use passed config (Test Button / Specific Mode)
-    // 2. Fallback to Database (Primary Source of Truth)
-    // 3. Fallback to Env Vars (Legacy/Development)
-    
+    // --- CONFIGURATION RESOLUTION STRATEGY (DATABASE ONLY) ---
     let activeConfig = providerConfig;
 
-    // If config is missing or incomplete (no mode specified), fetch from DB
+    // If config is not provided or incomplete (missing explicit mode), fetch from database
     if (!activeConfig || !activeConfig.mode) {
-        console.log("Fetching SMTP settings from Database...");
+        console.log("[send-email] Fetching SMTP settings from database...");
         const sbAdmin = createClient(sbUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
         const { data: dbSettings, error: dbError } = await sbAdmin
             .from('app_settings')
@@ -77,43 +91,37 @@ serve(async (req) => {
             .eq('id', 1)
             .single();
 
-        if (dbSettings && dbSettings.smtp_settings) {
-            console.log("Using Database SMTP Settings");
-            activeConfig = {
-                ...dbSettings.smtp_settings,
-                provider: dbSettings.email_provider || 'smtp',
-                mode: 'custom' // Treat DB settings as custom mode
-            };
-        } else {
-            console.log("No DB settings found, falling back to ENV");
-            // Fall back to env vars
-            activeConfig = { mode: 'env', provider: 'smtp' };
+        if (dbError || !dbSettings || !dbSettings.smtp_settings) {
+            throw new Error(
+                'SMTP settings not configured. Please configure email settings in the admin panel (Settings > Email Infrastructure).'
+            );
         }
+
+        activeConfig = {
+            ...dbSettings.smtp_settings,
+            provider: dbSettings.email_provider || 'smtp',
+            mode: 'custom'
+        };
     }
 
-    const useCustomMode = activeConfig?.mode === 'custom';
-    const envProvider = Deno.env.get('EMAIL_PROVIDER');
-    const effectiveProvider = useCustomMode ? (activeConfig?.provider || 'smtp') : (envProvider || 'smtp');
-    const useResend = effectiveProvider === 'resend';
-
-    let resendKey, smtpHost, smtpUser, smtpPass, smtpPort, fromEmail;
-
-    if (useCustomMode) {
-        resendKey = activeConfig?.apiKey;
-        smtpHost = activeConfig?.host;
-        smtpUser = activeConfig?.user;
-        smtpPass = activeConfig?.pass;
-        smtpPort = activeConfig?.port ? parseInt(String(activeConfig.port), 10) : 465;
-        fromEmail = activeConfig?.from || 'noreply@jamboapparels.com';
-    } else {
-        // Env Fallback
-        resendKey = Deno.env.get('RESEND_API_KEY');
-        smtpHost = Deno.env.get('SMTP_HOST');
-        smtpUser = Deno.env.get('SMTP_USER');
-        smtpPass = Deno.env.get('SMTP_PASS');
-        smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '465');
-        fromEmail = Deno.env.get('SMTP_FROM') || 'noreply@jamboapparels.com';
+    // Validate configuration
+    const validation = validateSmtpConfig(activeConfig);
+    if (!validation.valid) {
+        throw new Error(`Configuration error: ${validation.message}`);
     }
+
+    const provider = activeConfig.provider || 'smtp';
+    const useResend = provider === 'resend';
+
+    // Extract credentials
+    const resendKey = activeConfig.apiKey;
+    const smtpHost = activeConfig.host;
+    const smtpUser = activeConfig.user;
+    const smtpPass = activeConfig.pass;
+    const smtpPort = activeConfig.port ? parseInt(String(activeConfig.port), 10) : 465;
+    const fromEmail = activeConfig.from || 'noreply@jamboapparels.com';
+
+    console.log(`[send-email] Using ${useResend ? 'Resend' : 'SMTP'} provider`);
 
     let info;
     let finalHtml = htmlBody;
@@ -122,7 +130,7 @@ serve(async (req) => {
     }
 
     if (useResend) {
-      if (!resendKey) throw new Error(`Resend API Key missing in ${useCustomMode ? 'DB Settings' : 'Env Vars'}.`);
+      if (!resendKey) throw new Error(`Resend API Key missing in DB Settings.`);
 
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -143,7 +151,7 @@ serve(async (req) => {
       info = { id: data.id, provider: 'resend' };
 
     } else {
-      if (!smtpHost) throw new Error(`SMTP Host missing in ${useCustomMode ? 'DB Settings' : 'Env Vars'}.`);
+      if (!smtpHost) throw new Error(`SMTP Host missing in DB Settings.`);
       
       const auth = (smtpUser && smtpPass) ? { user: smtpUser, pass: smtpPass } : undefined;
       const isSecure = smtpPort === 465;
