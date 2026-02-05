@@ -28,7 +28,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
 
   // Modal State
   const [showTestModal, setShowTestModal] = useState(false);
-  const [testEmail, setTestEmail] = useState('');
+  const [testEmailInput, setTestEmailInput] = useState('');
 
   useEffect(() => {
     if (settings.resendApiKey) setResendApiKey(settings.resendApiKey);
@@ -46,15 +46,17 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   };
 
   const openHealthCheckModal = () => {
-    setTestEmail(settings.contactEmail || '');
+    setTestEmailInput(settings.contactEmail || '');
     setShowTestModal(true);
     setErrorMsg('');
     setHealthStatus('idle');
   };
 
-  const executeHealthCheck = async (e: React.FormEvent) => {
+  const executeHealthCheck = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!testEmail) {
+    e.stopPropagation(); // Prevent bubbling to parent form
+    
+    if (!testEmailInput) {
       showToast('Please enter a recipient email', 'error');
       return;
     }
@@ -64,7 +66,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setErrorMsg('');
 
     try {
-      const result = await settingsService.checkEmailHealth(testEmail, resendApiKey, resendFromEmail);
+      const result = await settingsService.checkEmailHealth(testEmailInput, resendApiKey, resendFromEmail);
       
       if (result.success) {
         setHealthStatus('ok');
@@ -210,14 +212,21 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
               <h3 className="text-lg font-bold text-brand-dark">Test Email Configuration</h3>
               <p className="text-sm text-slate-500 mt-1">Verify that your Resend settings are working correctly.</p>
             </div>
-            <form onSubmit={executeHealthCheck} className="p-6 space-y-4">
+            {/* Replaced form with div to prevent nesting in parent form */}
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient Email</label>
                 <input
                   type="email"
                   required
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
+                  value={testEmailInput}
+                  onChange={(e) => setTestEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeHealthCheck(e);
+                    }
+                  }}
                   className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
                   placeholder="you@example.com"
                 />
@@ -229,11 +238,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={checking}>
                   Cancel
                 </Button>
-                <Button type="submit" isLoading={checking}>
+                {/* Changed to type='button' with onClick handler */}
+                <Button type="button" onClick={executeHealthCheck} isLoading={checking}>
                   Send Test Email
                 </Button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
