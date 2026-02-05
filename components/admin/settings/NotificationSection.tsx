@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
 import { SettingsService } from '../../../lib/services/content';
@@ -16,6 +15,9 @@ const settingsService = new SettingsService();
 export const NotificationSection: React.FC<NotificationSectionProps> = ({ settings, onChange }) => {
   const { showToast } = useToast();
   
+  // Local state for the configuration object
+  const [smtpConfig, setSmtpConfig] = useState<Record<string, any>>(settings.smtpSettings || {});
+  
   // UI States
   const [checking, setChecking] = useState(false);
   const [healthStatus, setHealthStatus] = useState<'idle' | 'ok' | 'error'>('idle');
@@ -26,6 +28,33 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   const [showTestModal, setShowTestModal] = useState(false);
   const [testEmail, setTestEmail] = useState('');
 
+  useEffect(() => {
+    if (settings.smtpSettings) {
+      setSmtpConfig(settings.smtpSettings);
+    }
+  }, [settings]);
+
+  const updateParent = (newConfig: Record<string, any>) => {
+    const syntheticEvent = {
+      target: {
+        name: 'smtpSettings',
+        value: newConfig
+      }
+    };
+    setSmtpConfig(newConfig);
+    
+    // Force provider to 'smtp' implicitly by updating settings
+    onChange({ target: { name: 'emailProvider', value: 'smtp' } } as any);
+    onChange(syntheticEvent as any);
+  };
+
+  const handleConfigInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newConfig = { ...smtpConfig, [name]: value };
+    updateParent(newConfig);
+    setHealthStatus('idle');
+  };
+
   const openHealthCheckModal = () => {
     setTestEmail(settings.contactEmail || '');
     setShowTestModal(true);
@@ -33,9 +62,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setHealthStatus('idle');
   };
 
-  const executeHealthCheck = async (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
-    
+  const executeHealthCheck = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!testEmail) {
       showToast('Please enter a recipient email', 'error');
       return;
@@ -46,10 +74,13 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setErrorMsg('');
 
     try {
-      const result = await settingsService.checkEmailHealth(testEmail, {
-        resendApiKey: settings.resendApiKey,
-        senderEmail: settings.senderEmail
-      });
+      // Construct config for testing
+      const configPayload = {
+        ...smtpConfig,
+        port: smtpConfig.port ? parseInt(String(smtpConfig.port), 10) : 465
+      };
+
+      const result = await settingsService.checkEmailHealth(testEmail, configPayload);
       
       if (result.success) {
         setHealthStatus('ok');
@@ -87,8 +118,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
         <div className="border-b pb-4 flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-medium text-brand-green">Email Infrastructure (Resend)</h3>
-            <p className="text-sm text-gray-500 mt-1">Configure your Resend API credentials directly in the database.</p>
+            <h3 className="text-lg font-medium text-brand-green">Email Infrastructure</h3>
+            <p className="text-sm text-gray-500 mt-1">Configure your SMTP settings directly in the database.</p>
           </div>
           <div className="flex items-center gap-2">
             {healthStatus === 'ok' && (
@@ -108,34 +139,32 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Resend API Key</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Host</label>
+                    <input type="text" name="host" value={smtpConfig.host || ''} onChange={handleConfigInput} placeholder="smtp.example.com" className="w-full border border-gray-300 rounded p-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Port</label>
+                    <input type="number" name="port" value={smtpConfig.port || ''} onChange={handleConfigInput} placeholder="587" className="w-full border border-gray-300 rounded p-2 text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Username</label>
+                    <input type="text" name="user" value={smtpConfig.user || ''} onChange={handleConfigInput} className="w-full border border-gray-300 rounded p-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Password</label>
                     <div className="relative">
-                      <input 
-                        type={showPassword ? "text" : "password"} 
-                        name="resendApiKey" 
-                        value={settings.resendApiKey || ''} 
-                        onChange={onChange} 
-                        className="w-full border border-gray-300 rounded p-2 pr-10 text-sm focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none" 
-                        placeholder="re_..."
-                      />
+                      <input type={showPassword ? "text" : "password"} name="pass" value={smtpConfig.pass || ''} onChange={handleConfigInput} className="w-full border border-gray-300 rounded p-2 pr-10 text-sm" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                         {showPassword ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
                       </button>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">Starts with 're_'. Keep this private.</p>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Sender Email</label>
-                    <input 
-                      type="email" 
-                      name="senderEmail" 
-                      value={settings.senderEmail || ''} 
-                      onChange={onChange} 
-                      placeholder="onboarding@resend.dev" 
-                      className="w-full border border-gray-300 rounded p-2 text-sm focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none" 
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">Must be verified in Resend dashboard.</p>
-                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Sender Email</label>
+                  <input type="email" name="from" value={smtpConfig.from || ''} onChange={handleConfigInput} placeholder="noreply@jamboapparels.com" className="w-full border border-gray-300 rounded p-2 text-sm" />
                 </div>
             </div>
         </div>
@@ -196,9 +225,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
               <h3 className="text-lg font-bold text-brand-dark">Test Email Configuration</h3>
               <p className="text-sm text-slate-500 mt-1">Verify that your email settings are working correctly.</p>
             </div>
-            
-            {/* NO FORM TAG - prevents nesting issue in AdminAppSettings */}
-            <div className="p-6 space-y-4">
+            <form onSubmit={executeHealthCheck} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient Email</label>
                 <input
@@ -206,7 +233,6 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                   required
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && executeHealthCheck()}
                   className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
                   placeholder="you@example.com"
                 />
@@ -218,11 +244,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={checking}>
                   Cancel
                 </Button>
-                <Button type="button" onClick={executeHealthCheck} isLoading={checking}>
+                <Button type="submit" isLoading={checking}>
                   Send Test Email
                 </Button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

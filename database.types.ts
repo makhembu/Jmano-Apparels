@@ -198,6 +198,7 @@ export type Database = {
           contact_phone: string | null
           core_values: string | null
           currency: string | null
+          email_provider: string | null
           enable_email_new_order: boolean | null
           enable_email_notifications: boolean | null
           enable_email_order_shipped: boolean | null
@@ -220,8 +221,7 @@ export type Database = {
           secondary_slogan: string | null
           shipping_policy: string | null
           slogan: string | null
-          resend_api_key: string | null
-          sender_email: string | null
+          smtp_settings: Json | null
           social_links: Json | null
           support_email: string | null
           tax_rate: number | null
@@ -356,6 +356,7 @@ export type Database = {
           },
         ]
       }
+      // NEW TABLES
       blog_categories: {
         Row: {
           id: string

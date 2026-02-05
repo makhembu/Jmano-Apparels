@@ -1,26 +1,25 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createTransport } from "https://esm.sh/nodemailer@6.9.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@3.2.0";
 
 declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-jambo-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-// Shared secret for DB Triggers
-const JAMBO_INTERNAL_SECRET = "jambo_secure_trigger_8823";
 
 interface EmailRequest {
   to: string;
   subject: string;
   htmlBody: string;
   providerConfig?: {
-    resendApiKey?: string;
-    senderEmail?: string;
+    host?: string;
+    port?: number | string;
+    user?: string;
+    pass?: string;
+    from?: string;
   };
   testMode?: boolean;
 }
@@ -31,100 +30,85 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
     const sbUrl = Deno.env.get('SUPABASE_URL');
     const sbServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const sbAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
     if (!sbUrl || !sbServiceKey) {
        throw new Error("Missing server configuration (SUPABASE_URL or SERVICE_ROLE_KEY)");
     }
 
-    // --- SECURITY CHECK ---
-    const authHeader = req.headers.get('Authorization');
-    const internalSecret = req.headers.get('x-jambo-secret');
-    let isAuthorized = false;
-
-    // 1. Check for Internal Secret (DB Triggers)
-    if (internalSecret === JAMBO_INTERNAL_SECRET) {
-      console.log("[send-email] Authorized via Internal Secret");
-      isAuthorized = true;
-    } 
-    // 2. Check for Admin User (Browser/UI)
-    else if (authHeader) {
-      const supabaseClient = createClient(sbUrl, sbAnonKey || '', {
-        global: { headers: { Authorization: authHeader } }
-      });
-      
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-      
-      if (user && !userError) {
-        const supabaseAdmin = createClient(sbUrl, sbServiceKey);
-        const { data: profile } = await supabaseAdmin.from('users').select('role').eq('id', user.id).single();
-        
-        if (profile?.role === 'admin') {
-           console.log(`[send-email] Authorized Admin: ${user.email}`);
-           isAuthorized = true;
-        }
-      }
-    }
-
-    if (!isAuthorized) {
-      console.error("[send-email] Authorization Failed");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401 
-      });
-    }
-
-    // --- PROCESSING ---
+    // Initialize Admin Client to fetch settings if needed
     const supabaseAdmin = createClient(sbUrl, sbServiceKey);
+
+    // Parse Request
     const { to, subject, htmlBody, providerConfig, testMode }: EmailRequest = await req.json();
 
-    let resendApiKey = providerConfig?.resendApiKey;
-    let senderEmail = providerConfig?.senderEmail;
+    // --- CONFIGURATION RESOLUTION ---
+    let activeConfig = providerConfig;
 
-    // If config not provided in request, fetch from DB
-    if (!resendApiKey || !senderEmail) {
+    // If no config provided (Automated Trigger), fetch from Database
+    if (!activeConfig) {
+        console.log("[send-email] No config provided in payload. Fetching from Database...");
+        
         const { data: dbSettings, error: dbError } = await supabaseAdmin
             .from('app_settings')
-            .select('resend_api_key, sender_email')
+            .select('smtp_settings')
             .eq('id', 1)
             .single();
 
-        if (dbError || !dbSettings) {
-            throw new Error('Could not fetch email settings from database.');
+        if (dbError || !dbSettings || !dbSettings.smtp_settings) {
+            throw new Error('SMTP settings not found in database. Please configure in Admin > Settings > Notifications.');
         }
-        
-        resendApiKey = resendApiKey || dbSettings.resend_api_key;
-        senderEmail = senderEmail || dbSettings.sender_email;
+
+        activeConfig = dbSettings.smtp_settings;
     }
 
-    if (!resendApiKey) throw new Error("Resend API Key not configured.");
-    if (!senderEmail) throw new Error("Sender Email not configured.");
+    if (!activeConfig) throw new Error("Failed to resolve email configuration.");
 
-    const resend = new Resend(resendApiKey);
+    // Validate SMTP
+    if (!activeConfig.host) throw new Error("SMTP Host is missing.");
+    
+    const port = activeConfig.port ? parseInt(String(activeConfig.port), 10) : 587;
+    const fromEmail = activeConfig.from || 'noreply@jamboapparels.com';
 
-    // Ensure valid HTML wrapper
+    console.log(`[send-email] Using Custom SMTP (${activeConfig.host}:${port})`);
+
+    const transporter = createTransport({
+        host: activeConfig.host,
+        port: port,
+        secure: port === 465, // True for 465, false for other ports
+        auth: (activeConfig.user && activeConfig.pass) ? {
+            user: activeConfig.user,
+            pass: activeConfig.pass
+        } : undefined,
+        tls: {
+            rejectUnauthorized: false // Helps with some self-hosted SMTPs
+        }
+    });
+
+    // --- SENDING ---
+    if (testMode) {
+        await transporter.verify();
+        console.log("[send-email] Connection Verified");
+    }
+
+    // Ensure HTML wrapper
     let finalHtml = htmlBody;
     if (!htmlBody.trim().toLowerCase().startsWith('<!doctype') && !htmlBody.trim().toLowerCase().startsWith('<html')) {
        finalHtml = `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">${htmlBody}</body></html>`;
     }
 
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: `Jambo Apparels <${senderEmail}>`,
-      to: [to],
-      subject: subject,
-      html: finalHtml,
+    const info = await transporter.sendMail({
+        from: `Jambo Apparels <${fromEmail}>`,
+        to: to,
+        subject: subject,
+        html: finalHtml,
     });
 
-    if (emailError) {
-      console.error("Resend Error:", emailError);
-      throw new Error(`Resend Error: ${emailError.message}`);
-    }
+    console.log("[send-email] Message sent: %s", info.messageId);
 
-    console.log("[send-email] Sent:", emailData?.id);
-
-    return new Response(JSON.stringify({ success: true, id: emailData?.id }), {
+    return new Response(JSON.stringify({ success: true, id: info.messageId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
@@ -136,7 +120,7 @@ serve(async (req) => {
         error: error.message || 'Unknown error',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 400, // Return 400 so client knows it failed
     });
   }
 });
