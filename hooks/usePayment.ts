@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/db';
-import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,20 +23,17 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paypalConfig, setPaypalConfig] = useState<PaymentConfig | null>(null);
 
-  // Load Payment Settings on Mount
   useEffect(() => {
     api.getPublicPaymentSettings().then((config) => {
       if (config && config.paypalClientId) {
         setPaypalConfig({
-          clientId: config.paypalClientId.trim(), // Trim whitespace to prevent URL errors
+          clientId: config.paypalClientId.trim(),
           mode: config.paypalMode,
           enabled: config.paymentGatewayEnabled
         });
       }
     });
   }, []);
-
-  // --- PayPal Handlers ---
 
   const handlePayPalCreateOrder = useCallback(async (
     data: any, 
@@ -46,44 +42,39 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
     total: number
   ) => {
     try {
-      // 1. Prepare Data (Validate & Build Payload)
       const payload = await preparePayload();
-      if (!payload) throw new Error("Invalid order data");
+      if (!payload) throw new Error("Validation failed. Please check your address.");
 
-      // 2. Create DB Order (Pending Payment)
-      // We perform this first to reserve stock and get a persistent ID
+      // Create internal order first
       const dbOrder = await api.createOrder({ 
         ...payload, 
         paymentStatus: 'pending' 
       });
 
-      // 3. Create PayPal Order
+      // Strict amount string for PayPal (2 decimals)
+      const amountValue = total.toFixed(2);
+
       return actions.order.create({
         intent: "CAPTURE",
         purchase_units: [{
-          description: `Order #${dbOrder.orderNumber}`,
-          custom_id: dbOrder.id, // Link DB Order ID
+          description: `Jambo Apparels Order #${dbOrder.orderNumber}`,
+          custom_id: dbOrder.id,
           amount: {
             currency_code: settings.currency || 'GBP',
-            value: total.toFixed(2)
+            value: amountValue
           }
-        }]
+        }],
+        application_context: {
+          shipping_preference: "NO_SHIPPING", // We collect shipping in our form
+          user_action: "PAY_NOW"
+        }
       });
     } catch (e: any) {
-      console.error("PayPal Create Error:", e);
-      
-      const errMsg = e.message || '';
-      
-      // Friendly Error Handling
-      if (errMsg.includes('Insufficient stock')) {
-          // The new SQL returns format "Insufficient stock for "Product Name" (Only X left)"
-          // We can strip the extra SQL formatting if needed, but the raw message is usually readable enough now
-          const cleanMsg = errMsg.replace('P0001:', '').trim(); 
-          showToast(`Stock Alert: ${cleanMsg}`, 'error');
-      } else if (!errMsg.includes('detected')) { // Filter out internal PayPal cancellation noise
-          showToast(errMsg || "Failed to initialize payment.", 'error');
+      console.error("PayPal Initiation Error:", e);
+      const msg = e.message || "Failed to initialize payment.";
+      if (!msg.includes('detected')) {
+          showToast(msg, 'error');
       }
-      
       throw e;
     }
   }, [settings.currency, showToast]);
@@ -92,15 +83,12 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
     data: any, 
     actions: any
   ) => {
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
-      
-      // 1. Get Order Details to retrieve custom_id (DB Order ID)
       const orderDetails = await actions.order.get();
       const dbOrderId = orderDetails.purchase_units[0].custom_id;
       const paypalOrderId = data.orderID;
 
-      // 2. Server-Side Capture via Vercel API
       const response = await fetch('/api/paypal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,13 +98,11 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       const verifyData = await response.json();
 
       if (!response.ok || !verifyData?.success) {
-        console.error("Payment capture failed:", verifyData);
         throw new Error(verifyData?.message || "Payment verification failed.");
       }
 
-      // 3. Cleanup & Redirect
       clearCart();
-      showToast('Payment successful! Order confirmed.', 'success');
+      showToast('Blessing received! Order confirmed.', 'success');
       
       if (user) {
         navigate(`/order/${dbOrderId}`);
@@ -125,14 +111,12 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       }
 
     } catch (e: any) {
-      console.error("PayPal Approve Error:", e);
-      showToast(`Payment Error: ${e.message}`, 'error');
+      console.error("PayPal Capture Exception:", e);
+      showToast(e.message || "Capture failed.", 'error');
     } finally {
       setIsProcessing(false);
     }
   }, [user, clearCart, navigate, showToast]);
-
-  // --- Manual Handler ---
 
   const handleManualOrder = useCallback(async (
     preparePayload: () => Promise<any> | any
@@ -140,27 +124,21 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
     setIsProcessing(true);
     try {
       const payload = await preparePayload();
-      if (!payload) return; // Validation failed inside preparePayload usually
+      if (!payload) return;
 
       await api.createOrder({ ...payload, paymentStatus: 'pending' });
       
       clearCart();
-      showToast('Order received! Please check email for instructions.', 'success');
+      showToast('Order received! Check your email for next steps.', 'success');
       
       if (user) {
-        navigate('/dashboard', { state: { orderConfirmed: true } });
+        navigate('/dashboard');
       } else {
         navigate('/shop');
       }
     } catch (e: any) {
       console.error(e);
-      const errMsg = e.message || '';
-      if (errMsg.includes('Insufficient stock')) {
-          const cleanMsg = errMsg.replace('P0001:', '').trim();
-          showToast(`Stock Alert: ${cleanMsg}`, 'error');
-      } else {
-          showToast('Something went wrong. Please check your connection.', 'error');
-      }
+      showToast(e.message || 'Connection issue. Try again.', 'error');
     } finally {
       setIsProcessing(false);
     }

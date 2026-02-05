@@ -94,7 +94,8 @@ export const analytics = {
       };
 
       // Fire and forget
-      supabase.from('analytics_events').insert(payload).then(({ error }) => {
+      // Added any cast to bypass type error on insert
+      (supabase.from('analytics_events') as any).insert(payload as any).then(({ error }: any) => {
         if (error && error.code !== 'PGRST204') {
             console.warn("[Analytics] Tracking failed:", error.message);
         }

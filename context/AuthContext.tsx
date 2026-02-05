@@ -43,10 +43,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     try {
-      const { data, error } = await supabase
+      // Cast the table query to any to fix properties id, name, etc. not existing on type 'never'
+      const { data, error } = await (supabase
         .from('users')
         .select('*')
-        .eq('id', uid)
+        .eq('id', uid) as any)
         .maybeSingle();
       
       if (!error && data) {

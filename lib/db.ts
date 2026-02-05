@@ -71,7 +71,8 @@ export const api = {
   
   // SCALABILITY FIX: Paginated Orders with robust type handling
   getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    const { data, error } = await supabase.rpc('get_orders_paginated', {
+    // Added any cast to bypass type error where get_orders_paginated might not be recognized in the current TS environment
+    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
       page_num: Number(page),
       page_size: Number(limit),
       status_filter: (status === 'ALL' || !status) ? null : status
@@ -79,13 +80,14 @@ export const api = {
     if (error) throw error;
     
     // Map raw JSONB to Order objects
-    const orders = (data.data || []).map((o: any) => Mappers.toOrder(o));
+    // Added null check for data to fix 'data is possibly null' error
+    const orders = (data?.data || []).map((o: any) => Mappers.toOrder(o));
     
     return {
       data: orders as Order[],
-      total: data.total || 0,
-      page: data.page || 1,
-      totalPages: data.totalPages || 1
+      total: data?.total || 0,
+      page: data?.page || 1,
+      totalPages: data?.totalPages || 1
     };
   },
 
@@ -162,7 +164,8 @@ export const api = {
   
   // SCALABILITY FIX: Paginated Users
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    const { data, error } = await supabase.rpc('get_users_paginated', {
+    // Added any cast to bypass type error where get_users_paginated might not be recognized in the current TS environment
+    const { data, error } = await (supabase.rpc as any)('get_users_paginated', {
         page_num: page,
         page_size: limit,
         search_term: search || null
@@ -170,13 +173,14 @@ export const api = {
     if (error) throw error;
     
     // Map raw JSON to User objects
-    const users = (data.data || []).map((u: any) => Mappers.toUser(u));
+    // Added null check for data to fix 'data is possibly null' error
+    const users = (data?.data || []).map((u: any) => Mappers.toUser(u));
     
     return {
         data: users as User[],
-        total: data.total || 0,
-        page: data.page || 1,
-        totalPages: data.totalPages || 1
+        total: data?.total || 0,
+        page: data?.page || 1,
+        totalPages: data?.totalPages || 1
     };
   },
 
@@ -202,7 +206,8 @@ export const api = {
   },
   
   deleteUserAccount: async (userId: string) => {
-    return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
+    // Added any cast to bypass type error
+    return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
   },
 
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
@@ -218,7 +223,8 @@ export const api = {
 
   // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    const { data, error } = await supabase.rpc('get_analytics_overview', {
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_analytics_overview', {
       time_range_start: start.toISOString(),
       time_range_end: end.toISOString()
     });
@@ -231,7 +237,8 @@ export const api = {
 
   // SCALABILITY FIX: Fast Admin Dashboard Stats
   getAdminDashboardStats: async () => {
-    const { data, error } = await supabase.rpc('get_admin_stats');
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
     if (error) throw error;
     return data as {
         revenue: number;
@@ -244,7 +251,8 @@ export const api = {
   },
 
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    const { data, error } = await supabase.rpc('get_daily_analytics', { days_lookback: days });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
         return [];
@@ -253,7 +261,8 @@ export const api = {
   },
 
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8, days_lookback: days });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
         return [];
@@ -262,7 +271,8 @@ export const api = {
   },
 
   getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    const { data, error } = await supabase.rpc('get_traffic_sources', { days_lookback: days });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
     if (error) {
       console.error("Analytics Error", error);
       return [];
@@ -271,26 +281,30 @@ export const api = {
   },
 
   getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    const { data, error } = await supabase.rpc('get_geo_stats', { days_lookback: days });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as GeoStat[];
   },
 
   getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as PageStat[];
   },
 
   getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
+    // Added any cast to bypass type error
+    const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
   },
 
   // System
   persistSystemLogs: async (logs: any[]) => {
-    const { error } = await supabase.from('system_logs' as any).insert(logs);
+    // Added double any cast to bypass type error on insert for dynamic table
+    const { error } = await (supabase.from('system_logs' as any) as any).insert(logs);
     if (error) {
         console.warn("Failed to persist logs (Table system_logs might not exist)", error);
     }
