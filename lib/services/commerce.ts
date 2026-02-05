@@ -149,7 +149,7 @@ export class OrderService {
                             break;
                         case 'Shipped':
                             templateName = 'order_shipped';
-                            vars['{{tracking_number}}'] = updates.trackingNumber || order.trackingNumber || 'N/A';
+                            vars['{{tracking_number}}'] = updates.tracking_number || order.trackingNumber || 'N/A';
                             break;
                         case 'Delivered':
                             templateName = 'order_delivered';
@@ -178,24 +178,28 @@ export class OrderService {
     log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
     
     // Check if order is in a cancellable state first
-    // Added any cast to bypass type error
-    const { data: order, error: fetchError } = await (supabase
-      .from('orders')
+    // FIX: Cast Supabase query builder to any early to prevent type issues with 'never'
+    const { data: order, error: fetchError } = await (supabase.from('orders') as any)
       .select('*')
-      .match({ id: orderId, user_id: userId }) as any)
+      .match({ id: orderId, user_id: userId })
       .single();
 
     if (fetchError || !order) throw new Error("Order not found or permission denied.");
-    // Fixed 'status' does not exist on type 'never'
+    
+    // FIX: Cast order to any to access properties safely
     if (!['Pending', 'Processing', 'Pending Payment'].includes((order as any).status)) {
       throw new Error("This order can no longer be cancelled.");
     }
 
-    // Added any cast to bypass type error
-    const { error } = await (supabase
-      .from('orders')
-      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), total: (order as any).total } as any) as any)
+    // FIX: Cast Supabase query builder to any early to prevent type issues with 'never'
+    const { error } = await (supabase.from('orders') as any)
+      .update({ 
+        status: 'Cancelled', 
+        cancelled_at: new Date().toISOString(), 
+        total: (order as any).total 
+      })
       .match({ id: orderId, user_id: userId });
+
     if (error) throw error;
 
     // Email Notification
@@ -352,9 +356,9 @@ export class DiscountService {
       discount_value: code.discountValue,
       description: code.description,
       minimum_purchase: code.minimumPurchase,
-      valid_from: code.validFrom || new Date().toISOString(),
-      valid_until: code.validUntil,
-      max_uses: code.maxUses,
+      valid_from: code.valid_from || new Date().toISOString(),
+      valid_until: code.valid_until,
+      max_uses: code.max_uses,
       is_active: true
     } as any);
     if (error) throw error;

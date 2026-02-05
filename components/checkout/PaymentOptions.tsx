@@ -29,8 +29,10 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     "client-id": paypalConfig?.clientId || "test",
     currency: currency,
     intent: "capture",
-    "data-sdk-integration-source": "button-factory"
-  }), [paypalConfig?.clientId, currency]);
+    "data-sdk-integration-source": "button-factory",
+    // Ensure we strictly use the mode defined in settings
+    debug: paypalConfig?.mode === 'sandbox'
+  }), [paypalConfig?.clientId, currency, paypalConfig?.mode]);
 
   const handlePayPalError = (err: any) => {
     const errStr = err?.toString() || '';
@@ -38,13 +40,14 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     
     console.error("PayPal SDK Error:", err);
     setPaypalError(true);
-    showToast("Payment Gateway Error. Please refresh.", "error");
+    showToast("Payment Gateway Error. Please try again or use another method.", "error");
   };
 
   const isPayPalEnabled = paypalConfig?.enabled && !!paypalConfig?.clientId;
 
   return (
     <div className="mt-8 space-y-4">
+      {/* Discount Code Section */}
       <div className="flex gap-2 w-full">
         <input 
           type="text" 
@@ -58,6 +61,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
         </Button>
       </div>
 
+      {/* Payment Buttons Section */}
       {isPayPalEnabled ? (
         <div className="pt-4 animate-fade-in relative z-0 min-h-[150px]">
           {paypalError ? (
@@ -71,9 +75,21 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
              <PayPalScriptProvider options={initialOptions}>
                 <PayPalButtons 
                   key={`${currency}-${paypalConfig?.clientId}`}
-                  style={{ layout: "vertical", shape: "rect", height: 48 }}
+                  style={{ 
+                      layout: "vertical", 
+                      shape: "rect", 
+                      height: 48,
+                      label: 'checkout'
+                  }}
+                  // Disable standalone 'card' funding to remove the second card form
+                  // This forces card payments to happen inside the PayPal secure modal
+                  disabledFunding={['card', 'credit', 'paylater']}
                   onClick={(data, actions) => {
-                    if (!onValidate()) return actions.reject();
+                    // Check local form validation before opening PayPal
+                    if (!onValidate()) {
+                        showToast("Please complete your delivery details first.", "info");
+                        return actions.reject();
+                    }
                     return actions.resolve();
                   }}
                   createOrder={onPayPalCreateOrder}
@@ -85,18 +101,21 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
           )}
         </div>
       ) : (
-        <Button 
-          fullWidth 
-          onClick={onManualOrder} 
-          isLoading={isProcessing}
-          className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-2xl"
-        >
-          Confirm Order (Manual)
-        </Button>
+        <div className="pt-2">
+            <Button 
+                fullWidth 
+                onClick={onManualOrder} 
+                isLoading={isProcessing}
+                className="py-4 text-lg font-bold shadow-xl shadow-brand-green/20 rounded-2xl"
+            >
+                Confirm Order
+            </Button>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Manual payment coordination required after checkout.</p>
+        </div>
       )}
 
       <p className="text-[10px] text-gray-400 text-center mt-6 uppercase tracking-widest font-bold">
-        Secure Transaction via {isPayPalEnabled ? 'PayPal' : 'Jambo Secure'}
+        Secure Transaction via {isPayPalEnabled ? 'PayPal Secure' : 'Jambo Secure'}
       </p>
     </div>
   );

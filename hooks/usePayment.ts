@@ -16,6 +16,20 @@ interface UsePaymentProps {
   settings: any;
 }
 
+// Simple ISO Country Mapper for PayPal (2-char codes)
+const getCountryCode = (countryName: string): string => {
+    const map: Record<string, string> = {
+        'United Kingdom': 'GB',
+        'United States': 'US',
+        'France': 'FR',
+        'Germany': 'DE',
+        'Australia': 'AU',
+        'Canada': 'CA',
+        'Other': 'GB' // Fallback
+    };
+    return map[countryName] || 'GB';
+};
+
 export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -45,14 +59,20 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       const payload = await preparePayload();
       if (!payload) throw new Error("Validation failed. Please check your address.");
 
-      // Create internal order first
+      // Create internal order first (stores pending state in our DB)
       const dbOrder = await api.createOrder({ 
         ...payload, 
         paymentStatus: 'pending' 
       });
 
-      // Strict amount string for PayPal (2 decimals)
       const amountValue = total.toFixed(2);
+      const addr = payload.shippingAddress;
+      
+      // Parse names for PayPal structure
+      const fullName = payload.customerName || user?.name || 'Valued Customer';
+      const nameParts = fullName.trim().split(' ');
+      const givenName = nameParts[0];
+      const surname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Customer';
 
       return actions.order.create({
         intent: "CAPTURE",
@@ -61,24 +81,57 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
           custom_id: dbOrder.id,
           amount: {
             currency_code: settings.currency || 'GBP',
-            value: amountValue
+            value: amountValue,
+            breakdown: {
+                item_total: {
+                    currency_code: settings.currency || 'GBP',
+                    value: (payload.subtotal - (payload.discountAmount || 0)).toFixed(2)
+                },
+                shipping: {
+                    currency_code: settings.currency || 'GBP',
+                    value: (payload.shippingCost || 0).toFixed(2)
+                }
+            }
+          },
+          shipping: {
+              name: { full_name: fullName },
+              address: {
+                  address_line_1: addr.address1,
+                  address_line_2: addr.address2 || '',
+                  admin_area_2: addr.city,
+                  postal_code: addr.postcode,
+                  country_code: getCountryCode(addr.country)
+              }
           }
         }],
+        payer: {
+            name: {
+                given_name: givenName,
+                surname: surname
+            },
+            email_address: payload.customerEmail || user?.email,
+            address: {
+                address_line_1: addr.address1,
+                address_line_2: addr.address2 || '',
+                admin_area_2: addr.city,
+                postal_code: addr.postcode,
+                country_code: getCountryCode(addr.country)
+            }
+        },
         application_context: {
-          shipping_preference: "NO_SHIPPING",
+          shipping_preference: "SET_PROVIDED_ADDRESS",
           user_action: "PAY_NOW"
         }
       });
     } catch (e: any) {
       console.error("PayPal Initiation Error:", e);
       const msg = e.message || "Failed to initialize payment.";
-      // Don't show toast for some internal PayPal errors that the SDK handles
       if (!msg.includes('detected')) {
           showToast(msg, 'error');
       }
       throw e;
     }
-  }, [settings.currency, showToast]);
+  }, [settings.currency, showToast, user]);
 
   const handlePayPalApprove = useCallback(async (
     data: any, 
@@ -88,21 +141,7 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
     try {
       const paypalOrderId = data.orderID;
       
-      // First, attempt to verify and capture via our backend
-      // We pass both IDs to ensure we match correctly
-      const response = await fetch('/api/paypal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            // We'll get the custom_id (our order ID) from the PayPal order details first
-            // but for simplicity and safety, we rely on the backend finding it via payment_intent_id 
-            // or the passed orderId. Since we don't have dbOrderId here without another fetch, 
-            // we use the paypalOrderId to fetch it.
-            paypalOrderId: paypalOrderId 
-        })
-      });
-
-      // Improvement: Actually we need the DB Order ID. Let's get it from PayPal SDK first.
+      // Get the custom_id (our internal order ID) from the PayPal order
       const paypalOrderDetails = await actions.order.get();
       const dbOrderId = paypalOrderDetails.purchase_units[0].custom_id;
 
@@ -115,14 +154,11 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       const verifyData = await verifyResponse.json();
 
       if (!verifyResponse.ok || !verifyData?.success) {
-        // Handle specific recoverable errors
         if (verifyData?.issue === 'INSTRUMENT_DECLINED') {
-            // Fix: Changed 'warning' to 'info' to align with ToastType definition ('success' | 'error' | 'info')
             showToast("The payment method was declined. Please try another card in the PayPal window.", "info");
-            return actions.restart(); // This opens the PayPal window again for a different method
+            return actions.restart();
         }
-        
-        throw new Error(verifyData?.message || "Payment verification failed. If you were charged, contact support with Order ID: " + paypalOrderId);
+        throw new Error(verifyData?.message || "Payment verification failed. Please contact support.");
       }
 
       clearCart();
@@ -131,7 +167,6 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       if (user) {
         navigate(`/order/${dbOrderId}`);
       } else {
-        // For guests, we take them to a success page or shop with a notice
         navigate('/shop', { state: { orderSuccess: true, orderNumber: paypalOrderId } });
       }
 
