@@ -71,26 +71,10 @@ export const AdminAppSettings: React.FC = () => {
     setSaving(true);
     
     // Merge locals back into main object
-    // Note: We need to parse smtpSettings if it was stored as string, but formData should have it as object from getAdminSettings
-    // If it's coming from local state in child components, it might be tricky.
-    // However, in this architecture, child components call onChange which updates formData here.
     // NotificationSection handles the complex object update correctly.
-    
-    // Safety check for SMTP if it got messed up (rare)
-    let safeSmtp = formData.smtpSettings;
-    if (typeof formData.smtpSettings === 'string') {
-        try {
-            safeSmtp = JSON.parse(formData.smtpSettings);
-        } catch (e) {
-            showToast("Invalid SMTP configuration format", 'error');
-            setSaving(false);
-            return;
-        }
-    }
 
     const payload: any = { 
-        ...formData,
-        smtpSettings: safeSmtp
+        ...formData
     };
 
     try {
@@ -162,7 +146,7 @@ export const AdminAppSettings: React.FC = () => {
             {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
             {currentTab === 'system' && (
                 <div className="space-y-12 animate-fade-in">
-                    <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />
+                    <SystemSection settings={formData} onChange={handleChange} />
                     
                     <div className="border-t border-gray-200 pt-8">
                         <h3 className="text-lg font-bold text-slate-800 mb-4">Live System Monitor</h3>

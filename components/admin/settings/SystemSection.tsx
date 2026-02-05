@@ -6,7 +6,6 @@ import { Switch } from '../../ui/Switch';
 interface SystemSectionProps {
   settings: AppSettings;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  onSmtpChange: (smtp: any) => void;
 }
 
 export const SystemSection: React.FC<SystemSectionProps> = ({ settings, onChange }) => {

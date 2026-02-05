@@ -156,8 +156,11 @@ export class SettingsService {
       free_shipping_threshold: settings.freeShippingThreshold,
       require_login_for_checkout: settings.requireLoginForCheckout,
       featured_categories: settings.featuredCategories,
-      email_provider: settings.emailProvider,
-      smtp_settings: settings.smtpSettings,
+      
+      // Resend Configuration
+      resend_api_key: settings.resendApiKey,
+      sender_email: settings.senderEmail,
+      
       gemini_api_key: settings.geminiApiKey,
       enable_email_notifications: settings.enableEmailNotifications,
       enable_email_welcome: settings.enableEmailWelcome,
@@ -205,76 +208,45 @@ export class SettingsService {
     if (error) throw error;
   }
   
-  private validateSmtpConfig(config: any): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (!config) {
-      errors.push('No SMTP configuration provided');
-      return { valid: false, errors };
-    }
-
-    if (config.provider === 'resend') {
-      if (!config.apiKey) errors.push('Resend API Key is required');
-      if (!config.from) errors.push('From address is required');
-    } else if (config.provider === 'smtp') {
-      if (!config.host) errors.push('SMTP Host is required');
-      if (!config.port) errors.push('SMTP Port is required');
-      if (!config.user) errors.push('SMTP Username is required');
-      if (!config.pass) errors.push('SMTP Password is required');
-      if (!config.from) errors.push('From address is required');
-    } else {
-      errors.push('Unknown provider type');
-    }
-
-    return { valid: errors.length === 0, errors };
-  }
-
-  async checkEmailHealth(testEmail: string, providerConfig?: any): Promise<{ success: boolean; message?: string }> {
+  async checkEmailHealth(testEmail: string, providerConfig?: { resendApiKey?: string, senderEmail?: string }): Promise<{ success: boolean; message?: string }> {
     console.log("[SettingsService] Invoking send-email for health check...");
     try {
-      // Validate config before sending
-      if (!providerConfig) {
-        return { success: false, message: 'SMTP settings not configured. Please configure settings first.' };
-      }
-
-      const validation = this.validateSmtpConfig(providerConfig);
-      if (!validation.valid) {
-        return { success: false, message: `Configuration errors: ${validation.errors.join(', ')}` };
+      if (!providerConfig || !providerConfig.resendApiKey || !providerConfig.senderEmail) {
+        return { success: false, message: 'Resend configuration missing. Please enter API Key and Sender Email.' };
       }
 
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: testEmail,
           subject: 'Jambo Apparels - System Test',
-          htmlBody: '<p>This is a test email to verify your configuration settings.</p>',
+          htmlBody: '<p>This is a test email to verify your Resend configuration settings.</p>',
           testMode: true,
           providerConfig: providerConfig
         }
       });
       
-      console.log("[SettingsService] Response data:", data);
-      
       if (error) {
-          console.log("[SettingsService] Response error:", error);
+          console.error("[SettingsService] Health Check Error:", error);
           if (error instanceof Error && error.message.includes("FunctionsFetchError")) {
-             return { success: false, message: "Server unreachable. The 'send-email' Edge Function may not be deployed." };
+             return { success: false, message: "Server unreachable. The 'send-email' function may not be deployed or is waking up." };
+          }
+          if (error instanceof Error && error.message.includes("401")) {
+             return { success: false, message: "Unauthorized (401). Ensure you are logged in as Admin and the function is deployed." };
           }
           return { success: false, message: error.message || "Unknown server error." };
       }
       
-      if (data && data.success === false) {
-          return { success: false, message: data.error || 'Provider rejected credentials' };
+      if (data && data.error) {
+          return { success: false, message: data.error };
       }
       
       return { success: true };
     } catch (e: any) {
       console.error("[SettingsService] Health check Exception:", e);
-      
       const msg = e.message || "";
       if (msg.includes("Failed to send a request") || msg.includes("Relay Error") || msg.includes("fetch")) {
           return { success: false, message: "Server connection failed. Ensure Edge Functions are deployed." };
       }
-
       return { success: false, message: msg || 'Unknown error during test' };
     }
   }
@@ -290,7 +262,7 @@ export class SettingsService {
         }
       });
       if (error) throw error;
-      if (data && data.success === false) throw new Error(data.error || 'Unknown error');
+      if (data && data.error) throw new Error(data.error);
       return { success: true };
     } catch (e: any) {
       console.error("Test email failed", e);
