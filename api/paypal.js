@@ -19,14 +19,17 @@ export default async function handler(req, res) {
 
   try {
     // 1. Initialize Supabase Admin Client
+    // CRITICAL: We MUST use a Service Role key to read the paypal_secret_key from app_settings.
+    // The anon key will fail due to RLS policies.
     const sbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                  process.env.SUPABASE_ANON_KEY; // Fallback only
+    const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
     if (!sbUrl || !sbKey) {
-      console.error("[PayPal API] Missing Supabase Credentials");
-      return res.status(500).json({ error: "Server configuration missing (Supabase)." });
+      console.error("[PayPal API] CRITICAL ERROR: SUPABASE_SERVICE_ROLE_KEY is missing from environment.");
+      return res.status(500).json({ 
+        error: "Server configuration missing.",
+        details: "The Service Role Key is required to retrieve payment secrets. Please check your Vercel/Hosting Environment Variables."
+      });
     }
 
     const supabase = createClient(sbUrl, sbKey);
@@ -39,26 +42,27 @@ export default async function handler(req, res) {
         .single();
 
     if (settingsError || !settings) {
-        console.error("[PayPal API] DB Error:", settingsError);
-        throw new Error("Failed to fetch payment settings from database registry.");
+        console.error("[PayPal API] Database Error:", settingsError);
+        throw new Error("Could not retrieve payment credentials from settings registry.");
     }
 
-    // CRITICAL: Trim whitespace which often causes 'invalid_client' errors during manual entry
+    // Trim whitespace to prevent URL encoding issues
     const clientId = (settings.paypal_client_id || '').trim();
     const secretKey = (settings.paypal_secret_key || '').trim();
     const mode = settings.paypal_mode || 'sandbox';
 
     if (!clientId || !secretKey) {
-        throw new Error("PayPal Client ID or Secret Key is missing in database app_settings.");
+        throw new Error("PayPal Client ID or Secret Key is empty in the database. Please update App Settings.");
     }
 
     // 3. Authenticate with PayPal
+    // We use basic auth encoding for the token request
     const auth = Buffer.from(`${clientId}:${secretKey}`).toString('base64');
     const baseUrl = mode === 'live' 
         ? 'https://api-m.paypal.com' 
         : 'https://api-m.sandbox.paypal.com';
 
-    console.log(`[PayPal API] Attempting token exchange with ${mode} environment...`);
+    console.log(`[PayPal API] Requesting token for ${mode} mode...`);
 
     const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: 'POST',
@@ -66,19 +70,20 @@ export default async function handler(req, res) {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: 'grant_type=client_credentials'
+      // Using URLSearchParams ensures standard body encoding
+      body: new URLSearchParams({ grant_type: 'client_credentials' }).toString()
     });
 
     if (!tokenRes.ok) {
         const errorText = await tokenRes.text();
-        console.error("[PayPal API] Auth Failure:", errorText);
-        throw new Error(`PayPal Auth Failed: ${errorText}`);
+        console.error("[PayPal API] PayPal Auth Rejected:", errorText);
+        throw new Error(`PayPal credentials rejected. Ensure your Client ID and Secret match your selected mode (${mode}).`);
     }
     
     const tokenData = await tokenRes.json();
 
     // 4. Capture the Order
-    console.log(`[PayPal API] Capturing PayPal order ${paypalOrderId} for DB order ${orderId}...`);
+    console.log(`[PayPal API] Capturing PayPal order ${paypalOrderId}...`);
     
     const captureRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
       method: 'POST',
@@ -89,26 +94,21 @@ export default async function handler(req, res) {
       }
     });
 
-    let captureData;
-    try {
-        captureData = await captureRes.json();
-    } catch {
-        throw new Error(`PayPal Capture returned unparseable response. Status: ${captureRes.status}`);
-    }
+    const captureData = await captureRes.json();
 
-    // Handle "Order Already Captured" gracefully (idempotency)
     if (!captureRes.ok) {
+        // Handle idempotency: if already captured, we can proceed to update DB
         const issue = captureData.details?.[0]?.issue;
         if (issue !== 'ORDER_ALREADY_CAPTURED') {
-            console.error("[PayPal API] Capture Error:", JSON.stringify(captureData));
-            throw new Error(captureData.message || "Payment capture failed at PayPal.");
+            console.error("[PayPal API] Capture Failure:", JSON.stringify(captureData));
+            throw new Error(captureData.message || "Failed to capture payment at PayPal.");
         }
-        console.log("[PayPal API] Order already captured, proceeding to DB sync.");
+        console.log("[PayPal API] Order already captured at PayPal. Proceeding to sync.");
     }
 
     const captureId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || paypalOrderId;
 
-    // 5. Update Database Order
+    // 5. Update Database Order Status
     const { error: updateError } = await supabase
       .from('orders')
       .update({ 
@@ -119,15 +119,14 @@ export default async function handler(req, res) {
       .eq('id', orderId);
 
     if (updateError) {
-        console.error("[PayPal API] DB Update Error:", updateError);
-        throw new Error("Payment captured but failed to update order registry.");
+        console.error("[PayPal API] Registry Sync Error:", updateError);
+        throw new Error("Payment was successful but we couldn't update your order in our database. Please contact support with ID: " + captureId);
     }
 
-    console.log(`[PayPal API] Success. Order ${orderId} updated.`);
     return res.status(200).json({ success: true, transactionId: captureId });
 
   } catch (error) {
-    console.error("[PayPal API] Exception:", error.message);
+    console.error("[PayPal API] Execution Exception:", error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 }
