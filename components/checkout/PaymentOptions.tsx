@@ -73,6 +73,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
              </div>
           ) : (
              <PayPalScriptProvider options={initialOptions}>
+                {/* @ts-ignore - style prop typing issue in some versions of react-paypal-js */}
                 <PayPalButtons 
                   key={`${currency}-${paypalConfig?.clientId}`}
                   style={{ 
@@ -80,7 +81,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
                       shape: "rect", 
                       height: 48,
                       label: 'checkout'
-                  }}
+                  } as any}
                   // Disable standalone 'card' funding to remove the second card form
                   // This forces card payments to happen inside the PayPal secure modal
                   disabledFunding={['card', 'credit', 'paylater']}

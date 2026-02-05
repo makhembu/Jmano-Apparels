@@ -106,6 +106,9 @@ export const api = {
       .map(Mappers.toProduct);
   },
 
+  // Added fix for AdminDashboard error: getTopSellingProducts property existence
+  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
+
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
@@ -143,7 +146,10 @@ export const api = {
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  checkEmailHealth: (email: string) => settingsService.checkEmailHealth(email),
+  // Updated fix for NotificationSection error: checkEmailHealth argument count
+  checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
+  // Added fix for AuthContext error: sendTransactionalEmail property existence
+  sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
 
   // Support / Marketing
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
@@ -283,5 +289,16 @@ export const api = {
     const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
+  },
+  // Added fix for SystemLogViewer error: persistSystemLogs property existence
+  persistSystemLogs: async (logs: any[]) => {
+    const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
+      operation: l.operation,
+      context: l.context,
+      level: l.level,
+      details: l.details,
+      timestamp: new Date(l.timestamp).toISOString()
+    })));
+    if (error) throw error;
   }
 };

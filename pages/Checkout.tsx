@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -21,14 +19,12 @@ export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   
-  // -- Data State --
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [shippingCost, setShippingCost] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [activeDiscount, setActiveDiscount] = useState<DiscountCode | null>(null);
   const [orderNotes, setOrderNotes] = useState('');
 
-  // -- Address State --
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [saveThisAddress, setSaveThisAddress] = useState(true);
@@ -38,7 +34,6 @@ export const Checkout: React.FC = () => {
     address1: '', city: '', postcode: '', country: 'United Kingdom', phone: ''
   });
 
-  // -- Payment Hook Integration --
   const { 
     isProcessing, 
     paypalConfig, 
@@ -52,8 +47,6 @@ export const Checkout: React.FC = () => {
     try {
       const addresses = await api.getUserAddresses(user.id);
       setSavedAddresses(addresses);
-      
-      // Only set initial address if none selected or currently on 'new'
       if (selectedAddressId === 'new' && addresses.length > 0) {
         const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
         if (defaultAddr) {
@@ -73,17 +66,13 @@ export const Checkout: React.FC = () => {
     }
   }, [user, selectedAddressId]);
 
-  // -- Initialization --
   useEffect(() => {
     if (settings.requireLoginForCheckout && !user) {
         navigate('/login', { state: { from: '/checkout' } });
         return;
     }
     api.getShippingZones().then(setZones);
-    
-    if (user) {
-      fetchUserAddresses();
-    }
+    if (user) fetchUserAddresses();
   }, [user, settings, navigate, fetchUserAddresses]);
 
   const handleAddressSelect = (id: string) => {
@@ -105,11 +94,9 @@ export const Checkout: React.FC = () => {
     }
   };
 
-  // -- Calculations --
   useEffect(() => {
     const totalWeight = cart.reduce((acc, item) => acc + ((item.weight || 0) * item.quantity), 0);
     const zone = zones.find(z => z.countries.includes(address.country)) || zones.find(z => z.countries.includes('Other'));
-    
     if (zone) {
        if (zone.freeShippingThreshold && cartTotal >= zone.freeShippingThreshold) {
           setShippingCost(0);
@@ -125,9 +112,9 @@ export const Checkout: React.FC = () => {
      const valid = await api.validateDiscountCode(discountCode, cartTotal);
      if(valid) {
         setActiveDiscount(valid);
-        showToast('Blessing applied! Your discount is active.', 'success');
+        showToast('Blessing applied!', 'success');
      } else {
-        showToast('This code doesn’t seem to match our records.', 'error');
+        showToast('Invalid code.', 'error');
         setActiveDiscount(null);
      }
   };
@@ -136,26 +123,20 @@ export const Checkout: React.FC = () => {
     ? (activeDiscount.discountType === 'percentage' ? cartTotal * (activeDiscount.discountValue / 100) : activeDiscount.discountValue)
     : 0;
   
-  const rawTaxRate = settings.taxRate ?? 0.20;
-  const taxRate = rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate;
+  const taxRate = settings.taxRate || 0.20;
   const taxableTotal = Math.max(0, cartTotal - discountAmount);
   const taxAmount = (taxableTotal / (1 + taxRate)) * taxRate;
   const finalTotal = Math.max(0, cartTotal + shippingCost - discountAmount);
 
-  // -- Validation & Payload Construction --
   const validateOrder = (): boolean => {
     if (!user) {
-        if (!guestName || !guestEmail) {
-            showToast('Please provide your name and email.', 'error');
-            return false;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-            showToast('Please enter a valid email address.', 'error');
+        if (!guestName || !guestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+            showToast('Invalid name or email.', 'error');
             return false;
         }
     }
     if (!address.address1 || !address.city || !address.postcode) {
-        showToast('Please provide your full delivery details', 'error');
+        showToast('Delivery details incomplete', 'error');
         return false;
     }
     return true;
@@ -163,26 +144,17 @@ export const Checkout: React.FC = () => {
 
   const prepareOrderPayload = () => {
     if (!validateOrder()) return null;
-
     if (user && selectedAddressId === 'new' && saveThisAddress) {
         api.saveUserAddress(user.id, { ...address, label: 'Saved Address' }).catch(console.error);
     }
-
-    const orderItems = cart.map(c => ({
-      productId: c.id, 
-      quantity: c.quantity, 
-      size: c.selectedSize, 
-      title: c.title, 
-      price: c.price, 
-      selectedColor: c.selectedColor,
-      image: c.images[0]
-    }));
-
     return {
       userId: user?.id || null, 
       customerName: user ? user.name : guestName,
       customerEmail: user ? user.email : guestEmail,
-      products: orderItems,
+      products: cart.map(c => ({
+        productId: c.id, quantity: c.quantity, size: c.selectedSize, 
+        title: c.title, price: c.price, selectedColor: c.selectedColor, image: c.images[0]
+      })),
       total: finalTotal,
       subtotal: cartTotal,
       shippingCost: shippingCost,
@@ -194,75 +166,35 @@ export const Checkout: React.FC = () => {
     };
   };
 
-  if (cart.length === 0) return <EmptyState title="Your cart is waiting" description="Start your journey by adding scripture-inspired apparel." actionLink="/shop" actionLabel="Go to Shop" />;
+  if (cart.length === 0) return <EmptyState title="Your cart is waiting" description="Start your journey." actionLink="/shop" actionLabel="Go to Shop" />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-12 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-12 items-start">
-        
-        {/* Left Side: Form */}
-        <div className="w-full lg:w-3/5 space-y-10 animate-fade-in">
-          <div>
-            <h1 className="text-3xl font-serif font-bold text-brand-dark mb-2">Finalize Your Order</h1>
-            <p className="text-gray-500 font-light">Ethically threaded and ready to be delivered to your door.</p>
-          </div>
-
+        <div className="w-full lg:w-3/5 space-y-10">
+          <h1 className="text-3xl font-serif font-bold text-brand-dark">Finalize Your Order</h1>
           <CheckoutForm 
-            user={user}
-            guestName={guestName} setGuestName={setGuestName}
-            guestEmail={guestEmail} setGuestEmail={setGuestEmail}
-            savedAddresses={savedAddresses}
-            selectedAddressId={selectedAddressId} onAddressSelect={handleAddressSelect}
-            refreshAddresses={fetchUserAddresses}
-            address={address} setAddress={setAddress}
+            user={user} guestName={guestName} setGuestName={setGuestName} guestEmail={guestEmail} setGuestEmail={setGuestEmail}
+            savedAddresses={savedAddresses} selectedAddressId={selectedAddressId} onAddressSelect={handleAddressSelect}
+            refreshAddresses={fetchUserAddresses} address={address} setAddress={setAddress}
             saveThisAddress={saveThisAddress} setSaveThisAddress={setSaveThisAddress}
             orderNotes={orderNotes} setOrderNotes={setOrderNotes}
           />
         </div>
-
-        {/* Right Side: Summary & Payment */}
         <div className="w-full lg:w-2/5 lg:sticky lg:top-24 space-y-6">
-          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 ring-1 ring-gray-100 relative">
-            
-            {isProcessing && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div>
-                    <p className="mt-4 text-brand-dark font-bold animate-pulse">Processing...</p>
-                </div>
-            )}
-
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 relative">
+            {isProcessing && <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-2xl"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div></div>}
             <OrderSummary 
-              cart={cart}
-              cartTotal={cartTotal}
-              shippingCost={shippingCost}
-              discountAmount={discountAmount}
-              taxAmount={taxAmount}
-              taxRate={taxRate}
-              finalTotal={finalTotal}
-              activeDiscount={activeDiscount}
-              address={address}
-              orderNotes={orderNotes}
+              cart={cart} cartTotal={cartTotal} shippingCost={shippingCost} discountAmount={discountAmount} 
+              taxAmount={taxAmount} taxRate={taxRate} finalTotal={finalTotal} activeDiscount={activeDiscount} 
+              address={address} orderNotes={orderNotes}
             />
-
             <PaymentOptions 
-              discountCode={discountCode}
-              setDiscountCode={setDiscountCode}
-              applyDiscount={applyDiscount}
-              paypalConfig={paypalConfig}
-              currency={settings.currency || 'GBP'}
-              isProcessing={isProcessing}
+              discountCode={discountCode} setDiscountCode={setDiscountCode} applyDiscount={applyDiscount}
+              paypalConfig={paypalConfig} currency={settings.currency || 'GBP'} isProcessing={isProcessing}
               onPayPalCreateOrder={(data, actions) => handlePayPalCreateOrder(data, actions, prepareOrderPayload, finalTotal)}
-              onPayPalApprove={handlePayPalApprove}
-              onManualOrder={() => handleManualOrder(prepareOrderPayload)}
-              onValidate={validateOrder}
+              onPayPalApprove={handlePayPalApprove} onManualOrder={() => handleManualOrder(prepareOrderPayload)} onValidate={validateOrder}
             />
-          </div>
-
-          <div className="bg-brand-light p-6 rounded-2xl text-center">
-             <p className="text-brand-dark text-xs font-bold uppercase tracking-tighter mb-2">Supporting the Mission</p>
-             <p className="text-gray-600 text-xs font-light leading-relaxed">
-               Every thread in your order helps us transport the gospel news heartily as to the Lord. 
-             </p>
           </div>
         </div>
       </div>

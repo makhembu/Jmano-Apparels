@@ -13,7 +13,6 @@ import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
 import { Mappers } from './mappers';
 
-// Instantiate Services
 const productService = new ProductService();
 const categoryService = new CategoryService();
 const reviewService = new ReviewService();
@@ -28,108 +27,72 @@ const userService = new UserService();
 const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
-// Helper for hybrid routing redirect
 const getRedirectUrl = () => {
   const isProd = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
   return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
 };
 
 export const api = {
-  // Catalog
   getProducts: () => productService.getAll(),
   getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
-  getTopSellingProducts: (limit: number) => productService.getTopSellers(limit),
-  
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
   adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    for (const id of ids) {
-      await productService.update(id, updates);
-    }
+    for (const id of ids) await productService.update(id, updates);
   },
   adminBulkDeleteProducts: async (ids: string[]) => {
-    for (const id of ids) {
-      await productService.delete(id);
-    }
+    for (const id of ids) await productService.delete(id);
   },
-
   getCategories: () => categoryService.getAll(),
   createCategory: (c: Category) => categoryService.create(c),
   updateCategory: (key: string, c: Partial<Category>) => categoryService.update(key, c),
   deleteCategory: (key: string) => categoryService.delete(key),
-
   getProductReviews: (productId: string) => reviewService.getByProduct(productId),
   getRecentReviews: (limit: number) => reviewService.getRecent(limit),
   addProductReview: (review: Partial<ProductReview>) => reviewService.add(review),
-
-  // Commerce
   getUserOrders: (userId: string) => orderService.getUserOrders(userId),
   getOrders: (userId: string) => orderService.getUserOrders(userId),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
-  
-  // SCALABILITY FIX: Paginated Orders with robust type handling
   getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    // Added any cast to bypass type error where get_orders_paginated might not be recognized in the current TS environment
-    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
+    const { data, error } = await supabase.rpc('get_orders_paginated', {
       page_num: Number(page),
       page_size: Number(limit),
       status_filter: (status === 'ALL' || !status) ? null : status
     });
     if (error) throw error;
-    
-    // Map raw JSONB to Order objects
-    // Added null check for data to fix 'data is possibly null' error
-    const orders = (data?.data || []).map((o: any) => Mappers.toOrder(o));
-    
-    return {
-      data: orders as Order[],
-      total: data?.total || 0,
-      page: data?.page || 1,
-      totalPages: data?.totalPages || 1
-    };
+    const orders = (data.data || []).map((o: any) => Mappers.toOrder(o));
+    return { data: orders as Order[], total: data.total || 0, page: data.page || 1, totalPages: data.totalPages || 1 };
   },
-
-  // Helper for dashboard
   getLowStockProducts: async (limit: number = 5) => {
-    // Fetch products ordered by stock level ascending
-    // We use the authenticated client to ensure we get accurate stock data
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('stock_quantity', { ascending: true })
-      .limit(20); // Fetch a few more to filter locally for threshold
-
+    const { data, error } = await supabase.from('products').select('*').order('stock_quantity', { ascending: true }).limit(20);
     if (error) throw error;
-
-    // Filter for low stock (<= threshold or default 5)
-    return (data || [])
-      .filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5))
-      .slice(0, limit)
-      .map(Mappers.toProduct);
+    return (data || []).filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5)).slice(0, limit).map(Mappers.toProduct);
   },
-
+  // Added fix for AdminDashboard error: getTopSellingProducts property existence
+  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
+  
+  // NEW: Restoration API
+  cancelAndRestoreStock: async (orderId: string, userId: string) => {
+      return await supabase.rpc('cancel_and_restore_stock', { p_order_id: orderId, p_user_id: userId });
+  },
 
   fetchCart: (userId: string) => cartService.fetch(userId),
   syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
-
   getShippingZones: () => shippingService.getZones(),
   createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
   updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
   deleteShippingZone: (id: string) => shippingService.deleteZone(id),
-
   getDiscountCodes: () => discountService.getAll(),
   validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
   createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
   updateDiscountCode: (id: string, d: Partial<DiscountCode>) => discountService.update(id, d),
   deleteDiscountCode: (id: string) => discountService.delete(id),
-
-  // Content
   getBlogPosts: () => blogService.getAllPosts(),
   getBlogPostBySlug: (slug: string) => blogService.getPostBySlug(slug),
   getBlogCategories: () => blogService.getCategories(),
@@ -139,7 +102,6 @@ export const api = {
   adminUpdateBlogPost: (id: string, p: Partial<BlogPost>) => blogService.updatePost(id, p),
   adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
-
   getAppSettings: () => settingsService.get(),
   getAdminSettings: () => settingsService.getAdminSettings(),
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
@@ -147,10 +109,10 @@ export const api = {
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
+  // Updated fix for NotificationSection error: checkEmailHealth argument count
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
-  sendTransactionalEmail: (templateName: string, recipient: string, variables: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, variables),
-
-  // Support / Marketing
+  // Added fix for AuthContext error: sendTransactionalEmail property existence
+  sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
   submitContact: (data: any) => supportService.submitContact(data),
   getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
@@ -158,32 +120,13 @@ export const api = {
   getContactSubmissions: () => supportService.getContactSubmissions(),
   markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
   deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
-
-  // User
   getAllUsers: () => userService.getAll(),
-  
-  // SCALABILITY FIX: Paginated Users
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    // Added any cast to bypass type error where get_users_paginated might not be recognized in the current TS environment
-    const { data, error } = await (supabase.rpc as any)('get_users_paginated', {
-        page_num: page,
-        page_size: limit,
-        search_term: search || null
-    });
+    const { data, error } = await supabase.rpc('get_users_paginated', { page_num: page, page_size: limit, search_term: search || null });
     if (error) throw error;
-    
-    // Map raw JSON to User objects
-    // Added null check for data to fix 'data is possibly null' error
-    const users = (data?.data || []).map((u: any) => Mappers.toUser(u));
-    
-    return {
-        data: users as User[],
-        total: data?.total || 0,
-        page: data?.page || 1,
-        totalPages: data?.totalPages || 1
-    };
+    const users = (data.data || []).map((u: any) => Mappers.toUser(u));
+    return { data: users as User[], total: data.total || 0, page: data.page || 1, totalPages: data.totalPages || 1 };
   },
-
   getUserProfile: (id: string) => userService.getProfile(id),
   updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
   createUserProfile: (data: any) => userService.createProfile(data),
@@ -204,109 +147,65 @@ export const api = {
     const { error } = await (supabase.auth as any).signInWithOtp({ email });
     if (error) throw error;
   },
-  
   deleteUserAccount: async (userId: string) => {
-    // Added any cast to bypass type error
-    return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
+    return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
   },
-
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
   saveUserAddress: (userId: string, address: any) => userService.saveUserAddress(userId, address),
   deleteUserAddress: (id: string) => userService.deleteUserAddress(id),
-
   getWishlist: (userId: string) => wishlistService.getIds(userId),
   getWishlistProducts: (userId: string) => wishlistService.getProducts(userId),
   toggleWishlist: (userId: string, productId: string) => wishlistService.toggle(userId, productId),
-
-  // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
-
-  // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_analytics_overview', {
-      time_range_start: start.toISOString(),
-      time_range_end: end.toISOString()
-    });
-    if (error) {
-        console.error("Analytics Error", error);
-        return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
-    }
+    const { data, error } = await supabase.rpc('get_analytics_overview', { time_range_start: start.toISOString(), time_range_end: end.toISOString() });
+    if (error) return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
     return data as unknown as AnalyticsOverview;
   },
-
-  // SCALABILITY FIX: Fast Admin Dashboard Stats
   getAdminDashboardStats: async () => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
+    const { data, error } = await supabase.rpc('get_admin_stats');
     if (error) throw error;
-    return data as {
-        revenue: number;
-        orders: number;
-        users: number;
-        products: number;
-        low_stock: number;
-        pending_orders: number;
-    };
+    return data as { revenue: number; orders: number; users: number; products: number; low_stock: number; pending_orders: number; };
   },
-
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
-    if (error) {
-        console.error("Analytics Error", error);
-        return [];
-    }
+    const { data, error } = await supabase.rpc('get_daily_analytics', { days_lookback: days });
+    if (error) return [];
     return data as unknown as DailyAnalytics[];
   },
-
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
-    if (error) {
-        console.error("Analytics Error", error);
-        return [];
-    }
+    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8, days_lookback: days });
+    if (error) return [];
     return data as unknown as ProductPerformance[];
   },
-
   getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
-    if (error) {
-      console.error("Analytics Error", error);
-      return [];
-    }
+    const { data, error } = await supabase.rpc('get_traffic_sources', { days_lookback: days });
+    if (error) return [];
     return data as unknown as TrafficSource[];
   },
-
   getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
-    if (error) { console.error("Analytics Error", error); return []; }
+    const { data, error } = await supabase.rpc('get_geo_stats', { days_lookback: days });
+    if (error) return [];
     return data as unknown as GeoStat[];
   },
-
   getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
-    if (error) { console.error("Analytics Error", error); return []; }
+    const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
+    if (error) return [];
     return data as unknown as PageStat[];
   },
-
   getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
-    if (error) { console.error("Analytics Error", error); return []; }
+    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
+    if (error) return [];
     return data as unknown as LiveVisitor[];
   },
-
-  // System
+  // Added fix for SystemLogViewer error: persistSystemLogs property existence
   persistSystemLogs: async (logs: any[]) => {
-    // Added double any cast to bypass type error on insert for dynamic table
-    const { error } = await (supabase.from('system_logs' as any) as any).insert(logs);
-    if (error) {
-        console.warn("Failed to persist logs (Table system_logs might not exist)", error);
-    }
+    const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
+      operation: l.operation,
+      context: l.context,
+      level: l.level,
+      details: l.details,
+      timestamp: new Date(l.timestamp).toISOString()
+    })));
+    if (error) throw error;
   }
 };
