@@ -1,5 +1,5 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createTransport } from "https://esm.sh/nodemailer@6.9.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 declare const Deno: any;
@@ -14,11 +14,9 @@ interface EmailRequest {
   to: string;
   subject: string;
   htmlBody: string;
+  // Optional override for testing ONLY
   providerConfig?: {
-    host?: string;
-    port?: number | string;
-    user?: string;
-    pass?: string;
+    apiKey?: string;
     from?: string;
   };
   testMode?: boolean;
@@ -30,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
+    // 1. Initialize Supabase Admin Client
     const sbUrl = Deno.env.get('SUPABASE_URL');
     const sbServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -38,60 +36,35 @@ serve(async (req) => {
        throw new Error("Missing server configuration (SUPABASE_URL or SERVICE_ROLE_KEY)");
     }
 
-    // Initialize Admin Client to fetch settings if needed
     const supabaseAdmin = createClient(sbUrl, sbServiceKey);
 
-    // Parse Request
+    // 2. Parse Request
     const { to, subject, htmlBody, providerConfig, testMode }: EmailRequest = await req.json();
 
-    // --- CONFIGURATION RESOLUTION ---
-    let activeConfig = providerConfig;
+    // 3. Resolve API Key & From Address
+    let resendApiKey = providerConfig?.apiKey;
+    let resendFrom = providerConfig?.from;
 
-    // If no config provided (Automated Trigger), fetch from Database
-    if (!activeConfig) {
-        console.log("[send-email] No config provided in payload. Fetching from Database...");
+    // If not provided in payload (standard flow), fetch from Database
+    if (!resendApiKey) {
+        console.log("[send-email] No key in payload. Fetching from Database...");
         
         const { data: dbSettings, error: dbError } = await supabaseAdmin
             .from('app_settings')
-            .select('smtp_settings')
+            .select('resend_api_key, resend_from_email')
             .eq('id', 1)
             .single();
 
-        if (dbError || !dbSettings || !dbSettings.smtp_settings) {
-            throw new Error('SMTP settings not found in database. Please configure in Admin > Settings > Notifications.');
+        if (dbError || !dbSettings || !dbSettings.resend_api_key) {
+            throw new Error('Resend API Key not configured. Please set it in Admin > Settings > Notifications.');
         }
 
-        activeConfig = dbSettings.smtp_settings;
+        resendApiKey = dbSettings.resend_api_key;
+        resendFrom = dbSettings.resend_from_email || 'onboarding@resend.dev';
     }
 
-    if (!activeConfig) throw new Error("Failed to resolve email configuration.");
-
-    // Validate SMTP
-    if (!activeConfig.host) throw new Error("SMTP Host is missing.");
-    
-    const port = activeConfig.port ? parseInt(String(activeConfig.port), 10) : 587;
-    const fromEmail = activeConfig.from || 'noreply@jamboapparels.com';
-
-    console.log(`[send-email] Using Custom SMTP (${activeConfig.host}:${port})`);
-
-    const transporter = createTransport({
-        host: activeConfig.host,
-        port: port,
-        secure: port === 465, // True for 465, false for other ports
-        auth: (activeConfig.user && activeConfig.pass) ? {
-            user: activeConfig.user,
-            pass: activeConfig.pass
-        } : undefined,
-        tls: {
-            rejectUnauthorized: false // Helps with some self-hosted SMTPs
-        }
-    });
-
-    // --- SENDING ---
-    if (testMode) {
-        await transporter.verify();
-        console.log("[send-email] Connection Verified");
-    }
+    if (!resendApiKey) throw new Error("Resend API Key is missing.");
+    if (!resendFrom) resendFrom = 'onboarding@resend.dev';
 
     // Ensure HTML wrapper
     let finalHtml = htmlBody;
@@ -99,28 +72,45 @@ serve(async (req) => {
        finalHtml = `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">${htmlBody}</body></html>`;
     }
 
-    const info = await transporter.sendMail({
-        from: `Jambo Apparels <${fromEmail}>`,
-        to: to,
+    // 4. Send Email via native fetch (No SDK dependency)
+    console.log(`[send-email] Sending to ${to} from ${resendFrom}...`);
+    
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
+      },
+      body: JSON.stringify({
+        from: resendFrom,
+        to: [to],
         subject: subject,
-        html: finalHtml,
+        html: finalHtml
+      })
     });
 
-    console.log("[send-email] Message sent: %s", info.messageId);
+    const data = await res.json();
 
-    return new Response(JSON.stringify({ success: true, id: info.messageId }), {
+    if (!res.ok) {
+        console.error('[send-email] Resend API Error:', data);
+        throw new Error(`Resend Error: ${data.message || res.statusText}`);
+    }
+
+    console.log("[send-email] Success:", data.id);
+
+    return new Response(JSON.stringify({ success: true, id: data.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    console.error('[send-email] Error:', error.message);
+    console.error('[send-email] Exception:', error.message);
     return new Response(JSON.stringify({ 
         success: false, 
         error: error.message || 'Unknown error',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400, // Return 400 so client knows it failed
+      status: 400,
     });
   }
 });

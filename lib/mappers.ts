@@ -109,9 +109,9 @@ export const Mappers = {
     maintenanceMessage: s.maintenance_message || undefined,
     featuredCategories: (s.featured_categories as string[]) || undefined,
     
-    // Email Settings
-    emailProvider: s.email_provider || 'smtp',
-    smtpSettings: (s.smtp_settings as Record<string, any>) || undefined,
+    // Resend Email Settings
+    resendApiKey: s.resend_api_key || undefined,
+    resendFromEmail: s.resend_from_email || undefined,
 
     // AI Configuration
     geminiApiKey: s.gemini_api_key || undefined,

@@ -1,0 +1,87 @@
+
+-- ============================================================================
+-- SECURITY FIX: PUBLIC SETTINGS VIEW
+-- Replaces the 'public_app_settings' view (which could bypass RLS) with a 
+-- controlled SECURITY DEFINER function that selects specific columns.
+-- ============================================================================
+
+-- 1. Redefine the RPC to select directly from the table with explicit column mapping
+CREATE OR REPLACE FUNCTION get_public_site_settings()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  result jsonb;
+BEGIN
+  SELECT jsonb_build_object(
+    'id', id,
+    'slogan', slogan,
+    'secondary_slogan', secondary_slogan,
+    'logo_image', logo_image,
+    'mission', mission,
+    'vision', vision,
+    'core_values', core_values,
+    'founder_name', founder_name,
+    'founder_bio', founder_bio,
+    'founder_image', founder_image,
+    'founder_quote', founder_quote,
+    'contact_email', contact_email,
+    'contact_phone', contact_phone,
+    'contact_address', contact_address,
+    'business_hours', business_hours,
+    'social_links', social_links,
+    'support_email', support_email,
+    'currency', currency,
+    'tax_rate', tax_rate,
+    'free_shipping_threshold', free_shipping_threshold,
+    'require_login_for_checkout', require_login_for_checkout,
+    'shipping_policy', shipping_policy,
+    'return_policy', return_policy,
+    'privacy_policy', privacy_policy,
+    'terms_conditions', terms_conditions,
+    'hero_banner_image', hero_banner_image,
+    'hero_banner_text', hero_banner_text,
+    'announcement_text', announcement_text,
+    'is_announcement_enabled', is_announcement_enabled,
+    'maintenance_mode', maintenance_mode,
+    'maintenance_message', maintenance_message,
+    'featured_categories', featured_categories,
+    'enable_newsletter_signup', enable_newsletter_signup,
+    'enable_contact_form', enable_contact_form,
+    'enable_reviews', enable_reviews,
+    'enable_email_notifications', enable_email_notifications,
+    'enable_email_welcome', enable_email_welcome,
+    'enable_email_new_order', enable_email_new_order,
+    'enable_email_order_shipped', enable_email_order_shipped,
+    'enable_email_admin_new_order', enable_email_admin_new_order,
+    'enable_email_contact_admin', enable_email_contact_admin,
+    'seo_title', seo_title,
+    'seo_description', seo_description,
+    'default_og_image', default_og_image,
+    'google_analytics_id', google_analytics_id,
+    'custom_head_scripts', custom_head_scripts,
+    'shop_seo_title', shop_seo_title,
+    'shop_seo_description', shop_seo_description,
+    'blog_seo_title', blog_seo_title,
+    'blog_seo_description', blog_seo_description,
+    'about_seo_title', about_seo_title,
+    'about_seo_description', about_seo_description,
+    'paypal_client_id', paypal_client_id,
+    'paypal_mode', paypal_mode,
+    'payment_gateway_enabled', payment_gateway_enabled,
+    'gemini_api_key', gemini_api_key,
+    'resend_from_email', resend_from_email
+  ) INTO result
+  FROM public.app_settings
+  WHERE id = 1;
+  
+  RETURN result;
+END;
+$$;
+
+-- 2. Drop the insecure view as it is no longer needed
+DROP VIEW IF EXISTS public.public_app_settings;
+
+-- 3. Ensure the RPC is executable
+GRANT EXECUTE ON FUNCTION get_public_site_settings TO anon, authenticated;

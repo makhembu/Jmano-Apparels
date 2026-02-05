@@ -69,11 +69,17 @@ export const AdminAppSettings: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    
+    // Merge locals back into main object
+    const payload: any = { 
+        ...formData
+    };
+
     try {
-      const payload: any = { ...formData };
       await updateSettings(payload);
       showToast('Settings updated successfully', 'success');
     } catch (e) {
+      console.error(e);
       showToast('Failed to save settings', 'error');
     } finally {
       setSaving(false);
@@ -138,7 +144,7 @@ export const AdminAppSettings: React.FC = () => {
             {currentTab === 'content' && <PolicySection settings={formData} onChange={handleChange} />}
             {currentTab === 'system' && (
                 <div className="space-y-12 animate-fade-in">
-                    <SystemSection settings={formData} onChange={handleChange} onSmtpChange={(smtp) => setFormData(prev => ({ ...prev, smtpSettings: smtp }))} />
+                    <SystemSection settings={formData} onChange={handleChange} />
                     
                     <div className="border-t border-gray-200 pt-8">
                         <h3 className="text-lg font-bold text-slate-800 mb-4">Live System Monitor</h3>

@@ -194,8 +194,8 @@ export interface AppSettings {
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
   featuredCategories?: string[];
-  emailProvider?: 'smtp' | 'resend';
-  smtpSettings?: Record<string, any>;
+  resendApiKey?: string;
+  resendFromEmail?: string;
   geminiApiKey?: string;
   enableEmailNotifications?: boolean;
   enableEmailWelcome?: boolean;
