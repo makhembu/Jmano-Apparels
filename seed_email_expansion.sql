@@ -1,3 +1,4 @@
+
 -- ============================================================================
 -- JAMBO APPARELS - EMAIL SYSTEM EXPANSION
 -- Adds Admin Alerts, Newsletter Welcome, and Contact Form Auto-reply
@@ -51,8 +52,8 @@ BEGIN
       email_body := replace(template_row.body_html, '{{order_number}}', NEW.order_number);
       email_body := replace(email_body, '{{customer_name}}', COALESCE(NEW.customer_name, 'Guest'));
       email_body := replace(email_body, '{{total}}', NEW.total::text);
-      -- Replace with your actual deployed URL
-      email_body := replace(email_body, '{{admin_link}}', 'https://jamboapparels.com/#/admin/orders/' || NEW.id);
+      -- CLEAN URL FIX
+      email_body := replace(email_body, '{{admin_link}}', 'https://jamboapparels.com/admin/orders/' || NEW.id);
       
       PERFORM trigger_send_email(admin_email, replace(template_row.subject, '{{order_number}}', NEW.order_number), email_body);
     END IF;
@@ -133,7 +134,7 @@ BEGIN
      IF (TG_OP = 'INSERT') OR (TG_OP = 'UPDATE' AND OLD.is_subscribed = false) THEN
         SELECT * INTO template_row FROM public.email_templates WHERE name = 'newsletter_welcome';
         IF template_row IS NOT NULL THEN
-           email_body := replace(template_row.body_html, '{{shop_link}}', 'https://jamboapparels.com/#/shop');
+           email_body := replace(template_row.body_html, '{{shop_link}}', 'https://jamboapparels.com/shop');
            PERFORM trigger_send_email(NEW.email, template_row.subject, email_body);
         END IF;
      END IF;

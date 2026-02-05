@@ -88,7 +88,7 @@ export const EmailTemplatesSection: React.FC = () => {
       '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png',
       '{{shop_url}}': 'https://jamboapparels.com',
       '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com',
-      '{{shop_link}}': 'https://jamboapparels.com/#/shop',
+      '{{shop_link}}': 'https://jamboapparels.com/shop',
       
       // Dynamic Data
       '{{name}}': 'Sarah Jenkins',

@@ -55,8 +55,8 @@ VALUES
                   <p style="color: #A1A1AA; font-size: 12px; margin: 0 0 10px 0; font-style: italic;">"Divinely Threaded Scriptures."</p>
                   <div style="margin-bottom: 15px;">
                     <a href="{{shop_url}}" style="color: #1B5E20; text-decoration: none; font-weight: bold; font-size: 12px; margin: 0 10px;">Shop</a>
-                    <a href="{{shop_url}}/#/blog" style="color: #1B5E20; text-decoration: none; font-weight: bold; font-size: 12px; margin: 0 10px;">Journal</a>
-                    <a href="{{shop_url}}/#/about" style="color: #1B5E20; text-decoration: none; font-weight: bold; font-size: 12px; margin: 0 10px;">About</a>
+                    <a href="{{shop_url}}/blog" style="color: #1B5E20; text-decoration: none; font-weight: bold; font-size: 12px; margin: 0 10px;">Journal</a>
+                    <a href="{{shop_url}}/about" style="color: #1B5E20; text-decoration: none; font-weight: bold; font-size: 12px; margin: 0 10px;">About</a>
                   </div>
                   <p style="color: #D4D4D8; font-size: 11px; margin: 0;">&copy; 2025 Jambo Apparels. All rights reserved.</p>
                 </td>
@@ -105,8 +105,13 @@ VALUES
 
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
+                      <td align="center" style="padding-bottom: 15px;">
+                        <a href="{{order_link}}" style="background-color: #18181B; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 14px; width: 200px; text-align: center;">View Order Status</a>
+                      </td>
+                    </tr>
+                    <tr>
                       <td align="center">
-                        <a href="{{order_link}}" style="background-color: #18181B; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 14px;">View Order Status</a>
+                        <a href="{{order_link}}?print=true" style="border: 2px solid #E4E4E7; color: #52525B; padding: 10px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 14px; width: 200px; text-align: center;">Download Invoice (PDF)</a>
                       </td>
                     </tr>
                   </table>
@@ -420,7 +425,8 @@ BEGIN
       email_body := replace(template_row.body_html, '{{name}}', COALESCE(customer.name, 'Valued Customer'));
       email_body := replace(email_body, '{{order_number}}', NEW.order_number);
       email_body := replace(email_body, '{{total}}', NEW.total::text);
-      email_body := replace(email_body, '{{order_link}}', shop_url || '/#/order/' || NEW.id);
+      -- CLEAN URL FIX
+      email_body := replace(email_body, '{{order_link}}', shop_url || '/order/' || NEW.id);
       
       -- Globals
       email_body := replace(email_body, '{{logo_url}}', logo_url);
@@ -518,7 +524,8 @@ BEGIN
       email_body := replace(template_row.body_html, '{{order_number}}', NEW.order_number);
       email_body := replace(email_body, '{{customer_name}}', COALESCE(NEW.customer_name, 'Guest'));
       email_body := replace(email_body, '{{total}}', NEW.total::text);
-      email_body := replace(email_body, '{{admin_link}}', 'https://jamboapparels.com/#/admin/orders/' || NEW.id);
+      -- CLEAN URL FIX
+      email_body := replace(email_body, '{{admin_link}}', 'https://jamboapparels.com/admin/orders/' || NEW.id);
       
       -- Globals
       email_body := replace(email_body, '{{logo_url}}', logo_url);
@@ -605,7 +612,7 @@ BEGIN
      IF (TG_OP = 'INSERT') OR (TG_OP = 'UPDATE' AND OLD.is_subscribed = false) THEN
         SELECT * INTO template_row FROM public.email_templates WHERE name = 'newsletter_welcome';
         IF template_row IS NOT NULL THEN
-           email_body := replace(template_row.body_html, '{{shop_link}}', shop_url || '/#/shop');
+           email_body := replace(template_row.body_html, '{{shop_link}}', shop_url || '/shop');
            email_body := replace(email_body, '{{shop_url}}', shop_url);
            email_body := replace(email_body, '{{logo_url}}', logo_url);
            

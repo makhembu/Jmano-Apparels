@@ -333,7 +333,7 @@ export class SupportService {
 
     // Send Welcome Email
     this.settingsService.sendTransactionalEmail('newsletter_welcome', email, {
-        '{{shop_link}}': 'https://jamboapparels.com/#/shop'
+        '{{shop_link}}': 'https://jamboapparels.com/shop'
     });
   }
 

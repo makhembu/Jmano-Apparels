@@ -213,7 +213,7 @@ export const AdminBlogEditor: React.FC = () => {
                      defaultTitle={formData.title}
                      defaultDescription={formData.summary}
                      previewImage={formData.featuredImage || formData.thumbnail}
-                     permalink={`https://jamboapparels.com/#/blog/${formData.slug || 'new-post'}`}
+                     permalink={`https://jamboapparels.com/blog/${formData.slug || 'new-post'}`}
                   />
                </div>
             </div>

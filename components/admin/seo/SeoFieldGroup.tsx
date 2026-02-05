@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SeoConfig } from '../../../types';
 import { GoogleGenAI } from "@google/genai";

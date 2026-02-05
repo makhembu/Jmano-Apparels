@@ -40,6 +40,7 @@ export const api = {
   getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
   getTopSellingProducts: (limit: number) => productService.getTopSellers(limit),
+  
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
@@ -145,7 +146,7 @@ export const api = {
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
-  sendTransactionalEmail: (tpl: string, to: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(tpl, to, vars),
+  sendTransactionalEmail: (templateName: string, recipient: string, variables: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, variables),
 
   // Support / Marketing
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
@@ -287,8 +288,11 @@ export const api = {
     return data as unknown as LiveVisitor[];
   },
 
+  // System
   persistSystemLogs: async (logs: any[]) => {
     const { error } = await supabase.from('system_logs' as any).insert(logs);
-    if (error) throw error;
+    if (error) {
+        console.warn("Failed to persist logs (Table system_logs might not exist)", error);
+    }
   }
 };

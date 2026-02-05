@@ -9,7 +9,7 @@ interface ProductShareProps {
 
 export const ProductShare: React.FC<ProductShareProps> = ({ product }) => {
   // Fix: Construct a canonical URL instead of using window.location.href to avoid blob URLs in sandboxed environments.
-  const pageUrl = `https://jamboapparels.com/#/product/${product.slug || product.id}`;
+  const pageUrl = `https://jamboapparels.com/product/${product.slug || product.id}`;
   const shareTitle = encodeURIComponent(product.title);
   const encodedUrl = encodeURIComponent(pageUrl);
   const shareDescription = encodeURIComponent(`Check out this piece from Jambo Apparels: "${product.title}"`);

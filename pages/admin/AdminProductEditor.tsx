@@ -226,7 +226,7 @@ export const AdminProductEditor: React.FC = () => {
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
             {id && (
-                <a href={`/#/product/${formData.slug || id}`} target="_blank" rel="noreferrer">
+                <a href={`/product/${formData.slug || id}`} target="_blank" rel="noreferrer">
                     <Button variant="outline" className="h-10 bg-white">View in Shop</Button>
                 </a>
             )}
@@ -537,7 +537,7 @@ export const AdminProductEditor: React.FC = () => {
                         onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k}))}
                         defaultTitle={formData.title} defaultDescription={formData.description?.substring(0, 160)}
                         previewImage={formData.images?.[0]}
-                        permalink={`https://jamboapparels.com/#/product/${formData.slug || formData.id || 'new'}`}
+                        permalink={`https://jamboapparels.com/product/${formData.slug || formData.id || 'new'}`}
                         contextData={{ title: formData.title || '', description: formData.description || '', type: 'product' }}
                     />
                     </div>

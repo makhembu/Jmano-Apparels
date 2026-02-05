@@ -74,7 +74,7 @@ export class OrderService {
                 '{{name}}': customerName,
                 '{{order_number}}': orderNumber,
                 '{{total}}': total,
-                '{{order_link}}': `https://jamboapparels.com/#/order/${createdOrder.id}`
+                '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
             });
         }
 
@@ -85,7 +85,7 @@ export class OrderService {
                 '{{customer_name}}': customerName,
                 '{{order_number}}': orderNumber,
                 '{{total}}': total,
-                '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${createdOrder.id}`
+                '{{admin_link}}': `https://jamboapparels.com/admin/orders/${createdOrder.id}`
              });
         }
 
@@ -128,7 +128,7 @@ export class OrderService {
                         '{{order_number}}': order.orderNumber,
                         '{{status}}': updates.status,
                         '{{customer_name}}': order.customerName || 'Guest',
-                        '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${id}`
+                        '{{admin_link}}': `https://jamboapparels.com/admin/orders/${id}`
                      });
                 }
 
@@ -214,7 +214,7 @@ export class OrderService {
                 '{{order_number}}': orderNum,
                 '{{status}}': 'Cancelled',
                 '{{customer_name}}': custName,
-                '{{admin_link}}': `https://jamboapparels.com/#/admin/orders/${orderId}`
+                '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}`
              });
         }
 
