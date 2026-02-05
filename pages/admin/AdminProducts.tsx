@@ -262,8 +262,8 @@ export const AdminProducts: React.FC = () => {
                       £{product.price.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                      <Link to={`/admin/products/${product.id}`} className="text-brand-green hover:text-brand-dark hover:underline">Edit</Link>
-                      <button onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-700">Delete</button>
+                      <Link to={`/admin/products/${product.id}`} className="text-brand-green hover:text-brand-dark hover:underline font-bold">Manage</Link>
+                      <button onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-700 text-xs">Delete</button>
                     </td>
                   </tr>
                 );
