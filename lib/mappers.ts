@@ -1,3 +1,4 @@
+
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -299,7 +300,8 @@ export const Mappers = {
     email: u.email,
     role: u.role,
     createdAt: u.created_at,
-    avatarUrl: u.avatar_url || undefined
+    avatarUrl: u.avatar_url || undefined,
+    bio: u.bio || undefined
   }),
 
   toNewsletterSubscriber: (n: DbNewsletterSubscriber): NewsletterSubscriber => ({

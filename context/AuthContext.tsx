@@ -58,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: data.role as UserRole,
           createdAt: data.created_at || undefined,
           avatarUrl: data.avatar_url || undefined,
+          bio: data.bio || undefined,
         };
       }
     } catch (err: any) {

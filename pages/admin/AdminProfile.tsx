@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/db';
@@ -9,7 +10,7 @@ export const AdminProfile: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const { showToast } = useToast();
   
-  const [form, setForm] = useState({ name: '', email: '', avatarUrl: '' });
+  const [form, setForm] = useState({ name: '', email: '', avatarUrl: '', bio: '' });
   const [passForm, setPassForm] = useState({ newPassword: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
@@ -17,7 +18,7 @@ export const AdminProfile: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-        setForm({ name: user.name, email: user.email, avatarUrl: user.avatarUrl || '' });
+        setForm({ name: user.name, email: user.email, avatarUrl: user.avatarUrl || '', bio: user.bio || '' });
     }
   }, [user]);
 
@@ -26,7 +27,7 @@ export const AdminProfile: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      await api.updateUserProfile(user.id, { name: form.name, email: form.email, avatarUrl: form.avatarUrl });
+      await api.updateUserProfile(user.id, { name: form.name, email: form.email, avatarUrl: form.avatarUrl, bio: form.bio });
       await refreshProfile(); 
       showToast('Profile details updated successfully', 'success');
     } catch (e: any) {
@@ -131,6 +132,18 @@ export const AdminProfile: React.FC = () => {
                   <Button type="button" variant="outline" isLoading={uploading} className="h-full">Upload</Button>
                 </div>
               </div>
+            </div>
+
+            <div>
+               <label className="block text-sm font-medium text-gray-700">Bio (Short Description)</label>
+               <textarea 
+                  value={form.bio}
+                  onChange={e => setForm({...form, bio: e.target.value})}
+                  rows={3}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green"
+                  placeholder="A contributor to the Jambo Apparels faith journal."
+               />
+               <p className="text-xs text-gray-500 mt-1">Displayed on your blog posts.</p>
             </div>
 
             <div className="pt-2">

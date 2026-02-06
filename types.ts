@@ -1,3 +1,4 @@
+
 import { Database, Json } from './database.types';
 
 // Helper to extract tables from Database type
@@ -12,6 +13,7 @@ export interface User {
   role: UserRole;
   createdAt?: string;
   avatarUrl?: string;
+  bio?: string;
 }
 
 export interface Product {

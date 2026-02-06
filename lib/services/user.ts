@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -15,7 +16,13 @@ export class UserService {
     log('RPC', 'get_public_user_profiles');
     const { data, error } = await supabase.rpc('get_public_user_profiles');
     if (error) throw error;
-    return ((data || []) as any[]).map(u => ({ id: u.id, name: u.name, avatarUrl: u.avatar_url }));
+    // Map snake_case from RPC to camelCase for frontend
+    return ((data || []) as any[]).map(u => ({ 
+        id: u.id, 
+        name: u.name, 
+        avatarUrl: u.avatar_url, 
+        bio: u.bio 
+    }));
   }
 
   async getProfile(userId: string): Promise<User | null> {
@@ -31,7 +38,8 @@ export class UserService {
         name: updates.name,
         email: updates.email,
         role: updates.role,
-        avatar_url: updates.avatarUrl
+        avatar_url: updates.avatarUrl,
+        bio: updates.bio
      };
      Object.keys(dbUpdates).forEach(key => dbUpdates[key] === undefined && delete dbUpdates[key]);
      // Added any cast to bypass type error on update
