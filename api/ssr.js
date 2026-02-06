@@ -36,7 +36,10 @@ export default async function handler(req, res) {
 
     // 2. Fetch Page Specific Data
     if (path === '/' || path === '/index.html') {
-       // Homepage uses global settings
+       // Homepage specific: Use Hero Banner for social sharing if available, overrides default logo
+       if (settings?.hero_banner_image) {
+          meta.image = settings.hero_banner_image;
+       }
     } 
     else if (path.startsWith('/shop')) {
        meta.title = settings?.shop_seo_title || 'Shop Collection | Jambo Apparels';
