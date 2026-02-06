@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
@@ -70,16 +69,21 @@ export const api = {
     if (error) throw error;
     return (data || []).filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5)).slice(0, limit).map(Mappers.toProduct);
   },
-  // Added fix for AdminDashboard error: getTopSellingProducts property existence
   getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
   
-  // NEW: Restoration API
+  // FIXED: Proper mapping and error handling for restoration RPC
   cancelAndRestoreStock: async (orderId: string, userId: string) => {
-      return await supabase.rpc('cancel_and_restore_stock', { p_order_id: orderId, p_user_id: userId });
+      const { data, error } = await (supabase.rpc as any)('cancel_and_restore_stock', { 
+        p_order_id: orderId, 
+        p_user_id: userId 
+      });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error || 'Restoration failed');
+      return { success: true };
   },
 
   fetchCart: (userId: string) => cartService.fetch(userId),
@@ -109,9 +113,7 @@ export const api = {
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  // Updated fix for NotificationSection error: checkEmailHealth argument count
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
-  // Added fix for AuthContext error: sendTransactionalEmail property existence
   sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
   subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
   submitContact: (data: any) => supportService.submitContact(data),
@@ -197,7 +199,6 @@ export const api = {
     if (error) return [];
     return data as unknown as LiveVisitor[];
   },
-  // Added fix for SystemLogViewer error: persistSystemLogs property existence
   persistSystemLogs: async (logs: any[]) => {
     const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
       operation: l.operation,

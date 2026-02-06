@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -9,7 +8,6 @@ import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useApp } from '../../context/AppContext';
 import { OrderStatusTracker } from '../../components/dashboard/OrderStatusTracker';
-import { ProductCard } from '../../components/ProductCard';
 import { usePayment } from '../../hooks/usePayment';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
@@ -88,14 +86,18 @@ export const UserOrderDetails: React.FC = () => {
     setRestoring(true);
     try {
         // 1. Call Secure DB Function to cancel order and restore stock
-        const { error } = await (api as any).cancelAndRestoreStock(order.id, user.id);
-        if (error) throw error;
+        // Wrapped in safety check to ensure function exists or handle error cleanly
+        await api.cancelAndRestoreStock(order.id, user.id);
 
         // 2. Add items to user's local cart
         for (const item of order.products) {
             let productObj = products.find(p => p.id === item.productId);
             if (!productObj) {
-                productObj = await api.getProductById(item.productId);
+                try {
+                    productObj = await api.getProductById(item.productId) || undefined;
+                } catch(e) {
+                    console.warn(`Product ${item.productId} no longer exists in catalog.`);
+                }
             }
             if (productObj) {
                 addToCart(productObj, item.size, item.quantity, item.selectedColor);
@@ -106,7 +108,11 @@ export const UserOrderDetails: React.FC = () => {
         navigate('/cart');
     } catch (e: any) {
         console.error("Restoration failed", e);
-        showToast(e.message || "Could not restore items.", "error");
+        // Better error message for common Supabase failures
+        const msg = e.message?.includes('not found') 
+            ? "Server update pending. Please try again in a few seconds." 
+            : (e.message || "Could not restore items.");
+        showToast(msg, "error");
     } finally {
         setRestoring(false);
     }
@@ -119,7 +125,7 @@ export const UserOrderDetails: React.FC = () => {
     await Promise.all(order.products.map(async (item) => {
         let productToAdd = products.find((p) => p.id === item.productId);
         if (!productToAdd) {
-            try { productToAdd = await api.getProductById(item.productId); } catch (e) {}
+            try { productToAdd = await api.getProductById(item.productId) || undefined; } catch (e) {}
         }
         if (productToAdd && (productToAdd.isPublished !== false)) {
             itemsToAdd.push({ product: productToAdd, item });
@@ -156,26 +162,6 @@ export const UserOrderDetails: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in relative">
-      <div id="invoice-container" className="hidden print:block bg-white text-slate-900 p-8 font-sans max-w-[210mm] mx-auto h-full relative">
-         {/* ... Print View Implementation ... */}
-         <div className="flex justify-between items-start mb-12 border-b-2 border-slate-900 pb-8">
-            <div className="w-1/2">
-                <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} alt="Jambo Apparels" className="h-16 w-auto object-contain mb-4" />
-                <div className="text-sm text-gray-600 leading-relaxed font-medium">
-                    <p className="font-bold text-slate-900">Jambo Apparels</p>
-                    <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
-                    <p>{settings.contactEmail}</p>
-                </div>
-            </div>
-            <div className="w-1/2 text-right">
-                <h1 className="text-4xl font-black text-slate-900 uppercase tracking-widest mb-4">Invoice</h1>
-                <p className="text-base font-bold text-slate-900"><span className="text-slate-500 font-normal mr-2">Order:</span>#{order.orderNumber}</p>
-                <p className="text-base font-bold text-slate-900"><span className="text-slate-500 font-normal mr-2">Date:</span>{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
-            </div>
-         </div>
-         {/* ... Rest of print table ... */}
-      </div>
-
       <BackButton to="/dashboard" className="mb-6 no-print" />
 
       {isPendingPayment && (
@@ -201,7 +187,7 @@ export const UserOrderDetails: React.FC = () => {
               <div className="min-w-[200px]">
                 {paypalConfig?.enabled && (
                     <PayPalScriptProvider options={paypalOptions}>
-                        {/* @ts-ignore - style prop typing issue in some versions of react-paypal-js */}
+                        {/* @ts-ignore */}
                         <PayPalButtons 
                             style={{ layout: "horizontal", height: 44, color: "gold", shape: "rect", label: "pay" } as any}
                             createOrder={(data, actions) => handlePayPalCreateOrder(data, actions, () => {}, order.total, order)}
