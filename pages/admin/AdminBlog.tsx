@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -121,9 +120,20 @@ export const AdminBlog: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{post.author}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {post.status}
-                      </span>
+                      {post.status === 'draft' && post.scheduledFor && new Date(post.scheduledFor) > new Date() ? (
+                        <div className="flex flex-col">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                Scheduled
+                            </span>
+                            <span className="text-[10px] text-slate-500 mt-1">
+                                {new Date(post.scheduledFor).toLocaleDateString()}
+                            </span>
+                        </div>
+                      ) : (
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {post.status}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(post.createdAt).toLocaleDateString()}

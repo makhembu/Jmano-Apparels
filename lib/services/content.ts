@@ -91,7 +91,8 @@ export class BlogService {
       canonical_url: post.canonicalUrl,
       is_noindex: post.isNoIndex,
       is_nofollow: post.isNoFollow,
-      keywords: post.keywords
+      keywords: post.keywords,
+      scheduled_for: post.scheduledFor || null,
     };
   }
 }

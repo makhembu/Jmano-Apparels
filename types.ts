@@ -1,4 +1,3 @@
-
 import { Database, Json } from './database.types';
 
 // Helper to extract tables from Database type
@@ -84,6 +83,7 @@ export interface BlogPost {
   isNoFollow?: boolean;
   keywords?: string[];
   viewCount: number;
+  scheduledFor?: string;
 }
 
 export interface CartItem extends Product {

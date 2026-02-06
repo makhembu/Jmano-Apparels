@@ -1,4 +1,3 @@
-
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -179,7 +178,8 @@ export const Mappers = {
     isNoFollow: b.is_nofollow || false,
     keywords: b.keywords || [],
 
-    viewCount: b.view_count || 0
+    viewCount: b.view_count || 0,
+    scheduledFor: b.scheduled_for || undefined,
   }),
 
   toOrder: (o: DbOrder): Order => {

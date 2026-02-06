@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -340,6 +339,7 @@ export type Database = {
           is_noindex: boolean | null
           is_nofollow: boolean | null
           keywords: string[] | null
+          scheduled_for: string | null
         }
         Insert: {
           [key: string]: any
