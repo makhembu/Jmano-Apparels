@@ -1,8 +1,8 @@
-
 import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
 import { useCart } from '../context/CartContext';
+import { useOrders } from '../context/OrderContext';
 
 interface AppInitializerProps {
   children: React.ReactNode;
@@ -10,45 +10,43 @@ interface AppInitializerProps {
 
 export const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   const { isAuthReady, user } = useAuth();
-  const shop = useShop();
-  const cart = useCart();
+  const { initShopData } = useShop();
+  const { refreshCart } = useCart();
+  const { refreshOrders } = useOrders();
   
-  const initStartedRef = useRef(false);
+  const publicInitDone = useRef(false);
   const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Public data (Shop/Settings) is already triggered by AppProvider (AppContext.tsx)
-    // We only need to handle User-Specific data here once Auth is ready.
-
-    // 1. Wait for Auth to settle first
+    // --- 1. PUBLIC DATA INIT (Runs once on app start) ---
+    if (!publicInitDone.current) {
+        publicInitDone.current = true;
+        initShopData();
+    }
+    
+    // --- 2. USER DATA SYNC (Auth Dependent & runs on user change) ---
     if (!isAuthReady) return;
 
-    // 2. Check if we need to re-initialize (user changed)
-    const userChanged = lastUserIdRef.current !== (user?.id || null);
-    
-    // 3. Prevent duplicate initialization unless user changed
-    if (initStartedRef.current && !userChanged) return;
-    
-    initStartedRef.current = true;
-    lastUserIdRef.current = user?.id || null;
+    const currentUserId = user?.id || null;
+    if (lastUserIdRef.current === currentUserId) return; // No change, do nothing
 
-    const initializeUserData = async () => {
-      if (user?.id) {
-        console.log(`[App] 🛒 Loading cart for user ${user.id}...`);
-        try {
-          await cart.refreshCart(user.id);
-          console.log("[App] ✅ Cart synced");
-        } catch (e) {
-          console.warn("[App] Cart sync warning", e);
-        }
-      }
-    };
+    lastUserIdRef.current = currentUserId; // Track current user state
 
-    initializeUserData();
-  }, [isAuthReady, user?.id]);
+    if (currentUserId) {
+        // User logged in or session restored
+        console.log(`[AppInitializer] Syncing data for user ${currentUserId}`);
+        Promise.all([
+            refreshCart(currentUserId),
+            refreshOrders()
+        ]).catch(console.error);
+    } else {
+        // User logged out
+        console.log(`[AppInitializer] User logged out, clearing user-specific data.`);
+        refreshOrders(); // This will clear orders as user is null
+        // We don't clear the cart to preserve guest cart state.
+    }
 
-  // NON-BLOCKING RENDER: We return children immediately.
-  // Auth checking happens in background.
-  // Protected routes (Admin/Dashboard) handle their own loading states.
+  }, [isAuthReady, user, initShopData, refreshCart, refreshOrders]);
+
   return <>{children}</>;
 };

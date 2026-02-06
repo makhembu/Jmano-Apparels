@@ -1,13 +1,17 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with specific context hooks
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+import { useShop } from '../../context/ShopContext';
 import { useClickOutside } from '../../lib/utils';
 import { api } from '../../lib/db';
 import { Product } from '../../types';
 
 export const DesktopNavbar: React.FC = () => {
-  const { user, cartCount, logout, settings } = useApp();
+  const { user, logout } = useAuth();
+  const { cartCount } = useCart();
+  const { settings } = useShop();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -6,7 +5,7 @@ import { Order, User, ReturnStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { useApp } from '../../context/AppContext';
+import { useOrders } from '../../context/OrderContext';
 import { useShop } from '../../context/ShopContext';
 import { formatDate, formatCurrency } from '../../lib/utils';
 
@@ -14,8 +13,8 @@ export const AdminOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { refreshOrders, settings } = useApp();
-  const { refreshData } = useShop();
+  const { refreshOrders } = useOrders();
+  const { settings, refreshData } = useShop();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);

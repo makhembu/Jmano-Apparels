@@ -1,7 +1,7 @@
-
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../context/ShopContext';
 
 export interface SEOProps {
   title?: string;
@@ -26,7 +26,7 @@ export const SEO: React.FC<SEOProps> = ({
   keywords = [],
   schema
 }) => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   const location = useLocation();
 
   // --- 1. Defaults & Logic ---

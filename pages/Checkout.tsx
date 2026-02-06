@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/ShopContext';
 import { api } from '../lib/db';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ShippingAddress, ShippingZone, DiscountCode, UserAddress } from '../types';
@@ -15,7 +15,7 @@ import { PaymentOptions } from '../components/checkout/PaymentOptions';
 export const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
-  const { settings } = useApp();
+  const { settings } = useShop();
   const navigate = useNavigate();
   const { showToast } = useToast();
   

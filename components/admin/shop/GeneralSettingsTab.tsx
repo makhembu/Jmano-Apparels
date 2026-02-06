@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppSettings, Category } from '../../../types';
-import { useApp } from '../../../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../../../context/ShopContext';
 import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
 import { Switch } from '../../ui/Switch';
 
 export const GeneralSettingsTab: React.FC = () => {
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings } = useShop();
   const [generalForm, setGeneralForm] = useState(settings);
   const [featuredCats, setFeaturedCats] = useState<string[]>([]);
   const [prodCats, setProdCats] = useState<Category[]>([]);

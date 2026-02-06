@@ -5,7 +5,8 @@ import { User, Product, ShippingAddress } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with useOrders
+import { useOrders } from '../../context/OrderContext';
 import { useShop } from '../../context/ShopContext';
 
 interface OrderItemDraft {
@@ -22,7 +23,7 @@ interface OrderItemDraft {
 export const AdminOrderNew: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { refreshOrders } = useApp();
+  const { refreshOrders } = useOrders();
   const { refreshData } = useShop();
   
   const [loading, setLoading] = useState(true);
@@ -153,7 +154,7 @@ export const AdminOrderNew: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           
           {/* 1. Customer Selection */}
-          <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
+          <div id="section-customer-info" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4 flex justify-between items-center">
               Customer
               {!isNewUser && (
@@ -205,7 +206,7 @@ export const AdminOrderNew: React.FC = () => {
           </div>
 
           {/* 2. Order Items */}
-          <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
+          <div id="section-order-items" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4">Items</h2>
             
             {/* Add Item Form */}
@@ -340,7 +341,9 @@ export const AdminOrderNew: React.FC = () => {
                 <span>£{items.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}</span>
              </div>
              <p className="text-xs text-gray-500 mb-4">Shipping & Tax calculated upon creation.</p>
-             <Button fullWidth onClick={handleSubmit} isLoading={processing}>Create Order</Button>
+             <div id="btn-create-order">
+                <Button fullWidth onClick={handleSubmit} isLoading={processing}>Create Order</Button>
+             </div>
           </div>
 
         </div>

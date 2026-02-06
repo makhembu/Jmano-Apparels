@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { EmailTemplate } from '../../../types';
 import { api } from '../../../lib/db';
 import { Button } from '../../ui/Button';
 import { useToast } from '../../../context/ToastContext';
-import { useApp } from '../../../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../../../context/ShopContext';
 
 export const EmailTemplatesSection: React.FC = () => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -19,7 +19,7 @@ export const EmailTemplatesSection: React.FC = () => {
   const [testEmailInput, setTestEmailInput] = useState('');
 
   const { showToast } = useToast();
-  const { settings } = useApp();
+  const { settings } = useShop();
 
   useEffect(() => {
     loadTemplates();

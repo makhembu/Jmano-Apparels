@@ -1,11 +1,10 @@
-
 import React from 'react';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/ShopContext';
 import { SEO } from '../components/SEO';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const About: React.FC = () => {
-  const { settings, loading } = useApp();
+  const { settings, loading } = useShop();
 
   const seoTitle = settings.aboutSeoTitle || `Our Story | Jambo Apparels`;
   const seoDesc = settings.aboutSeoDescription || settings.mission;

@@ -1,7 +1,8 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with specific context hooks
+import { useAuth } from '../../context/AuthContext';
+import { useShop } from '../../context/ShopContext';
 import { Button } from '../ui/Button';
 
 interface MobileMenuOverlayProps {
@@ -10,7 +11,8 @@ interface MobileMenuOverlayProps {
 }
 
 export const MobileMenuOverlay: React.FC<MobileMenuOverlayProps> = ({ isOpen, onClose }) => {
-  const { user, logout, settings } = useApp();
+  const { user, logout } = useAuth();
+  const { settings } = useShop();
   const navigate = useNavigate();
 
   if (!isOpen) return null;

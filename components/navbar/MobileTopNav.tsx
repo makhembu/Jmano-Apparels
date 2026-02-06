@@ -1,14 +1,14 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../../context/ShopContext';
 
 interface MobileTopNavProps {
   onSearchClick: () => void;
 }
 
 export const MobileTopNav: React.FC<MobileTopNavProps> = ({ onSearchClick }) => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   
   return (
     <nav className="h-16 flex items-center px-4 justify-between bg-brand-dark">

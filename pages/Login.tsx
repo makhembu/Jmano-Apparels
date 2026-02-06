@@ -1,14 +1,13 @@
-
 import React, { useState } from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const Login: React.FC = () => {
-  const { login, signUp, user, loading: authLoading, refreshProfile } = useApp();
+  const { login, signUp, user, loading: authLoading, refreshProfile } = useAuth();
   const location = useLocation();
   
   const [isSignUp, setIsSignUp] = useState(false);

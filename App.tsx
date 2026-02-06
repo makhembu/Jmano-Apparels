@@ -1,9 +1,9 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { HashRouter, BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { ShopProvider } from './context/ShopContext';
 import { CartProvider } from './context/CartContext';
+import { OrderProvider } from './context/OrderContext';
 import { CookieConsentProvider } from './context/CookieConsentContext';
 import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -73,7 +73,7 @@ const App: React.FC = () => {
             <AuthProvider>
               <ShopProvider>
                 <CartProvider>
-                  <AppProvider>
+                  <OrderProvider>
                     <AppInitializer>
                       <GlobalScriptInjector />
                       <GlobalAnalyticsTracker />
@@ -126,7 +126,7 @@ const App: React.FC = () => {
                         </Routes>
                       </Suspense>
                     </AppInitializer>
-                  </AppProvider>
+                  </OrderProvider>
                 </CartProvider>
               </ShopProvider>
             </AuthProvider>

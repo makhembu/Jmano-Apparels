@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with useCart
+import { useCart } from '../../context/CartContext';
 import { useLongPress } from '../../hooks/useLongPress';
 
 interface MobileBottomNavProps {
@@ -11,7 +11,7 @@ interface MobileBottomNavProps {
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick, onCartLongPress, isMenuOpen }) => {
-  const { cartCount } = useApp();
+  const { cartCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
 

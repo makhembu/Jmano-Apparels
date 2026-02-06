@@ -1,9 +1,9 @@
-
 import React from 'react';
-import { useApp } from '../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../context/ShopContext';
 
 export const AnnouncementBar: React.FC = () => {
-  const { settings } = useApp();
+  const { settings } = useShop();
 
   if (!settings.isAnnouncementEnabled || !settings.announcementText) {
     return null;

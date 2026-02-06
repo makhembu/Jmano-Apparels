@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/ShopContext';
 import { api } from '../lib/db';
 import { useToast } from '../context/ToastContext';
 import { useConsent } from '../context/CookieConsentContext';
@@ -19,7 +19,7 @@ const SocialIcons: Record<string, React.ReactElement<React.SVGProps<SVGSVGElemen
 };
 
 export const Footer: React.FC = () => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   const { showToast } = useToast();
   const { resetConsent } = useConsent();
   const [email, setEmail] = useState('');

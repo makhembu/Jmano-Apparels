@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 // @ts-ignore
 import { useLocation } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useCart } from '../context/CartContext';
 import { useClickOutside } from '../lib/utils';
 import { DesktopNavbar } from './navbar/DesktopNavbar';
 import { MobileTopNav } from './navbar/MobileTopNav';
@@ -13,7 +12,7 @@ import { CartPreviewPopup } from './navbar/CartPreviewPopup';
 import { AnnouncementBar } from './AnnouncementBar';
 
 export const Navbar: React.FC = () => {
-  const { cart, cartTotal } = useApp();
+  const { cart, cartTotal } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartPreviewOpen, setIsCartPreviewOpen] = useState(false);

@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../../context/ShopContext';
 import { Button } from '../../components/ui/Button';
 import { IdentitySection } from '../../components/admin/settings/IdentitySection';
 import { ContactSection } from '../../components/admin/settings/ContactSection';
@@ -21,7 +21,7 @@ type SettingsTab = 'brand' | 'seo' | 'payments' | 'emails' | 'contact' | 'conten
 const settingsService = new SettingsService();
 
 export const AdminAppSettings: React.FC = () => {
-  const { settings: globalSettings, updateSettings } = useApp();
+  const { settings: globalSettings, updateSettings } = useShop();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [formData, setFormData] = useState(globalSettings);

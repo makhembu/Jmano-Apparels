@@ -1,8 +1,8 @@
-
 import React from 'react';
 // @ts-ignore
 import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useShop } from '../context/ShopContext';
 import { useCart } from '../context/CartContext';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
@@ -11,8 +11,9 @@ import { formatCurrency } from '../lib/utils';
 import { BackButton } from '../components/ui/BackButton';
 
 export const Cart: React.FC = () => {
-  const { cart, removeFromCart, clearCart, user, settings } = useApp();
-  const { updateQuantity } = useCart();
+  const { cart, removeFromCart, clearCart, updateQuantity } = useCart();
+  const { user } = useAuth();
+  const { settings } = useShop();
   const { showToast } = useToast();
   const navigate = useNavigate();
 

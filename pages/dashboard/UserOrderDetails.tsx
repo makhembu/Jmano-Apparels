@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
-import { Order, Product } from '../../types';
+import { Order } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { BackButton } from '../../components/ui/BackButton';
 import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import { useShop } from '../../context/ShopContext';
+import { useCart } from '../../context/CartContext';
+import { useOrders } from '../../context/OrderContext';
 import { OrderStatusTracker } from '../../components/dashboard/OrderStatusTracker';
 import { usePayment } from '../../hooks/usePayment';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -17,7 +20,12 @@ export const UserOrderDetails: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user, refreshOrders, products, addToCart, settings, clearCart } = useApp();
+  
+  // Decoupled Hooks
+  const { user } = useAuth();
+  const { settings } = useShop();
+  const { clearCart } = useCart();
+  const { refreshOrders } = useOrders();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);

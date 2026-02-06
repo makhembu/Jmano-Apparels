@@ -1,8 +1,7 @@
-
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/ShopContext';
 import { ProductCard } from '../components/ProductCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SEO } from '../components/SEO';
@@ -25,7 +24,7 @@ const SocialIcons: Record<string, React.ReactElement<React.SVGProps<SVGSVGElemen
 };
 
 export const Home: React.FC = () => {
-  const { settings, products, categories, blogPosts, latestReviews, loading } = useApp();
+  const { settings, products, categories, blogPosts, latestReviews, loading } = useShop();
   
   const showSkeletons = loading && products.length === 0;
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);

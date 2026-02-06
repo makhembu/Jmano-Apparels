@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/ShopContext';
 import { BackButton } from '../components/ui/BackButton';
 import { SEO } from '../components/SEO';
 
 export const Privacy: React.FC = () => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 animate-fade-in">
@@ -127,7 +126,7 @@ export const Privacy: React.FC = () => {
 };
 
 export const Terms: React.FC = () => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 animate-fade-in">
       <SEO title="Terms & Conditions | Jambo Apparels" />
@@ -141,7 +140,7 @@ export const Terms: React.FC = () => {
 };
 
 export const Returns: React.FC = () => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 animate-fade-in">
       <SEO title="Returns Policy | Jambo Apparels" />

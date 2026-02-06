@@ -1,7 +1,7 @@
-
 import React, { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../context/ShopContext';
 import { useConsent } from '../context/CookieConsentContext';
 
 declare global {
@@ -12,7 +12,7 @@ declare global {
 }
 
 export const GlobalScriptInjector: React.FC = () => {
-  const { settings, loading } = useApp();
+  const { settings, loading } = useShop();
   const { consent } = useConsent();
   const location = useLocation();
 

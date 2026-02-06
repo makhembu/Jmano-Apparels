@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Product } from '../../types';
-import { useApp } from '../../context/AppContext';
+// FIX: Replaced deprecated useApp with useShop
+import { useShop } from '../../context/ShopContext';
 
 interface MobileStickyBarProps {
   product: Product;
@@ -10,7 +10,7 @@ interface MobileStickyBarProps {
 }
 
 export const MobileStickyBar: React.FC<MobileStickyBarProps> = ({ product, show, onAddToCart }) => {
-  const { settings } = useApp();
+  const { settings } = useShop();
   const isOutOfStock = (product.stockQuantity ?? 0) <= 0;
   
   // Calculate top offset if needed, but for "Bottom Sticky" typically it stays at bottom
