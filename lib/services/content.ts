@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -185,6 +186,12 @@ export class SettingsService {
       enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm,
       enable_reviews: settings.enableReviews,
+      enable_featured_products: settings.enableFeaturedProducts,
+      enable_commitment_section: settings.enableCommitmentSection,
+      enable_categories_section: settings.enableCategoriesSection,
+      enable_community_section: settings.enableCommunitySection,
+      enable_journal_section: settings.enableJournalSection,
+      enable_social_section: settings.enableSocialSection,
       seo_title: settings.seoTitle,
       seo_description: settings.seoDescription,
       default_og_image: settings.defaultOgImage,
