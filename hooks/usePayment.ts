@@ -77,8 +77,7 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
           orderNumberToUse = dbOrder.orderNumber;
           orderPayload = payload;
           
-          // CRITICAL: Clear cart immediately to prevent duplicates if payment is interrupted
-          clearCart();
+          // CRITICAL: DO NOT CLEAR CART HERE. IT WILL BE CLEARED ON APPROVAL.
       }
 
       const addr = orderPayload.shippingAddress;
@@ -134,7 +133,7 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
       showToast(e.message || "Failed to initialize payment.", 'error');
       throw e;
     }
-  }, [settings.currency, showToast, user, clearCart]);
+  }, [settings.currency, showToast, user]);
 
   const handlePayPalApprove = useCallback(async (data: any, actions: any) => {
     setIsProcessing(true);
@@ -159,6 +158,9 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
         throw new Error(verifyData?.message || "Payment verification failed.");
       }
 
+      // PAYMENT SUCCESSFUL, NOW CLEAR CART
+      clearCart();
+
       showToast('Blessing received! Your order is confirmed.', 'success');
       navigate(user ? `/order/${dbOrderId}` : '/shop', { state: { orderSuccess: true } });
     } catch (e: any) {
@@ -167,7 +169,7 @@ export const usePayment = ({ user, clearCart, settings }: UsePaymentProps) => {
     } finally {
       setIsProcessing(false);
     }
-  }, [user, navigate, showToast]);
+  }, [user, navigate, showToast, clearCart]);
 
   const handleManualOrder = useCallback(async (preparePayload: () => any) => {
     setIsProcessing(true);

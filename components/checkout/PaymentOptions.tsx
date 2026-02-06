@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Button } from '../ui/Button';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -26,7 +25,8 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   const [paypalError, setPaypalError] = useState(false);
   
   const initialOptions = useMemo(() => ({
-    "client-id": paypalConfig?.clientId || "test",
+    // FIX: Corrected property name from "client-id" to "clientId" to match ReactPayPalScriptOptions type.
+    clientId: paypalConfig?.clientId || "test",
     currency: currency,
     intent: "capture",
     "data-sdk-integration-source": "button-factory",
@@ -82,9 +82,6 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
                       height: 48,
                       label: 'checkout'
                   } as any}
-                  // Disable standalone 'card' funding to remove the second card form
-                  // This forces card payments to happen inside the PayPal secure modal
-                  disabledFunding={['card', 'credit', 'paylater']}
                   onClick={(data, actions) => {
                     // Check local form validation before opening PayPal
                     if (!onValidate()) {
