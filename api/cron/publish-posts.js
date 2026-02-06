@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('[Cron] Server configuration error: Missing Supabase credentials.');
-    return res.status(500).json({ error: 'Server configuration error.' });
+    return res.status(500).json({ error: 'Server configuration error now.' });
   }
   
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
