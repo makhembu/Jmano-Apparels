@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { Product } from '../../types';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface ProductImageGalleryProps {
   product: Product;
@@ -33,7 +33,14 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                   : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300'
               }`}
             >
-              <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+              <OptimizedImage 
+                src={img} 
+                alt={`View ${idx + 1}`} 
+                width={80}
+                height={80}
+                quality={75}
+                className="w-full h-full object-cover" 
+              />
             </button>
           ))}
         </div>
@@ -45,11 +52,15 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
           className="relative aspect-[4/5] lg:aspect-square w-full rounded-2xl lg:rounded-3xl overflow-hidden bg-gray-50 cursor-zoom-in shadow-sm"
           onClick={() => onImageExpand(activeIndex)}
         >
-          <img 
+          <OptimizedImage 
             key={images[activeIndex]}
             src={images[activeIndex]} 
             alt={product.title} 
             className="w-full h-full object-center object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            width={800}
+            height={1000}
+            priority={true}
+            fit="cover"
           />
           
           {/* Hover Overlay Icon */}
