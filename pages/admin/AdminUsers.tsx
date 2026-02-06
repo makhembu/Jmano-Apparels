@@ -189,7 +189,7 @@ export const AdminUsers: React.FC = () => {
             setUsers(result.data);
             setTotalPages(result.totalPages);
         } catch (e) {
-            showToast('Failed to load users', 'error');
+            showToast('Failed to load the users', 'error');
         } finally {
             setLoading(false);
         }
