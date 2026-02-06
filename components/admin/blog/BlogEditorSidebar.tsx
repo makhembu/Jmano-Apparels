@@ -41,6 +41,28 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
     }
   };
 
+  const formatDateTimeForInput = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      const timezoneOffset = date.getTimezoneOffset() * 60000;
+      const localDate = new Date(date.getTime() - timezoneOffset);
+      return localDate.toISOString().slice(0, 16);
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const dateValue = value ? new Date(value).toISOString() : undefined;
+    onChange({ target: { name, value: dateValue } } as any);
+  };
+
+  const clearSchedule = () => {
+    onChange({ target: { name: 'scheduledFor', value: undefined } } as any);
+  };
+
   const renderImageInput = (label: string, field: 'featuredImage' | 'thumbnail', typeState: ImageInputType, setTypeState: (t: ImageInputType) => void) => (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
@@ -129,6 +151,27 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
                 <option value="archived">Archived</option>
              </select>
           </div>
+          
+          <div>
+             <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Schedule Publication</label>
+             <input 
+                type="datetime-local" 
+                name="scheduledFor" 
+                value={formatDateTimeForInput(formData.scheduledFor)} 
+                onChange={handleDateTimeChange} 
+                className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none" 
+             />
+             {formData.scheduledFor && (
+                <button 
+                    type="button" 
+                    onClick={clearSchedule} 
+                    className="text-xs text-red-500 hover:underline mt-2"
+                >
+                    Clear Schedule
+                </button>
+             )}
+          </div>
+          
           <div>
              <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Author Attribute</label>
              <input type="text" name="author" value={formData.author} onChange={onChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none" />

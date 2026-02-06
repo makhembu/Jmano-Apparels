@@ -39,7 +39,8 @@ export const AdminBlogEditor: React.FC = () => {
     keywords: [],
     canonicalUrl: '',
     isNoIndex: false,
-    isNoFollow: false
+    isNoFollow: false,
+    scheduledFor: undefined
   });
 
   useEffect(() => {
@@ -73,22 +74,38 @@ export const AdminBlogEditor: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    if (type === 'checkbox') {
-       const checked = (e.target as HTMLInputElement).checked;
-       setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (name === 'title') {
-      const shouldUpdateSlug = !id || !formData.slug;
-      setFormData(prev => ({
-        ...prev,
-        title: value,
-        slug: shouldUpdateSlug ? generateSlug(value) : prev.slug,
-        seoTitle: !prev.seoTitle ? value : prev.seoTitle 
-      }));
-    } else if (type === 'number') {
-       setFormData({ ...formData, [name]: parseFloat(value) });
-    } else {
-       setFormData({ ...formData, [name]: value });
-    }
+    setFormData(prev => {
+        const newForm = { ...prev };
+        
+        if (type === 'checkbox') {
+            const checked = (e.target as HTMLInputElement).checked;
+            (newForm as any)[name] = checked;
+        } else if (name === 'title' && !id && !prev.slug) {
+            newForm.title = value;
+            newForm.slug = generateSlug(value);
+            if (!prev.seoTitle) {
+                newForm.seoTitle = value;
+            }
+        } else {
+            (newForm as any)[name] = value;
+        }
+
+        // Scheduling logic
+        if (name === 'scheduledFor') {
+            if (value && new Date(value as string) > new Date()) {
+                newForm.status = 'draft';
+            }
+        }
+        
+        if (name === 'status' && value === 'published') {
+             // If they manually publish, clear any future schedule
+             if (newForm.scheduledFor && new Date(newForm.scheduledFor) > new Date()) {
+                newForm.scheduledFor = undefined;
+             }
+        }
+
+        return newForm;
+    });
   };
 
   const handleEditorChange = (content: string) => {
@@ -132,6 +149,11 @@ export const AdminBlogEditor: React.FC = () => {
       seoDescription: formData.seoDescription || formData.summary
     };
 
+    // Final check: if scheduled for future, ensure status is draft.
+    if (payload.scheduledFor && new Date(payload.scheduledFor) > new Date()) {
+        payload.status = 'draft';
+    }
+
     try {
       if (id) {
         await api.adminUpdateBlogPost(id, payload);
@@ -146,6 +168,13 @@ export const AdminBlogEditor: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const isScheduled = formData.scheduledFor && new Date(formData.scheduledFor) > new Date();
+  let buttonText = id ? 'Update' : 'Publish';
+  if (isScheduled) {
+      buttonText = 'Schedule';
+  }
+
 
   return (
     <div className="max-w-6xl mx-auto pb-20 animate-fade-in">
@@ -171,7 +200,7 @@ export const AdminBlogEditor: React.FC = () => {
             </button>
             <div className="w-px h-10 bg-slate-200 mx-2 hidden sm:block"></div>
             <Button type="submit" form="blog-form" isLoading={loading} className="px-8 shadow-lg shadow-brand-green/20">
-               {id ? 'Update' : 'Publish'}
+               {buttonText}
             </Button>
          </div>
       </div>
@@ -211,7 +240,7 @@ export const AdminBlogEditor: React.FC = () => {
                   <SeoFieldGroup 
                      data={formData} 
                      onChange={handleChange}
-                     onKeywordsChange={(k) => setFormData(prev => ({ ...prev, keywords: k }))}
+                     onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k }))}
                      defaultTitle={formData.title}
                      defaultDescription={formData.summary}
                      previewImage={formData.featuredImage || formData.thumbnail}

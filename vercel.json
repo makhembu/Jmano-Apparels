@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/publish-posts",
+      "schedule": "* * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
