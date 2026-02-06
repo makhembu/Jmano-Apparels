@@ -133,6 +133,7 @@ export const Mappers = {
     paypalClientId: s.paypal_client_id || undefined,
     paypalSecretKey: s.paypal_secret_key || undefined,
     paypalMode: s.paypal_mode || 'sandbox',
+    paypalWebhookId: s.paypal_webhook_id || undefined,
     paymentGatewayEnabled: s.payment_gateway_enabled || false
   }),
 
@@ -223,7 +224,12 @@ export const Mappers = {
       trackingNumber: o.tracking_number || undefined,
       shippedAt: o.shipped_at || undefined,
       deliveredAt: o.delivered_at || undefined,
-      cancelledAt: o.cancelled_at || undefined
+      cancelledAt: o.cancelled_at || undefined,
+      notes: o.notes || undefined,
+      // Return fields
+      returnReason: (o as any).return_reason || undefined,
+      returnRequestedAt: (o as any).return_requested_at || undefined,
+      returnStatus: (o as any).return_status || 'none',
     };
   },
 

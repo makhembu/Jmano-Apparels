@@ -393,9 +393,66 @@ export type Database = {
           created_at: string
           shipping_address: Json | null
           notes: string | null
+          return_reason: string | null
+          return_requested_at: string | null
+          return_status: string | null
         }
-        Insert: { [key: string]: any }
-        Update: { [key: string]: any }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          customer_name?: string | null
+          customer_email?: string | null
+          order_number?: string
+          products: Json
+          total: number
+          subtotal?: number | null
+          shipping_cost?: number | null
+          tax_amount?: number | null
+          discount_amount?: number | null
+          discount_code?: string | null
+          status?: string
+          date?: string
+          payment_status?: string | null
+          payment_intent_id?: string | null
+          tracking_number?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          shipping_address?: Json | null
+          notes?: string | null
+          return_reason?: string | null
+          return_requested_at?: string | null
+          return_status?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          customer_name?: string | null
+          customer_email?: string | null
+          order_number?: string
+          products?: Json
+          total?: number
+          subtotal?: number | null
+          shipping_cost?: number | null
+          tax_amount?: number | null
+          discount_amount?: number | null
+          discount_code?: string | null
+          status?: string
+          date?: string
+          payment_status?: string | null
+          payment_intent_id?: string | null
+          tracking_number?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          shipping_address?: Json | null
+          notes?: string | null
+          return_reason?: string | null
+          return_requested_at?: string | null
+          return_status?: string | null
+        }
         Relationships: []
       }
       newsletter_subscribers: {
