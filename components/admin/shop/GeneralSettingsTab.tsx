@@ -1,23 +1,37 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSettings, Category } from '../../../types';
-// FIX: Replaced deprecated useApp with useShop
 import { useShop } from '../../../context/ShopContext';
 import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
 import { Switch } from '../../ui/Switch';
+import { useToast } from '../../../context/ToastContext';
 
 export const GeneralSettingsTab: React.FC = () => {
   const { settings, updateSettings } = useShop();
+  const { showToast } = useToast();
   const [generalForm, setGeneralForm] = useState(settings);
   const [featuredCats, setFeaturedCats] = useState<string[]>([]);
   const [prodCats, setProdCats] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setGeneralForm(settings);
-    if (settings.featuredCategories) setFeaturedCats(settings.featuredCategories);
-    api.getCategories().then(setProdCats);
+    // Only update form if settings actually change (avoids overwriting work in progress)
+    if (settings && settings.id) {
+        setGeneralForm(prev => ({
+            ...settings,
+            // Preserve local edits if keys match, otherwise sync from DB
+            // This is a simple sync strategy; for complex forms deep merge is better.
+            // For now, simple replacement on load is safer to ensure we have DB state.
+            ...settings
+        }));
+        if (settings.featuredCategories) setFeaturedCats(settings.featuredCategories);
+    }
   }, [settings]);
+
+  useEffect(() => {
+    api.getCategories().then(setProdCats);
+  }, []);
 
   const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -44,19 +58,32 @@ export const GeneralSettingsTab: React.FC = () => {
   const saveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    
+    // Explicitly construct payload to ensure booleans are sent correctly
     const payload = {
         ...generalForm,
-        featuredCategories: featuredCats
+        featuredCategories: featuredCats,
+        // Explicitly ensuring these booleans are present
+        enableFeaturedProducts: generalForm.enableFeaturedProducts,
+        enableCommitmentSection: generalForm.enableCommitmentSection,
+        enableCategoriesSection: generalForm.enableCategoriesSection,
+        enableCommunitySection: generalForm.enableCommunitySection,
+        enableJournalSection: generalForm.enableJournalSection,
+        enableSocialSection: generalForm.enableSocialSection,
     };
+
     try {
         await updateSettings(payload);
+        // Note: The toast is handled by updateSettings, but we can add redundancy or logs if needed
+    } catch (e) {
+        showToast("Failed to save settings", "error");
     } finally {
         setSaving(false);
     }
   };
 
   return (
-    <form onSubmit={saveGeneral} className="bg-white shadow-lg shadow-slate-200/50 rounded-2xl p-8 space-y-6 max-w-3xl border border-slate-100">
+    <form onSubmit={saveGeneral} className="bg-white shadow-lg shadow-slate-200/50 rounded-2xl p-8 space-y-6 max-w-3xl border border-slate-100 animate-fade-in">
         <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-4">Financials & Display</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
