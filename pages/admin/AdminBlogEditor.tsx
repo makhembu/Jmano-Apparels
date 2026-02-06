@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { BlogPost, BlogCategory } from '../../types';
@@ -17,6 +17,7 @@ export const AdminBlogEditor: React.FC = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
   const { products } = useShop();
+  const submitActionRef = useRef<'publish' | 'schedule'>('publish');
 
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -142,6 +143,7 @@ export const AdminBlogEditor: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const action = submitActionRef.current;
     
     const payload = {
       ...formData,
@@ -149,9 +151,18 @@ export const AdminBlogEditor: React.FC = () => {
       seoDescription: formData.seoDescription || formData.summary
     };
 
-    // Final check: if scheduled for future, ensure status is draft.
-    if (payload.scheduledFor && new Date(payload.scheduledFor) > new Date()) {
-        payload.status = 'draft';
+    const isFutureDate = payload.scheduledFor && new Date(payload.scheduledFor) > new Date();
+
+    if (action === 'schedule') {
+      if (!isFutureDate) {
+        showToast('Please select a future date to schedule.', 'error');
+        setLoading(false);
+        return;
+      }
+      payload.status = 'draft';
+    } else { // 'publish'
+      payload.status = 'published';
+      payload.scheduledFor = undefined; // Clear schedule on manual publish
     }
 
     try {
@@ -160,7 +171,7 @@ export const AdminBlogEditor: React.FC = () => {
       } else {
         await api.adminCreateBlogPost(payload);
       }
-      showToast('Journal entry saved', 'success');
+      showToast(action === 'schedule' ? 'Post scheduled successfully!' : 'Journal entry published!', 'success');
       navigate('/admin/blog');
     } catch (error: any) {
       showToast(error.message || 'Error saving post', 'error');
@@ -170,11 +181,6 @@ export const AdminBlogEditor: React.FC = () => {
   };
 
   const isScheduled = formData.scheduledFor && new Date(formData.scheduledFor) > new Date();
-  let buttonText = id ? 'Update' : 'Publish';
-  if (isScheduled) {
-      buttonText = 'Schedule';
-  }
-
 
   return (
     <div className="max-w-6xl mx-auto pb-20 animate-fade-in">
@@ -199,8 +205,26 @@ export const AdminBlogEditor: React.FC = () => {
               Preview
             </button>
             <div className="w-px h-10 bg-slate-200 mx-2 hidden sm:block"></div>
-            <Button type="submit" form="blog-form" isLoading={loading} className="px-8 shadow-lg shadow-brand-green/20">
-               {buttonText}
+            <Button
+              type="submit"
+              form="blog-form"
+              onClick={() => submitActionRef.current = 'schedule'}
+              isLoading={loading}
+              disabled={!isScheduled || loading}
+              variant="outline"
+              className="px-6"
+            >
+              Schedule
+            </Button>
+            <Button
+              type="submit"
+              form="blog-form"
+              onClick={() => submitActionRef.current = 'publish'}
+              isLoading={loading}
+              disabled={loading}
+              className="px-8 shadow-lg shadow-brand-green/20"
+            >
+              {id ? 'Update Post' : 'Publish'}
             </Button>
          </div>
       </div>
