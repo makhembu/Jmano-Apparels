@@ -126,7 +126,64 @@ BEGIN
 END;
 $$;
 
+-- 4. PRODUCT-SPECIFIC SALES STATS
+CREATE OR REPLACE FUNCTION get_product_sales_stats(p_product_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_stats jsonb;
+  v_recent_orders jsonb;
+BEGIN
+  -- Check Admin Permissions
+  IF NOT public.check_is_admin(auth.uid()) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  -- Calculate stats
+  WITH product_orders AS (
+    SELECT
+      o.id,
+      (item->>'quantity')::int as quantity,
+      (item->>'price')::numeric as price
+    FROM public.orders o,
+    jsonb_array_elements(o.products) as item
+    WHERE (item->>'productId')::uuid = p_product_id
+    AND o.status NOT IN ('Cancelled', 'Refunded')
+  )
+  SELECT jsonb_build_object(
+    'revenue', COALESCE(SUM(po.price * po.quantity), 0),
+    'unitsSold', COALESCE(SUM(po.quantity), 0),
+    'orderCount', COUNT(DISTINCT po.id)
+  )
+  INTO v_stats
+  FROM product_orders po;
+
+  -- Get recent orders containing this product
+  SELECT jsonb_agg(t)
+  INTO v_recent_orders
+  FROM (
+    SELECT o.*
+    FROM public.orders o,
+    jsonb_array_elements(o.products) as item
+    WHERE (item->>'productId')::uuid = p_product_id
+    AND o.status NOT IN ('Cancelled', 'Refunded')
+    ORDER BY o.created_at DESC
+    LIMIT 5
+  ) t;
+
+  -- Combine and return
+  RETURN jsonb_build_object(
+    'stats', v_stats,
+    'recentOrders', COALESCE(v_recent_orders, '[]'::jsonb)
+  );
+END;
+$$;
+
+
 -- Grant permissions
 GRANT EXECUTE ON FUNCTION get_admin_stats TO authenticated;
 GRANT EXECUTE ON FUNCTION get_users_paginated TO authenticated;
 GRANT EXECUTE ON FUNCTION get_orders_paginated TO authenticated;
+GRANT EXECUTE ON FUNCTION get_product_sales_stats TO authenticated;

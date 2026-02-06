@@ -279,6 +279,18 @@ export const api = {
     if (error) throw error;
     return data as { revenue: number; orders: number; users: number; products: number; low_stock: number; pending_orders: number; };
   },
+  getAdminProductStats: async (productId: string) => {
+    const { data, error } = await (supabase.rpc as any)('get_product_sales_stats', { p_product_id: productId });
+    if (error) throw error;
+    const rpcData = data as any;
+    const stats = {
+        revenue: rpcData.stats.revenue || 0,
+        unitsSold: rpcData.stats.unitsSold || 0,
+        orderCount: rpcData.stats.orderCount || 0
+    };
+    const recentOrders = (rpcData.recentOrders || []).map(Mappers.toOrder);
+    return { stats, recentOrders };
+  },
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
     // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
