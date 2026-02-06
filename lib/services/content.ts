@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -99,14 +98,27 @@ export class BlogService {
 
 export class SettingsService {
   async get(): Promise<AppSettings | null> {
-    log('RPC', 'get_public_site_settings');
-    // Added any cast to bypass type error
-    const { data, error } = await (supabasePublic.rpc as any)('get_public_site_settings');
-    if (error) {
-        console.error("Failed to load settings via RPC", error);
-        return null;
+    log('FETCH', 'public_settings');
+    try {
+      log('RPC_CALL', 'get_public_site_settings');
+      const { data, error } = await (supabasePublic.rpc as any)('get_public_site_settings');
+      
+      if (error) {
+        console.error("Failed to load public settings via RPC", error);
+        throw error; // Fail loudly
+      }
+
+      if (data) {
+        log('FETCH_SUCCESS', 'get_public_site_settings', 'RPC');
+        return Mappers.toAppSettings(data as DbAppSettings);
+      }
+      
+      return null;
+
+    } catch (e) {
+      console.error("Fatal error in SettingsService.get()", e);
+      return null;
     }
-    return Mappers.toAppSettings(data as DbAppSettings);
   }
 
   async getAdminSettings(): Promise<AppSettings | null> {

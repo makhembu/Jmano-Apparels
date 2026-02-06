@@ -1,153 +1,128 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Button } from '../components/ui/Button';
-import { api } from '../lib/db';
-import { useToast } from '../context/ToastContext';
 import { SEO } from '../components/SEO';
-import { Input } from '../components/ui/Input';
-import { Textarea } from '../components/ui/Textarea';
-import { Card, CardContent } from '../components/ui/Card';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const About: React.FC = () => {
-  const { settings, user } = useApp();
-  const { showToast } = useToast();
-  
-  const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', message: '' });
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setForm(prev => ({ ...prev, name: user.name, email: user.email }));
-    }
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.message) {
-      showToast('Please fill in all fields', 'error');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api.submitContact(form);
-      showToast('Message sent! We will be in touch shortly.', 'success');
-      setForm({ ...form, message: '' }); 
-    } catch (e) {
-      showToast('Failed to send message. Please try again.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { settings, loading } = useApp();
 
   const seoTitle = settings.aboutSeoTitle || `Our Story | Jambo Apparels`;
   const seoDesc = settings.aboutSeoDescription || settings.mission;
 
+  if (loading && settings.slogan === "Loading...") {
+    return <LoadingSpinner fullScreen />;
+  }
+
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className="bg-slate-50 min-h-screen text-slate-800">
       <SEO 
         title={seoTitle}
         description={seoDesc}
         type="website"
       />
 
-      <header className="relative bg-brand-dark pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden text-center border-b border-brand-green/20">
-        <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
+      {/* Header */}
+      <header className="bg-brand-dark py-20 md:py-32 text-center text-white relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 relative z-10">
+          <span className="inline-block bg-brand-hope text-brand-dark font-bold text-xs uppercase tracking-widest px-6 py-2 rounded-full mb-6 shadow-lg">
             Our Divine Purpose
           </span>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight">
             The Jambo <span className="text-brand-humility">Legacy</span>
           </h1>
-          <p className="text-base md:text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic border-l-4 md:border-l-0 border-brand-hope pl-6 md:pl-0">
+          <p className="mt-6 text-lg md:text-xl font-light italic opacity-90 max-w-2xl mx-auto">
             "{settings.secondarySlogan}"
           </p>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20 space-y-12 md:space-y-24 pb-24">
-        
-        <Card className="shadow-2xl shadow-brand-dark/5 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12">
-            <div className="lg:col-span-5 relative group">
+      <main className="py-16 md:py-24 space-y-16 md:space-y-24">
+        {/* Founder Section */}
+        <section className="max-w-6xl mx-auto px-4 -mt-32 md:-mt-48 relative z-20">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5">
+            <div className="lg:col-span-2">
               <img 
                 src={settings.founderImage || "https://i.imgur.com/EuNbPGG.png"} 
-                alt={settings.founderName} 
-                className="w-full h-full object-cover aspect-[4/5] lg:aspect-auto"
+                alt={settings.founderName || 'Linah Makembu'} 
+                className="w-full h-full object-cover object-top aspect-[4/5]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-10">
-                 <p className="text-white text-xs font-black uppercase tracking-widest">Est. 2019</p>
-              </div>
             </div>
-            
-            <div className="lg:col-span-7 p-8 md:p-16 flex flex-col justify-center bg-white relative">
-              <div className="mb-10 relative">
-                <span className="text-brand-green font-black text-xs uppercase tracking-widest block mb-2">Message from the Heart</span>
-                <h2 className="text-3xl md:text-5xl font-serif font-bold text-brand-dark leading-tight">{settings.founderName || "Linah Makembu"}</h2>
-                <div className="w-20 h-1.5 bg-brand-hope mt-4 rounded-full"></div>
-              </div>
+            <div className="lg:col-span-3 p-8 md:p-16 flex flex-col justify-center">
+              <span className="text-brand-green font-bold text-xs uppercase tracking-widest mb-2">Message from the Heart</span>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">{settings.founderName}</h2>
+              <div className="w-20 h-1.5 bg-brand-hope rounded-full mb-8"></div>
               
-              <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed text-base md:text-lg mb-10 whitespace-pre-wrap">
-                {settings.founderBio || `Linah Makembu is the Founding Director of Jambo Apparels...`}
+              <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed mb-8 whitespace-pre-wrap">
+                <p>{settings.founderBio}</p>
               </div>
 
-              <div className="bg-brand-testament/10 border-l-4 border-brand-testament p-8 rounded-r-2xl rounded-bl-2xl">
-                <blockquote className="text-brand-dark font-serif text-xl md:text-2xl italic leading-relaxed relative">
-                  <span className="absolute -left-4 -top-4 text-brand-testament text-7xl leading-none font-serif opacity-30">“</span>
-                  {settings.founderQuote || "Guided by honesty, excellence, and boldness..."}
+              <div className="bg-brand-testament/10 p-6 rounded-2xl relative">
+                <span className="absolute -left-3 -top-3 text-brand-testament text-7xl font-serif opacity-20">“</span>
+                <blockquote className="text-brand-dark font-serif text-xl italic leading-relaxed">
+                  {settings.founderQuote}
                 </blockquote>
               </div>
             </div>
           </div>
-        </Card>
+        </section>
 
-        {settings.enableContactForm && (
-          <section className="bg-brand-dark text-white rounded-3xl overflow-hidden shadow-2xl shadow-brand-green/20">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="p-10 md:p-20 flex flex-col justify-center bg-brand-dark relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
-                <h3 className="text-3xl md:text-5xl font-serif font-bold mb-6 relative z-10">Let's Connect</h3>
-                <p className="text-brand-light/80 text-lg mb-12 font-light leading-relaxed relative z-10">
-                  Whether you have a question about our products, a testimony to share, or just want to say jambo, we're here to listen.
-                </p>
-              </div>
-
-              <div className="p-10 md:p-20 bg-white text-slate-900">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <Input 
-                    label="Your Name"
-                    required
-                    value={form.name}
-                    onChange={e => setForm({...form, name: e.target.value})}
-                    placeholder="John Doe"
-                  />
-                  <Input 
-                    label="Email Address"
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={e => setForm({...form, email: e.target.value})}
-                    placeholder="john@example.com"
-                  />
-                  <Textarea 
-                    label="Message"
-                    required
-                    rows={4}
-                    value={form.message}
-                    onChange={e => setForm({...form, message: e.target.value})}
-                    placeholder="How can we help you?"
-                  />
-                  <div className="pt-6">
-                    <Button type="submit" isLoading={submitting} fullWidth size="lg">
-                      Send Message
-                    </Button>
-                  </div>
-                </form>
-              </div>
+        {/* Mission & Vision */}
+        <section className="max-w-5xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-brand-dark text-white p-10 md:p-12 rounded-3xl shadow-xl flex flex-col justify-center text-center h-full">
+              <span className="font-bold text-xs uppercase tracking-widest text-brand-hope mb-4">The Mission</span>
+              <p className="font-serif text-2xl md:text-3xl font-bold leading-snug">
+                {settings.mission}
+              </p>
             </div>
-          </section>
-        )}
-      </div>
+            <div className="bg-brand-testament text-white p-10 md:p-12 rounded-3xl shadow-xl flex flex-col justify-center text-center h-full">
+              <span className="font-bold text-xs uppercase tracking-widest text-white/70 mb-4">The Vision</span>
+              <p className="font-serif text-2xl md:text-3xl font-bold leading-snug">
+                {settings.vision}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Core Values */}
+        <section className="max-w-6xl mx-auto px-4 pb-12">
+          <div className="text-center mb-12">
+            <span className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2">The Foundation</span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark">Core Values</h2>
+            <div className="w-20 h-1.5 bg-brand-hope rounded-full mt-4 mx-auto"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Honesty */}
+            <div className="bg-brand-humility text-white p-8 rounded-3xl shadow-xl text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">H</div>
+              <h3 className="font-bold text-xl uppercase tracking-wider mb-3">Honesty</h3>
+              <p className="text-sm font-light leading-relaxed">
+                Authentic faith, transparent practices, and integrity in every stitch we thread for our community.
+              </p>
+            </div>
+
+            {/* Excellence */}
+            <div className="bg-brand-hope text-brand-dark p-8 rounded-3xl shadow-xl text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-black/10 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">E</div>
+              <h3 className="font-bold text-xl uppercase tracking-wider mb-3">Excellence</h3>
+              <p className="text-sm font-light leading-relaxed">
+                Striving for the highest quality to reflect the character of God in everything we create.
+              </p>
+            </div>
+
+            {/* Boldness */}
+            <div className="bg-brand-patience text-white p-8 rounded-3xl shadow-xl text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">B</div>
+              <h3 className="font-bold text-xl uppercase tracking-wider mb-3">Boldness</h3>
+              <p className="text-sm font-light leading-relaxed">
+                Courage to wear our scriptures and share the Gospel without compromise in the modern world.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </main>
     </div>
   );
 };
