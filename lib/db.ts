@@ -159,6 +159,12 @@ export const api = {
   adminCreateBlogPost: (p: Partial<BlogPost>) => blogService.createPost(p),
   adminUpdateBlogPost: (id: string, p: Partial<BlogPost>) => blogService.updatePost(id, p),
   adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
+  adminBulkUpdateBlogPosts: async (ids: string[], updates: Partial<BlogPost>) => {
+    for (const id of ids) await blogService.updatePost(id, updates);
+  },
+  adminBulkDeleteBlogPosts: async (ids: string[]) => {
+    for (const id of ids) await blogService.deletePost(id);
+  },
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
   getAppSettings: () => settingsService.get(),
   getAdminSettings: () => settingsService.getAdminSettings(),

@@ -16,6 +16,9 @@ export const AdminBlog: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
   const activeTab = (searchParams.get('tab') as Tab) || 'posts';
 
   const fetchData = async () => {
@@ -55,6 +58,53 @@ export const AdminBlog: React.FC = () => {
     }
   };
 
+  // --- Bulk Actions ---
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === posts.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(posts.map(p => p.id));
+    }
+  };
+
+  const handleBulkUpdate = async (updates: Partial<BlogPost>) => {
+    if (!window.confirm(`Are you sure you want to update ${selectedIds.length} posts?`)) return;
+    setIsBulkProcessing(true);
+    try {
+        await api.adminBulkUpdateBlogPosts(selectedIds, updates);
+        const statusMessage = updates.status ? `status to '${updates.status}'` : '';
+        showToast(`${selectedIds.length} posts updated ${statusMessage}`, 'success');
+        setSelectedIds([]);
+        await fetchData(); // Re-fetch data
+    } catch (e) {
+        showToast('Bulk update failed', 'error');
+    } finally {
+        setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+      if (!window.confirm(`Permanently delete ${selectedIds.length} posts? This cannot be undone.`)) return;
+      setIsBulkProcessing(true);
+      try {
+          await api.adminBulkDeleteBlogPosts(selectedIds);
+          showToast(`${selectedIds.length} posts deleted`, 'success');
+          setSelectedIds([]);
+          await fetchData(); // Re-fetch data
+      } catch (e) {
+          showToast('Bulk delete failed', 'error');
+      } finally {
+          setIsBulkProcessing(false);
+      }
+  };
+
+
   if (loading && activeTab === 'posts') return <LoadingSpinner />;
 
   return (
@@ -85,10 +135,33 @@ export const AdminBlog: React.FC = () => {
       </div>
 
       {activeTab === 'posts' && (
+        <>
+        {/* Bulk Actions Toolbar */}
+        {selectedIds.length > 0 && (
+            <div className="mb-4 p-3 bg-brand-dark text-white rounded-xl flex justify-between items-center shadow-lg animate-fade-in">
+                <span className="text-sm font-bold">{selectedIds.length} selected</span>
+                <div className="flex gap-4 items-center">
+                    <span className="text-xs font-bold uppercase">Change Status:</span>
+                    <button onClick={() => handleBulkUpdate({ status: 'published' })} disabled={isBulkProcessing} className="text-xs font-bold text-brand-green hover:underline disabled:opacity-50">Publish</button>
+                    <button onClick={() => handleBulkUpdate({ status: 'draft' })} disabled={isBulkProcessing} className="text-xs font-bold text-slate-300 hover:underline disabled:opacity-50">Draft</button>
+                    <div className="w-px h-4 bg-slate-600"></div>
+                    <button onClick={handleBulkDelete} disabled={isBulkProcessing} className="text-xs font-bold text-red-400 hover:underline disabled:opacity-50">Delete</button>
+                </div>
+            </div>
+        )}
+
         <div className="bg-white shadow overflow-hidden sm:rounded-lg overflow-x-auto border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={posts.length > 0 && selectedIds.length === posts.length}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 text-brand-green rounded border-gray-300 focus:ring-brand-green"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Title</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Author</th>
@@ -100,11 +173,20 @@ export const AdminBlog: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {posts.length === 0 ? (
-                 <tr><td colSpan={7} className="text-center py-10 text-gray-500 text-sm">No journal entries found.</td></tr>
+                 <tr><td colSpan={8} className="text-center py-10 text-gray-500 text-sm">No journal entries found.</td></tr>
               ) : posts.map(post => {
                 const category = categories.find(c => c.id === post.categoryId);
+                const isSelected = selectedIds.includes(post.id);
                 return (
-                  <tr key={post.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={post.id} className={`transition-colors ${isSelected ? 'bg-brand-light/30' : 'hover:bg-slate-50'}`}>
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelection(post.id)}
+                        className="h-4 w-4 text-brand-green rounded border-gray-300 focus:ring-brand-green"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{post.title}</div>
                       <div className="text-xs text-gray-500 truncate max-w-[150px]">{post.slug}</div>
@@ -151,6 +233,7 @@ export const AdminBlog: React.FC = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {activeTab === 'categories' && (
