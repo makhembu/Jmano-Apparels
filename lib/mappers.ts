@@ -298,7 +298,8 @@ export const Mappers = {
     name: u.name,
     email: u.email,
     role: u.role,
-    createdAt: u.created_at
+    createdAt: u.created_at,
+    avatarUrl: u.avatar_url || undefined
   }),
 
   toNewsletterSubscriber: (n: DbNewsletterSubscriber): NewsletterSubscriber => ({

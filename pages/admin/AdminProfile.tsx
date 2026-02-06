@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/db';
@@ -10,14 +9,15 @@ export const AdminProfile: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const { showToast } = useToast();
   
-  const [form, setForm] = useState({ name: '', email: '' });
+  const [form, setForm] = useState({ name: '', email: '', avatarUrl: '' });
   const [passForm, setPassForm] = useState({ newPassword: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
-        setForm({ name: user.name, email: user.email });
+        setForm({ name: user.name, email: user.email, avatarUrl: user.avatarUrl || '' });
     }
   }, [user]);
 
@@ -26,7 +26,7 @@ export const AdminProfile: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      await api.updateUserProfile(user.id, { name: form.name, email: form.email });
+      await api.updateUserProfile(user.id, { name: form.name, email: form.email, avatarUrl: form.avatarUrl });
       await refreshProfile(); 
       showToast('Profile details updated successfully', 'success');
     } catch (e: any) {
@@ -59,6 +59,21 @@ export const AdminProfile: React.FC = () => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setUploading(true);
+    try {
+      const url = await api.uploadImage(file);
+      setForm(prev => ({ ...prev, avatarUrl: url }));
+      showToast('Avatar updated', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Upload failed', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!user) return <LoadingSpinner />;
 
   return (
@@ -68,8 +83,12 @@ export const AdminProfile: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
           <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-4">
-             <div className="h-12 w-12 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xl">
-                {user.name.charAt(0).toUpperCase()}
+             <div className="h-12 w-12 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xl overflow-hidden">
+                {form.avatarUrl ? (
+                  <img src={form.avatarUrl} alt={form.name} className="w-full h-full object-cover" />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
              </div>
              <div>
                 <h2 className="text-lg font-bold text-gray-900">Personal Details</h2>
@@ -97,6 +116,23 @@ export const AdminProfile: React.FC = () => {
                 className="mt-1 block w-full border border-gray-200 bg-gray-50 rounded-md p-2 text-gray-500 cursor-not-allowed"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={form.avatarUrl}
+                  onChange={e => setForm({...form, avatarUrl: e.target.value})}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 focus:ring-brand-green"
+                />
+                <div className="relative">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                  <Button type="button" variant="outline" isLoading={uploading} className="h-full">Upload</Button>
+                </div>
+              </div>
+            </div>
+
             <div className="pt-2">
                <Button type="submit" isLoading={loading} className="w-full">Update Profile</Button>
             </div>

@@ -9,23 +9,34 @@ interface NextPostProps {
 
 export const NextPost: React.FC<NextPostProps> = ({ post }) => {
   return (
-    <section className="bg-slate-50 border-t border-slate-100 py-16">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-8">Up Next</h4>
-        <Link to={`/blog/${post.slug}`} className="group block max-w-2xl mx-auto">
-          <div className="aspect-[16/9] rounded-xl overflow-hidden shadow-xl mb-6">
-            <OptimizedImage 
+    <section className="bg-slate-50 border-t border-slate-100 py-8">
+      <div className="max-w-3xl mx-auto px-4">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 text-center">
+          Up Next
+        </h4>
+
+        <Link
+          to={`/blog/${post.slug}`}
+          className="group flex items-center gap-4 bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition"
+        >
+          <div className="w-28 h-20 flex-shrink-0 rounded-md overflow-hidden">
+            <OptimizedImage
               src={post.thumbnail}
               alt={post.title}
-              width={800}
-              height={450}
-              className="group-hover:scale-105 transition-transform duration-500"
+              width={224}
+              height={160}
+              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <h3 className="text-2xl md:text-3xl font-serif font-bold text-brand-dark group-hover:text-brand-green transition-colors">
-            {post.title}
-          </h3>
-          <p className="text-sm text-slate-500 mt-2 line-clamp-2">{post.summary}</p>
+
+          <div className="text-left">
+            <h3 className="text-base font-serif font-bold text-brand-dark group-hover:text-brand-green leading-snug line-clamp-2">
+              {post.title}
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+              {post.summary}
+            </p>
+          </div>
         </Link>
       </div>
     </section>

@@ -48,11 +48,8 @@ AS $$
 DECLARE
   new_likes int;
 BEGIN
-  -- This function can only be called by authenticated users
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
-
+  -- This function can be called by anonymous users.
+  -- The frontend will use localStorage to prevent multiple likes from the same client.
   UPDATE public.blog_posts
   SET likes = likes + 1
   WHERE id = post_id_to_inc
@@ -62,5 +59,6 @@ BEGIN
 END;
 $$;
 
--- Grant execution permission to logged-in users
+-- Grant execution permission to logged-in users and anonymous users
 GRANT EXECUTE ON FUNCTION increment_blog_like TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_blog_like TO anon;

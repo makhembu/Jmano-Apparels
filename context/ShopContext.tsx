@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
-import { Product, Category, BlogPost, AppSettings, ProductReview } from '../types';
+import { Product, Category, BlogPost, AppSettings, ProductReview, User } from '../types';
 import { api } from '../lib/db';
 import { useToast } from './ToastContext';
 import { ProductFilters } from '../lib/services/catalog';
@@ -11,6 +10,7 @@ interface ShopContextType {
   products: Product[];
   categories: Category[];
   blogPosts: BlogPost[];
+  users: Partial<User>[];
   latestReviews: ProductReview[];
   settings: AppSettings;
   
@@ -47,6 +47,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [users, setUsers] = useState<Partial<User>[]>([]);
   const [latestReviews, setLatestReviews] = useState<ProductReview[]>([]);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   
@@ -87,17 +88,19 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
         // Use the SECURE get() method which filters out secrets
-        const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews] = await Promise.all([
+        const [fetchedSettings, fetchedCats, fetchedPosts, fetchedReviews, fetchedUsers] = await Promise.all([
           settingsService.get().catch(() => null),
           api.getCategories().catch(() => []),
           api.getBlogPosts().catch(() => []),
-          api.getRecentReviews(6).catch(() => [])
+          api.getRecentReviews(6).catch(() => []),
+          api.getPublicUsers().catch(() => [])
         ]);
 
         if (fetchedSettings) setSettings(fetchedSettings);
         if (fetchedCats) setCategories(fetchedCats);
         if (fetchedPosts) setBlogPosts(fetchedPosts);
         if (fetchedReviews) setLatestReviews(fetchedReviews);
+        if (fetchedUsers) setUsers(fetchedUsers);
         
         await fetchPaginated(1, { sortBy: 'newest' }, true);
 
@@ -142,12 +145,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [settings.id, showToast]);
 
   const value = useMemo(() => ({ 
-      products, categories, blogPosts, latestReviews, settings, 
+      products, categories, blogPosts, users, latestReviews, settings, 
       loading: initialLoading, productsLoading, 
       initShopData, refreshData, updateSettings,
       hasMore, isLoadingMore, loadMore, filters, updateFilters
   }), [
-    products, categories, blogPosts, latestReviews, settings, 
+    products, categories, blogPosts, users, latestReviews, settings, 
     initialLoading, productsLoading, 
     initShopData, refreshData, updateSettings, 
     hasMore, isLoadingMore, loadMore, filters, updateFilters

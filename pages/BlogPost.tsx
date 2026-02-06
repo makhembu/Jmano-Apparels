@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 // @ts-ignore
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -53,6 +53,46 @@ export const BlogPost: React.FC = () => {
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [blogCategories, setBlogCategories] = useState<BlogCategory[]>([]);
+
+  // --- Hashtag and Styling Logic ---
+  // FIX: Correctly typed 'node' and its props to resolve property access and spread operator errors.
+  const processNode = (node: React.ReactNode, key: string | number): React.ReactNode => {
+      if (React.isValidElement<{ children: React.ReactNode }>(node)) {
+          if (node.props.children) {
+              return React.cloneElement(node, {
+                  ...node.props,
+                  key,
+                  children: processChildren(node.props.children)
+              });
+          }
+          return React.cloneElement(node, { ...node.props, key });
+      }
+      if (typeof node === 'string') {
+          const parts = node.split(/(#\w+)/g);
+          return parts.map((part, i) =>
+              part.startsWith('#') ? (
+                  <span key={`${key}-${i}`} className="text-brand-green font-bold">{part}</span>
+              ) : (
+                  part
+              )
+          );
+      }
+      return node;
+  };
+
+  const processChildren = (children: React.ReactNode): React.ReactNode => {
+      if (Array.isArray(children)) {
+          return children.map((child, index) => processNode(child, index));
+      }
+      return processNode(children, 0);
+  };
+  
+  const markdownComponents = {
+      p: (props: any) => <p {...props}>{processChildren(props.children)}</p>,
+      li: (props: any) => <li {...props}>{processChildren(props.children)}</li>,
+      blockquote: (props: any) => <blockquote {...props}>{processChildren(props.children)}</blockquote>,
+  };
+  // --- End Styling Logic ---
 
   useEffect(() => {
     api.getBlogCategories().then(setBlogCategories).catch(() => {});
@@ -148,24 +188,29 @@ export const BlogPost: React.FC = () => {
               prose-blockquote:border-l-4 prose-blockquote:border-brand-hope prose-blockquote:bg-gray-50/50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:text-slate-800
               prose-a:text-brand-green prose-a:font-bold prose-a:no-underline hover:prose-a:underline
               prose-img:rounded-xl prose-img:shadow-lg
-              prose-strong:font-black prose-strong:text-slate-900">
+              prose-strong:font-black prose-strong:text-brand-green">
               {contentBlocks.map((block, index) => {
                   const match = block.match(/@\[product:([a-zA-Z0-9-]+)\]/);
                   if (match) {
                       const product = products.find(p => p.id === match[1]);
                       return product ? <div key={index} className="my-12 not-prose"><ProductCard product={product} /></div> : null;
                   }
-                  return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]}>{block}</ReactMarkdown>;
+                  return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} components={markdownComponents}>{block}</ReactMarkdown>;
               })}
             </article>
 
-            <AuthorBio authorName={post.author} />
+            {/* Mobile-only author/share section */}
+            <div className="lg:hidden mt-16 space-y-8">
+              <AuthorBio authorName={post.author} />
+              <BlogShare post={post} />
+            </div>
 
             <BlogComments postId={post.id} initialLikes={post.likes} />
 
           </div>
           <aside className="hidden lg:block lg:col-span-4">
             <div className="sticky top-28 space-y-8">
+              <AuthorBio authorName={post.author} />
               <BlogShare post={post} />
             </div>
           </aside>

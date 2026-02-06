@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppSettings } from '../../../types';
 import { api } from '../../../lib/db';

@@ -206,6 +206,7 @@ export const api = {
   markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
   deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
   getAllUsers: () => userService.getAll(),
+  getPublicUsers: () => userService.getPublicProfiles(),
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
     // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_users_paginated', { page_num: page, page_size: limit, search_term: search || null });

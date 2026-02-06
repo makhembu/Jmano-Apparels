@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
@@ -9,6 +10,8 @@ interface BlogCommentsProps {
   postId: string;
   initialLikes: number;
 }
+
+const LIKES_STORAGE_KEY = 'jambo_blog_likes';
 
 export const BlogComments: React.FC<BlogCommentsProps> = ({ postId, initialLikes }) => {
   const { user } = useAuth();
@@ -31,16 +34,24 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId, initialLikes
 
   useEffect(() => {
     fetchComments();
-  }, [fetchComments]);
+    // Check local storage for like status
+    const likedPosts = JSON.parse(localStorage.getItem(LIKES_STORAGE_KEY) || '[]');
+    if (likedPosts.includes(postId)) {
+        setHasLiked(true);
+    }
+  }, [fetchComments, postId]);
 
   const handleLike = async () => {
-    if (!user) return showToast("Please sign in to like this post.", "info");
-    if (hasLiked) return;
+    if (hasLiked) return; // Already liked on this device
     
     setHasLiked(true);
     setLikes(prev => prev + 1);
+
     try {
       await api.incrementBlogPostLike(postId);
+      // On success, save to local storage
+      const likedPosts = JSON.parse(localStorage.getItem(LIKES_STORAGE_KEY) || '[]');
+      localStorage.setItem(LIKES_STORAGE_KEY, JSON.stringify([...likedPosts, postId]));
     } catch (e) {
       // Revert on error
       setLikes(prev => prev - 1);
@@ -81,7 +92,7 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId, initialLikes
         </button>
       </div>
 
-      {user && (
+      {user ? (
         <form onSubmit={handleCommentSubmit} className="mb-12">
           <textarea
             value={newComment}
@@ -94,6 +105,14 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId, initialLikes
             <Button type="submit" isLoading={submitting} disabled={!newComment.trim()}>Post Comment</Button>
           </div>
         </form>
+      ) : (
+        <div className="mb-12 text-center bg-slate-50 p-8 rounded-2xl border border-slate-200">
+            <h4 className="font-bold text-slate-800">Sign in to share your testimony.</h4>
+            <p className="text-sm text-slate-500 mt-2">Join the Jambo family to engage with our community.</p>
+            <Link to="/login">
+                <Button className="mt-4">Sign In</Button>
+            </Link>
+        </div>
       )}
 
       <div className="space-y-8">

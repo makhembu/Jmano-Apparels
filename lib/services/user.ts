@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -12,6 +11,13 @@ export class UserService {
     return ((data || []) as any[]).map(Mappers.toUser);
   }
 
+  async getPublicProfiles(): Promise<Partial<User>[]> {
+    log('RPC', 'get_public_user_profiles');
+    const { data, error } = await supabase.rpc('get_public_user_profiles');
+    if (error) throw error;
+    return ((data || []) as any[]).map(u => ({ id: u.id, name: u.name, avatarUrl: u.avatar_url }));
+  }
+
   async getProfile(userId: string): Promise<User | null> {
     log('SELECT', 'users', { userId });
     const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
@@ -19,10 +25,17 @@ export class UserService {
     return Mappers.toUser(data);
   }
 
-  async updateProfile(userId: string, updates: { name: string, email: string, role?: string }): Promise<void> {
+  async updateProfile(userId: string, updates: Partial<User>): Promise<void> {
      log('UPDATE', 'users', userId);
+     const dbUpdates: any = {
+        name: updates.name,
+        email: updates.email,
+        role: updates.role,
+        avatar_url: updates.avatarUrl
+     };
+     Object.keys(dbUpdates).forEach(key => dbUpdates[key] === undefined && delete dbUpdates[key]);
      // Added any cast to bypass type error on update
-     const { error } = await (supabase.from('users') as any).update(updates as any).eq('id', userId);
+     const { error } = await (supabase.from('users') as any).update(dbUpdates as any).eq('id', userId);
      if (error) throw error;
   }
 
