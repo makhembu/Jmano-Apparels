@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { BlogPost, BlogCategory } from '../../../types';
-import DOMPurify from 'dompurify';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface BlogEditorPreviewProps {
   formData: Partial<BlogPost>;
@@ -8,8 +10,7 @@ interface BlogEditorPreviewProps {
 }
 
 export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, categories }) => {
-  // Sanitize the HTML content to prevent XSS attacks
-  const cleanContent = DOMPurify.sanitize(formData.content || '<p>Start writing to see content here...</p>');
+  const contentToRender = formData.content || 'Start writing to see content here...';
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden min-h-screen">
@@ -47,7 +48,9 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
          </div>
 
          <article className="prose prose-lg max-w-none text-gray-700 font-light leading-relaxed prose-headings:font-serif prose-headings:text-brand-dark prose-a:text-brand-green">
-            <div dangerouslySetInnerHTML={{ __html: cleanContent }} />
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {contentToRender}
+            </ReactMarkdown>
          </article>
       </div>
     </div>
