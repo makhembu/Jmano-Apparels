@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -40,7 +39,11 @@ const UserDetailPanel: React.FC<{ user: User, onUserUpdate: () => void, onClose:
     const stats = useMemo(() => {
         if (!details) return { totalSpent: 0, orderCount: 0 };
         const orderCount = details.orders.length;
-        const totalSpent = details.orders.reduce((sum, o) => sum + (o.total || 0), 0);
+        const paidOrders = details.orders.filter(o => 
+            o.paymentStatus === 'paid' && 
+            !['Cancelled', 'Refunded'].includes(o.status)
+        );
+        const totalSpent = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
         return { totalSpent, orderCount };
     }, [details]);
     
@@ -255,7 +258,7 @@ export const AdminUsers: React.FC = () => {
                         />
                     ) : (
                         <div className="text-center py-24 px-8 bg-white rounded-xl border-2 border-dashed border-slate-200 h-full flex flex-col justify-center items-center">
-                            <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             <h3 className="text-lg font-serif font-bold text-slate-700">Select a Customer</h3>
                             <p className="text-sm text-slate-400 mt-1">Choose a user from the list to view their details.</p>
                         </div>

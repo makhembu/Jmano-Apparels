@@ -1,4 +1,3 @@
-
 -- ============================================================================
 -- JAMBO APPARELS - PRODUCTION ANALYTICS REPAIR
 -- Fixes "No Data" issues by sourcing Sales/Revenue directly from Orders table
@@ -39,15 +38,17 @@ BEGIN
   AND created_at BETWEEN time_range_start AND time_range_end;
 
   -- 2. Financial Metrics (From Real Orders)
+  -- Count valid orders for conversion calculation
   SELECT COUNT(*) INTO total_orders
   FROM orders 
-  WHERE created_at BETWEEN time_range_start AND time_range_end
-  AND status NOT IN ('Cancelled', 'Refunded');
+  WHERE date BETWEEN time_range_start AND time_range_end
+  AND status NOT IN ('Cancelled', 'Refunded', 'Pending Payment');
 
+  -- Sum revenue for PAID orders
   SELECT COALESCE(SUM(total), 0) INTO total_revenue
   FROM orders 
-  WHERE created_at BETWEEN time_range_start AND time_range_end
-  AND status NOT IN ('Cancelled', 'Refunded');
+  WHERE date BETWEEN time_range_start AND time_range_end
+  AND payment_status = 'paid';
 
   -- 3. Calculate Conversion
   IF total_visitors > 0 THEN
@@ -99,8 +100,8 @@ BEGIN
       SUM(COALESCE((item->>'quantity')::int, 1)) as sales
     FROM orders,
     jsonb_array_elements(products) as item
-    WHERE created_at > (now() - (days_lookback || ' days')::interval)
-    AND status NOT IN ('Cancelled', 'Refunded')
+    WHERE date > (now() - (days_lookback || ' days')::interval)
+    AND payment_status = 'paid' -- More accurate than status check for sales
     GROUP BY 1
   )
   -- Merge Results

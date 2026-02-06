@@ -1,4 +1,3 @@
-
 -- ============================================================================
 -- JAMBO APPARELS - SCALABILITY & PAGINATION RPCs
 -- Fixes: "Data Bomb" crashes in Admin Dashboard
@@ -19,12 +18,12 @@ BEGIN
   END IF;
 
   SELECT jsonb_build_object(
-    'revenue', COALESCE((SELECT SUM(total) FROM orders WHERE status != 'Cancelled' AND status != 'Refunded'), 0),
-    'orders', (SELECT COUNT(*) FROM orders),
+    'revenue', COALESCE((SELECT SUM(total) FROM orders WHERE payment_status = 'paid'), 0),
+    'orders', (SELECT COUNT(*) FROM orders WHERE status NOT IN ('Cancelled', 'Refunded', 'Pending Payment')),
     'users', (SELECT COUNT(*) FROM users),
     'products', (SELECT COUNT(*) FROM products),
     'low_stock', (SELECT COUNT(*) FROM products WHERE stock_quantity <= low_stock_threshold),
-    'pending_orders', (SELECT COUNT(*) FROM orders WHERE status = 'Pending' OR status = 'Processing')
+    'pending_orders', (SELECT COUNT(*) FROM orders WHERE status IN ('Pending', 'Processing', 'Pending Payment'))
   ) INTO result;
   
   RETURN result;
@@ -113,7 +112,7 @@ BEGIN
     SELECT *
     FROM orders
     WHERE status_filter IS NULL OR status_filter = 'ALL' OR status = status_filter
-    ORDER BY created_at DESC
+    ORDER BY date DESC
     LIMIT page_size
     OFFSET v_offset
   ) t;
