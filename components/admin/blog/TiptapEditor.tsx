@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Product } from '../../../types';
+import { api } from '../../../lib/db';
+import { useToast } from '../../../context/ToastContext';
 
 interface TiptapEditorProps {
     value: string;
@@ -8,12 +10,13 @@ interface TiptapEditorProps {
     products: Product[];
 }
 
-const ToolbarButton: React.FC<{ onClick: (e: React.MouseEvent) => void, title: string, children: React.ReactNode }> = ({ onClick, title, children }) => (
+const ToolbarButton: React.FC<{ onClick: (e: React.MouseEvent) => void, title: string, children: React.ReactNode, disabled?: boolean }> = ({ onClick, title, children, disabled }) => (
     <button
         type="button"
         onClick={onClick}
         title={title}
-        className="p-2 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors text-xs font-bold"
+        disabled={disabled}
+        className="p-2 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors text-xs font-bold disabled:opacity-50 disabled:cursor-wait"
     >
         {children}
     </button>
@@ -21,7 +24,10 @@ const ToolbarButton: React.FC<{ onClick: (e: React.MouseEvent) => void, title: s
 
 export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, placeholder, products }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const { showToast } = useToast();
 
     const applyMarkdown = (syntaxStart: string, syntaxEnd: string = syntaxStart) => {
         const textarea = textareaRef.current;
@@ -52,10 +58,38 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
         }
     };
     
-    const applyImage = () => {
-        const url = window.prompt("Enter Image URL:", "https://");
-        if (url) {
-            applyMarkdown(`![Alt text](${url})`);
+    const triggerImageUpload = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            showToast('Image file too large (max 5MB)', 'error');
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const publicUrl = await api.uploadImage(file);
+            const markdownImage = `\n![Alt text](${publicUrl})\n`;
+            
+            const textarea = textareaRef.current;
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const newText = `${textarea.value.substring(0, start)}${markdownImage}${textarea.value.substring(start)}`;
+            
+            onChange(newText);
+            showToast('Image uploaded and inserted!', 'success');
+
+        } catch (error: any) {
+            showToast(error.message || 'Image upload failed', 'error');
+        } finally {
+            setIsUploading(false);
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -103,11 +137,27 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
                 <ToolbarButton title="Italic" onClick={() => applyMarkdown('*')}><em>I</em></ToolbarButton>
                 <div className="w-px h-5 bg-slate-200 mx-1"></div>
                 <ToolbarButton title="Link" onClick={applyLink}>Link</ToolbarButton>
-                <ToolbarButton title="Image" onClick={applyImage}>Image</ToolbarButton>
+                <ToolbarButton title="Image" onClick={triggerImageUpload} disabled={isUploading}>
+                    {isUploading ? (
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                            <span>Uploading</span>
+                        </div>
+                    ) : (
+                        'Image'
+                    )}
+                </ToolbarButton>
                 <ToolbarButton title="Bullet List" onClick={applyList}>List</ToolbarButton>
                 <div className="w-px h-5 bg-slate-200 mx-1"></div>
                 <ToolbarButton title="Embed Product" onClick={() => setIsProductModalOpen(true)}>Product</ToolbarButton>
             </div>
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+            />
             <textarea
                 ref={textareaRef}
                 value={value}
