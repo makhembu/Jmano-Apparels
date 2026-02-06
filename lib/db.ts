@@ -168,7 +168,8 @@ export const api = {
   },
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
   incrementBlogPostLike: async (postId: string) => {
-    const { data, error } = await supabase.rpc('increment_blog_like', { post_id_to_inc: postId });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('increment_blog_like', { post_id_to_inc: postId });
     if (error) throw error;
     return data;
   },
