@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
@@ -91,8 +90,9 @@ export const api = {
 
   // Returns and Refunds API
   requestReturn: async (orderId: string, userId: string, reason: string) => {
-    const { error } = await supabase
-      .from('orders')
+    // FIX: Cast to any to bypass Supabase client type error on update.
+    const { error } = await (supabase
+      .from('orders') as any)
       .update({
         status: 'Return Requested',
         return_reason: reason,
@@ -120,7 +120,8 @@ export const api = {
       updates.notes = notes;
     }
 
-    const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
+    // FIX: Cast to any to bypass Supabase client type error on update.
+    const { error } = await (supabase.from('orders') as any).update(updates).eq('id', orderId);
     if (error) throw error;
     return { success: true };
   },
