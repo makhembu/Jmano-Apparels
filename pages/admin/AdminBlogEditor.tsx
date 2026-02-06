@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -10,12 +9,14 @@ import { BlogEditorSidebar } from '../../components/admin/blog/BlogEditorSidebar
 import { BlogEditorPreview } from '../../components/admin/blog/BlogEditorPreview';
 import { TiptapEditor } from '../../components/admin/blog/TiptapEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
+import { useShop } from '../../context/ShopContext';
 
 export const AdminBlogEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { products } = useShop();
 
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -199,7 +200,8 @@ export const AdminBlogEditor: React.FC = () => {
                      <TiptapEditor
                         value={formData.content || ''}
                         onChange={handleEditorChange}
-                        placeholder="Thread your testimony here..."
+                        placeholder="Thread your testimony here... Use #hashtags and embed products!"
+                        products={products}
                      />
                   </div>
                </div>

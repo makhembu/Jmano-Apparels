@@ -1,10 +1,11 @@
-
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { Product } from '../../../types';
 
 interface TiptapEditorProps {
     value: string;
     onChange: (val: string) => void;
     placeholder?: string;
+    products: Product[];
 }
 
 const ToolbarButton: React.FC<{ onClick: (e: React.MouseEvent) => void, title: string, children: React.ReactNode }> = ({ onClick, title, children }) => (
@@ -18,8 +19,9 @@ const ToolbarButton: React.FC<{ onClick: (e: React.MouseEvent) => void, title: s
     </button>
 );
 
-export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, placeholder }) => {
+export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, placeholder, products }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
     const applyMarkdown = (syntaxStart: string, syntaxEnd: string = syntaxStart) => {
         const textarea = textareaRef.current;
@@ -50,6 +52,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
         }
     };
     
+    const applyImage = () => {
+        const url = window.prompt("Enter Image URL:", "https://");
+        if (url) {
+            applyMarkdown(`![Alt text](${url})`);
+        }
+    };
+
     const applyHeading = (level: number) => {
         const textarea = textareaRef.current;
         if (!textarea) return;
@@ -72,6 +81,17 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
         onChange(newText);
     }
 
+    const handleEmbedProduct = (productId: string) => {
+        const embedCode = `\n@[product:${productId}]\n`;
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const newText = `${textarea.value.substring(0, start)}${embedCode}${textarea.value.substring(start)}`;
+        onChange(newText);
+        setIsProductModalOpen(false);
+    };
+
     return (
         <div className="border border-slate-200 rounded-xl bg-white flex flex-col">
             <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-xl sticky top-0 z-10">
@@ -83,7 +103,10 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
                 <ToolbarButton title="Italic" onClick={() => applyMarkdown('*')}><em>I</em></ToolbarButton>
                 <div className="w-px h-5 bg-slate-200 mx-1"></div>
                 <ToolbarButton title="Link" onClick={applyLink}>Link</ToolbarButton>
+                <ToolbarButton title="Image" onClick={applyImage}>Image</ToolbarButton>
                 <ToolbarButton title="Bullet List" onClick={applyList}>List</ToolbarButton>
+                <div className="w-px h-5 bg-slate-200 mx-1"></div>
+                <ToolbarButton title="Embed Product" onClick={() => setIsProductModalOpen(true)}>Product</ToolbarButton>
             </div>
             <textarea
                 ref={textareaRef}
@@ -93,6 +116,23 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({ value, onChange, pla
                 className="w-full h-96 p-4 font-mono text-sm text-slate-800 leading-relaxed resize-y focus:outline-none bg-white rounded-b-xl custom-scrollbar"
                 spellCheck="false"
             />
+
+            {/* Product Embed Modal */}
+            {isProductModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsProductModalOpen(false)}>
+                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold p-4 border-b">Embed a Product</h3>
+                        <div className="overflow-y-auto p-4 space-y-2">
+                            {products.map(p => (
+                                <button key={p.id} onClick={() => handleEmbedProduct(p.id)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 text-left">
+                                    <img src={p.images[0]} alt={p.title} className="w-12 h-12 rounded-md object-cover" />
+                                    <span className="font-bold text-sm text-slate-800">{p.title}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
