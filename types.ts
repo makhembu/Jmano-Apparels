@@ -215,6 +215,13 @@ export interface AppSettings {
   paypalMode?: 'sandbox' | 'live';
   paypalWebhookId?: string;
   paymentGatewayEnabled?: boolean;
+  // Homepage Section Toggles
+  enableFeaturedProducts?: boolean;
+  enableCommitmentSection?: boolean;
+  enableCategoriesSection?: boolean;
+  enableCommunitySection?: boolean;
+  enableJournalSection?: boolean;
+  enableSocialSection?: boolean;
 }
 
 export interface ShippingZone {

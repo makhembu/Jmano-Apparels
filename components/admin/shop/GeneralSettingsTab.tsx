@@ -125,6 +125,46 @@ export const GeneralSettingsTab: React.FC = () => {
             />
         </div>
 
+        <div className="pt-6 border-t border-gray-100 space-y-4">
+            <h4 className="text-sm font-bold text-gray-700 mb-2">Homepage Sections</h4>
+            <Switch 
+                label="Featured Products"
+                description="Show the 'Featured Collections' section on the homepage."
+                checked={generalForm.enableFeaturedProducts ?? true}
+                onChange={(val) => handleSwitchChange('enableFeaturedProducts', val)}
+            />
+            <Switch 
+                label="Commitment / Core Values"
+                description="Show the 'Our Commitment' section."
+                checked={generalForm.enableCommitmentSection ?? true}
+                onChange={(val) => handleSwitchChange('enableCommitmentSection', val)}
+            />
+            <Switch 
+                label="Shop by Category"
+                description="Show the 'Shop by Category' links."
+                checked={generalForm.enableCategoriesSection ?? true}
+                onChange={(val) => handleSwitchChange('enableCategoriesSection', val)}
+            />
+            <Switch 
+                label="Community Reviews"
+                description="Show the 'From Our Community' section."
+                checked={generalForm.enableCommunitySection ?? true}
+                onChange={(val) => handleSwitchChange('enableCommunitySection', val)}
+            />
+            <Switch 
+                label="Latest Journal"
+                description="Show the 'Latest from our Journal' section."
+                checked={generalForm.enableJournalSection ?? true}
+                onChange={(val) => handleSwitchChange('enableJournalSection', val)}
+            />
+            <Switch 
+                label="Social Media Follow"
+                description="Show the 'Follow Our Journey' section."
+                checked={generalForm.enableSocialSection ?? true}
+                onChange={(val) => handleSwitchChange('enableSocialSection', val)}
+            />
+        </div>
+
         <div className="pt-4">
         <Button type="submit" isLoading={saving} className="shadow-lg shadow-brand-green/20">Save General Settings</Button>
         </div>

@@ -1,3 +1,4 @@
+
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -134,7 +135,15 @@ export const Mappers = {
     paypalSecretKey: s.paypal_secret_key || undefined,
     paypalMode: s.paypal_mode || 'sandbox',
     paypalWebhookId: s.paypal_webhook_id || undefined,
-    paymentGatewayEnabled: s.payment_gateway_enabled || false
+    paymentGatewayEnabled: s.payment_gateway_enabled || false,
+    
+    // Homepage Section Toggles
+    enableFeaturedProducts: s.enable_featured_products ?? true,
+    enableCommitmentSection: s.enable_commitment_section ?? true,
+    enableCategoriesSection: s.enable_categories_section ?? true,
+    enableCommunitySection: s.enable_community_section ?? true,
+    enableJournalSection: s.enable_journal_section ?? true,
+    enableSocialSection: s.enable_social_section ?? true,
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
