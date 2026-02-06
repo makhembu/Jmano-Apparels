@@ -27,7 +27,8 @@ const wishlistService = new WishlistService();
 const storageService = new StorageService();
 
 const getRedirectUrl = () => {
-  const isProd = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
+  const isProd = window.location.hostname.includes('jamboapparels.com');
+  // In production, use clean URLs. In dev/sandbox, use hash-based URLs.
   return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
 };
 

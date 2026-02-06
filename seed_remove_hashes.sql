@@ -1,4 +1,3 @@
-
 -- ============================================================================
 -- MIGRATION: REMOVE HASHES FROM URLS
 -- Updates existing email templates to use cleaner URLs (removing /#/)

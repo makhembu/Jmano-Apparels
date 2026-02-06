@@ -1,4 +1,3 @@
-
 import React, { useEffect, Suspense, lazy } from 'react';
 import { HashRouter, BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
@@ -58,7 +57,7 @@ const AdminNewsletter = lazy(() => import('./pages/admin/AdminNewsletter').then(
 const AdminContact = lazy(() => import('./pages/admin/AdminContact').then(module => ({ default: module.AdminContact })));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile').then(module => ({ default: module.AdminProfile })));
 
-const isProduction = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
+const isProduction = window.location.hostname.includes('jamboapparels.com');
 const Router = isProduction ? BrowserRouter : HashRouter;
 
 const App: React.FC = () => {

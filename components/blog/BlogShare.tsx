@@ -1,6 +1,7 @@
 import React from 'react';
 import { BlogPost } from '../../types';
 
+// FIX: Define the props interface for the component.
 interface BlogShareProps {
   post: BlogPost;
 }

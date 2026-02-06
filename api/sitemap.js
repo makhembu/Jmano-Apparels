@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   // Prioritize standard backend env vars (SUPABASE_URL), fallback to VITE_ prefixed ones for dev
   let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;

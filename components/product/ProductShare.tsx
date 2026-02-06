@@ -1,14 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../../types';
 
-interface ProductShareProps {
-  product: Product;
-}
-
-export const ProductShare: React.FC<ProductShareProps> = ({ product }) => {
-  // Fix: Construct a canonical URL instead of using window.location.href to avoid blob URLs in sandboxed environments.
+export const ProductShare: React.FC<{ product: Product }> = ({ product }) => {
   const pageUrl = `https://jamboapparels.com/product/${product.slug || product.id}`;
   const shareTitle = encodeURIComponent(product.title);
   const encodedUrl = encodeURIComponent(pageUrl);
