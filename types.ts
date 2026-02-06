@@ -1,9 +1,8 @@
+
 import { Database, Json } from './database.types';
 
 // Helper to extract tables from Database type
 type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
-
-// ... (Keep existing types)
 
 export type UserRole = 'admin' | 'user';
 
@@ -34,7 +33,6 @@ export interface Product {
   stockQuantity: number;
   lowStockThreshold: number;
   weight: number;
-  // Added isFreeShipping property
   isFreeShipping?: boolean;
   seoTitle?: string;
   seoDescription?: string;
@@ -113,6 +111,8 @@ export interface OrderItem {
   image: string;
 }
 
+export type ReturnStatus = 'none' | 'requested' | 'approved' | 'rejected' | 'completed';
+
 export interface Order {
   id: string;
   userId: string | null;
@@ -136,6 +136,10 @@ export interface Order {
   deliveredAt?: string;
   cancelledAt?: string;
   notes?: string;
+  // Return fields
+  returnReason?: string;
+  returnRequestedAt?: string;
+  returnStatus?: ReturnStatus;
 }
 
 export interface ProductReview {
@@ -209,6 +213,7 @@ export interface AppSettings {
   paypalClientId?: string;
   paypalSecretKey?: string;
   paypalMode?: 'sandbox' | 'live';
+  paypalWebhookId?: string;
   paymentGatewayEnabled?: boolean;
 }
 
@@ -288,6 +293,8 @@ export interface SeoConfig {
 }
 
 export interface AnalyticsEvent {
+  id: number;
+  created_at: string;
   eventType: 'page_view' | 'add_to_cart' | 'purchase' | 'view_item' | 'purchase_item' | 'page_leave';
   path?: string;
   metadata?: Record<string, any>;

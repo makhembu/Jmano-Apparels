@@ -1,8 +1,9 @@
+
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ReturnStatus, AnalyticsEvent
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -55,14 +56,17 @@ export const api = {
   getOrders: (userId: string) => orderService.getUserOrders(userId),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
   getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    const { data, error } = await supabase.rpc('get_orders_paginated', {
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
       page_num: Number(page),
       page_size: Number(limit),
       status_filter: (status === 'ALL' || !status) ? null : status
     });
     if (error) throw error;
-    const orders = (data.data || []).map((o: any) => Mappers.toOrder(o));
-    return { data: orders as Order[], total: data.total || 0, page: data.page || 1, totalPages: data.totalPages || 1 };
+    // Fixed: Cast data to any to access custom properties returned by RPC
+    const responseData = data as any;
+    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
+    return { data: orders as Order[], total: responseData.total || 0, page: responseData.page || 1, totalPages: responseData.totalPages || 1 };
   },
   getLowStockProducts: async (limit: number = 5) => {
     const { data, error } = await supabase.from('products').select('*').order('stock_quantity', { ascending: true }).limit(20);
@@ -75,7 +79,6 @@ export const api = {
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
   
-  // FIXED: Proper mapping and error handling for restoration RPC
   cancelAndRestoreStock: async (orderId: string, userId: string) => {
       const { data, error } = await (supabase.rpc as any)('cancel_and_restore_stock', { 
         p_order_id: orderId, 
@@ -84,6 +87,56 @@ export const api = {
       if (error) throw error;
       if (data && data.success === false) throw new Error(data.error || 'Restoration failed');
       return { success: true };
+  },
+
+  // Returns and Refunds API
+  requestReturn: async (orderId: string, userId: string, reason: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'Return Requested',
+        return_reason: reason,
+        return_requested_at: new Date().toISOString(),
+        return_status: 'requested'
+      })
+      .match({ id: orderId, user_id: userId });
+    
+    if (error) throw error;
+    return { success: true };
+  },
+
+  adminProcessReturn: async (orderId: string, returnStatus: ReturnStatus, notes?: string) => {
+    const statusMap: Record<string, string> = {
+      'approved': 'Return Approved',
+      'rejected': 'Return Rejected',
+      'completed': 'Returned'
+    };
+    
+    const updates: any = { return_status: returnStatus };
+    if (statusMap[returnStatus]) {
+      updates.status = statusMap[returnStatus];
+    }
+    if (notes) {
+      updates.notes = notes;
+    }
+
+    const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
+    if (error) throw error;
+    return { success: true };
+  },
+
+  issueFullRefund: async (orderId: string) => {
+    const response = await fetch('/api/paypal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'refund', orderId })
+    });
+    
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Refund failed');
+    }
+    return data;
   },
 
   fetchCart: (userId: string) => cartService.fetch(userId),
@@ -124,10 +177,13 @@ export const api = {
   deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
   getAllUsers: () => userService.getAll(),
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    const { data, error } = await supabase.rpc('get_users_paginated', { page_num: page, page_size: limit, search_term: search || null });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_users_paginated', { page_num: page, page_size: limit, search_term: search || null });
     if (error) throw error;
-    const users = (data.data || []).map((u: any) => Mappers.toUser(u));
-    return { data: users as User[], total: data.total || 0, page: data.page || 1, totalPages: data.totalPages || 1 };
+    // Fixed: Cast data to any to access custom properties returned by RPC
+    const responseData = data as any;
+    const users = (responseData.data || []).map((u: any) => Mappers.toUser(u));
+    return { data: users as User[], total: responseData.total || 0, page: responseData.page || 1, totalPages: responseData.totalPages || 1 };
   },
   getUserProfile: (id: string) => userService.getProfile(id),
   updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
@@ -149,8 +205,29 @@ export const api = {
     const { error } = await (supabase.auth as any).signInWithOtp({ email });
     if (error) throw error;
   },
+// Fix: Map database response to AnalyticsEvent type and handle snake_case to camelCase conversion.
+  getUserActivity: async (userId: string, limit: number = 50): Promise<AnalyticsEvent[]> => {
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      created_at: row.created_at,
+      eventType: row.event_type,
+      path: row.path,
+      metadata: row.metadata,
+      duration: row.duration,
+      geo_country: row.geo_country,
+      geo_city: row.geo_city,
+    }));
+  },
   deleteUserAccount: async (userId: string) => {
-    return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
   },
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
   saveUserAddress: (userId: string, address: any) => userService.saveUserAddress(userId, address),
@@ -160,42 +237,49 @@ export const api = {
   toggleWishlist: (userId: string, productId: string) => wishlistService.toggle(userId, productId),
   uploadImage: (file: File) => storageService.uploadImage(file),
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    const { data, error } = await supabase.rpc('get_analytics_overview', { time_range_start: start.toISOString(), time_range_end: end.toISOString() });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_analytics_overview', { time_range_start: start.toISOString(), time_range_end: end.toISOString() });
     if (error) return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
     return data as unknown as AnalyticsOverview;
   },
   getAdminDashboardStats: async () => {
-    const { data, error } = await supabase.rpc('get_admin_stats');
+    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
     if (error) throw error;
     return data as { revenue: number; orders: number; users: number; products: number; low_stock: number; pending_orders: number; };
   },
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    const { data, error } = await supabase.rpc('get_daily_analytics', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
     if (error) return [];
     return data as unknown as DailyAnalytics[];
   },
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8, days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
     if (error) return [];
     return data as unknown as ProductPerformance[];
   },
   getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    const { data, error } = await supabase.rpc('get_traffic_sources', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
     if (error) return [];
     return data as unknown as TrafficSource[];
   },
   getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    const { data, error } = await supabase.rpc('get_geo_stats', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
     if (error) return [];
     return data as unknown as GeoStat[];
   },
   getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
     if (error) return [];
     return data as unknown as PageStat[];
   },
   getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
     if (error) return [];
     return data as unknown as LiveVisitor[];
   },

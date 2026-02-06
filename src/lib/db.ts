@@ -69,21 +69,23 @@ export const api = {
   
   // SCALABILITY FIX: Paginated Orders with robust type handling
   getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    const { data, error } = await supabase.rpc('get_orders_paginated', {
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
       page_num: Number(page),
       page_size: Number(limit),
       status_filter: (status === 'ALL' || !status) ? null : status
     });
     if (error) throw error;
     
-    // Map raw JSONB to Order objects
-    const orders = (data.data || []).map((o: any) => Mappers.toOrder(o));
+    // Fixed: Cast data to any to access custom properties returned by RPC
+    const responseData = data as any;
+    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
     
     return {
       data: orders as Order[],
-      total: data.total || 0,
-      page: data.page || 1,
-      totalPages: data.totalPages || 1
+      total: responseData.total || 0,
+      page: responseData.page || 1,
+      totalPages: responseData.totalPages || 1
     };
   },
 
@@ -165,21 +167,23 @@ export const api = {
   
   // SCALABILITY FIX: Paginated Users
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    const { data, error } = await supabase.rpc('get_users_paginated', {
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_users_paginated', {
         page_num: page,
         page_size: limit,
         search_term: search || null
     });
     if (error) throw error;
     
-    // Map raw JSON to User objects
-    const users = (data.data || []).map((u: any) => Mappers.toUser(u));
+    // Fixed: Cast data to any to access custom properties returned by RPC
+    const responseData = data as any;
+    const users = (responseData.data || []).map((u: any) => Mappers.toUser(u));
     
     return {
         data: users as User[],
-        total: data.total || 0,
-        page: data.page || 1,
-        totalPages: data.totalPages || 1
+        total: responseData.total || 0,
+        page: responseData.page || 1,
+        totalPages: responseData.totalPages || 1
     };
   },
 
@@ -205,7 +209,8 @@ export const api = {
   },
   
   deleteUserAccount: async (userId: string) => {
-    return await supabase.rpc('anonymize_and_delete_user', { target_user_id: userId });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
   },
 
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
@@ -221,7 +226,8 @@ export const api = {
 
   // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    const { data, error } = await supabase.rpc('get_analytics_overview', {
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_analytics_overview', {
       time_range_start: start.toISOString(),
       time_range_end: end.toISOString()
     });
@@ -234,7 +240,8 @@ export const api = {
 
   // SCALABILITY FIX: Fast Admin Dashboard Stats
   getAdminDashboardStats: async () => {
-    const { data, error } = await supabase.rpc('get_admin_stats');
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
     if (error) throw error;
     return data as {
         revenue: number;
@@ -247,7 +254,8 @@ export const api = {
   },
 
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    const { data, error } = await supabase.rpc('get_daily_analytics', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
         return [];
@@ -256,7 +264,8 @@ export const api = {
   },
 
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    const { data, error } = await supabase.rpc('get_product_analytics', { limit_count: 8, days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
         return [];
@@ -265,7 +274,8 @@ export const api = {
   },
 
   getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    const { data, error } = await supabase.rpc('get_traffic_sources', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
     if (error) {
       console.error("Analytics Error", error);
       return [];
@@ -274,19 +284,22 @@ export const api = {
   },
 
   getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    const { data, error } = await supabase.rpc('get_geo_stats', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as GeoStat[];
   },
 
   getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    const { data, error } = await supabase.rpc('get_page_analytics', { days_lookback: days });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as PageStat[];
   },
 
   getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    const { data, error } = await supabase.rpc('get_live_visitors', { lookback_minutes });
+    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
+    const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
   },
