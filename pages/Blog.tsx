@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Button } from '../components/ui/Button';
+import { SEO } from '../components/SEO';
 
 export const Blog: React.FC = () => {
   const { blogPosts, settings, loading } = useShop();
@@ -17,13 +18,6 @@ export const Blog: React.FC = () => {
     { key: 'FAITH', label: 'Faith & Living' },
     { key: 'BEHIND', label: 'Behind the Scenes' }
   ];
-
-  useEffect(() => {
-    if (settings) {
-      const title = settings.blogSeoTitle || `The Journal | Jambo Apparels`;
-      document.title = title;
-    }
-  }, [settings]);
 
   const filteredPosts = useMemo(() => {
     const published = blogPosts.filter(post => post.status === 'published');
@@ -52,6 +46,11 @@ export const Blog: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
+      <SEO
+        title={settings.blogSeoTitle || "The Journal | Jambo Apparels"}
+        description={settings.blogSeoDescription || "Stories of faith, style guides, and community testimonies."}
+        type="website"
+      />
       
       {/* Desktop Hero (Matches Shop Layout) */}
       <header className="hidden md:block relative bg-brand-dark pt-20 pb-28 overflow-hidden text-center border-b border-brand-green/20">

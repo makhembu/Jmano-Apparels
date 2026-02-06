@@ -60,6 +60,11 @@ export const Shop: React.FC = () => {
 
   const activeCategory = categories.find(c => c.key === filters.categoryKey);
   const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
+  const heroTitle = activeCategory?.label || "Ethically Threaded";
+  const heroSubtitle = filters.search 
+    ? `Searching for "${filters.search}"`
+    : (activeCategory?.seoDescription || `"${settings.secondarySlogan}"`);
+
 
   if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
 
@@ -80,10 +85,10 @@ export const Shop: React.FC = () => {
             The Collection
           </span>
           <h1 className="text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
-            Ethically <span className="text-brand-humility">Threaded</span>
+            {heroTitle}
           </h1>
           <p className="text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
-            "{settings.secondarySlogan}"
+            {heroSubtitle}
           </p>
         </div>
       </header>
@@ -206,7 +211,7 @@ export const Shop: React.FC = () => {
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
                     className="w-full flex items-center justify-between mb-6 text-left"
                   >
-                    <h3 className="text-xs font-black text-brand-dark uppercase tracking-[0.2em]">Our Collections</h3>
+                    <h2 className="text-xs font-black text-brand-dark uppercase tracking-[0.2em]">Our Collections</h2>
                     <svg className={`w-4 h-4 text-brand-green transition-transform duration-300 ${isCategoriesExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                   </button>
 

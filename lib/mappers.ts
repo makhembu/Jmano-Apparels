@@ -144,6 +144,9 @@ export const Mappers = {
     enableCommunitySection: s.enable_community_section ?? true,
     enableJournalSection: s.enable_journal_section ?? true,
     enableSocialSection: s.enable_social_section ?? true,
+    
+    // Sitelinks
+    priorityPages: (s.priority_pages as any[]) || undefined,
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({

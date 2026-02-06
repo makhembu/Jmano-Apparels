@@ -154,6 +154,14 @@ export interface ProductReview {
   isApproved: boolean;
 }
 
+export interface PriorityPage {
+  pageUrl: string;
+  pageTitle: string;
+  pageDescription: string;
+  priority: number;
+  enabled: boolean;
+}
+
 export interface AppSettings {
   id: number;
   slogan: string;
@@ -222,6 +230,8 @@ export interface AppSettings {
   enableCommunitySection?: boolean;
   enableJournalSection?: boolean;
   enableSocialSection?: boolean;
+  // Sitelinks Management
+  priorityPages?: PriorityPage[];
 }
 
 export interface ShippingZone {

@@ -55,16 +55,26 @@ export default async function handler(req, res) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
     // Static Routes
-    const staticRoutes = ['', '/shop', '/about', '/blog', '/terms', '/privacy', '/returns', '/cookies', '/contact'];
+    const staticRoutes = [
+      { path: '', priority: '1.0', freq: 'daily' },
+      { path: '/shop', priority: '0.9', freq: 'daily' },
+      { path: '/blog', priority: '0.8', freq: 'weekly' },
+      { path: '/about', priority: '0.7', freq: 'monthly' },
+      { path: '/terms', priority: '0.3', freq: 'yearly' },
+      { path: '/privacy', priority: '0.3', freq: 'yearly' },
+      { path: '/returns', priority: '0.5', freq: 'monthly' },
+      { path: '/cookies', priority: '0.3', freq: 'yearly' },
+      { path: '/contact', priority: '0.6', freq: 'yearly' }
+    ];
     const currentDate = new Date().toISOString().split('T')[0];
 
     staticRoutes.forEach(route => {
        xml += `
   <url>
-    <loc>${BASE_URL}${route}</loc>
+    <loc>${BASE_URL}${route.path}</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${route === '' ? '1.0' : '0.8'}</priority>
+    <changefreq>${route.freq}</changefreq>
+    <priority>${route.priority}</priority>
   </url>`;
     });
 
@@ -77,7 +87,7 @@ export default async function handler(req, res) {
   <url>
     <loc>${BASE_URL}/product/${identifier}</loc>
     <lastmod>${date}</lastmod>
-    <changefreq>daily</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>`;
         });

@@ -1,3 +1,4 @@
+
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
@@ -20,44 +21,6 @@ const SocialIcons: Record<string, React.ReactElement> = {
   ),
   tiktok: <svg className="" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.23-.16 1.82.23 1.05.84 1.97 1.76 2.44 1.08.54 2.37.56 3.46.49.27-.02.53-.08.78-.15.56-.15 1.11-.36 1.62-.62.08-.43.16-.86.24-1.28.2-1.09.18-2.22.11-3.33-.03-1.54-.53-3.04-1.4-4.25-1.11-1.52-2.86-2.34-4.65-2.22-.05 1.49-.01 2.99-.01 4.47.98-.32 2.13-.24 2.99.38.67.43 1.15 1.08 1.38 1.8.24.74.18 1.62.18 2.38-.01 1.6-.53 3.15-1.56 4.35-1.13 1.32-2.82 2.04-4.52 1.93-1.16-.07-2.29-.4-3.2-.99-1.49-.94-2.43-2.5-2.52-4.12-.03-.53 0-1.07.01-1.6.23-1.7 1.2-3.2 2.5-4.15 1.48-1.08 3.33-1.48 5.1-1.06.01-1.49-.01-2.99 0-4.48z" /></svg>,
   linkedin: <svg className="" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>,
-};
-
-// Schema.org structured data component
-const StructuredData: React.FC<{ settings: any; products: any[] }> = ({ settings, products }) => {
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Jambo Apparels",
-    "url": "https://jamboapparels.com",
-    "logo": settings.heroBannerImage || "",
-    "description": settings.mission || "Premium Christian streetwear and scripture-inspired apparel",
-    "sameAs": Object.values(settings.socialLinks || {}).filter(Boolean),
-  };
-
-  const websiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Jambo Apparels",
-    "url": "https://jamboapparels.com",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://jamboapparels.com/shop?search={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
-    </>
-  );
 };
 
 export const Home: React.FC = () => {
@@ -100,15 +63,14 @@ export const Home: React.FC = () => {
         image={settings.heroBannerImage}
         type="website"
       />
-      <StructuredData settings={settings} products={products} />
 
       {/* Hero Section */}
-      <section className="relative bg-brand-dark overflow-hidden flex flex-col lg:block min-h-[400px]" aria-label="Hero banner">
+      <section className="relative bg-brand-dark overflow-hidden flex flex-col lg:block min-h-[400px]" aria-labelledby="hero-heading">
         <div className="max-w-7xl mx-auto w-full">
           <div className="relative z-10 bg-brand-dark lg:max-w-2xl lg:w-full pb-12 lg:pb-28 xl:pb-32">
             <div className="pt-10 lg:pt-28 mx-auto max-w-7xl px-6 sm:px-8 lg:px-8">
               <div className="text-left lg:text-left">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-serif font-bold text-white leading-tight">
+                <h1 id="hero-heading" className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-serif font-bold text-white leading-tight">
                   Wear Your Scriptures in Humility and Boldness
                 </h1>
                 <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-90 min-h-[3rem]">

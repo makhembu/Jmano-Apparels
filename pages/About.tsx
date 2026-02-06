@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { SEO } from '../components/SEO';
@@ -43,7 +44,7 @@ export const About: React.FC = () => {
             <div className="lg:col-span-2">
               <img 
                 src={settings.founderImage || "https://i.imgur.com/EuNbPGG.png"} 
-                alt={settings.founderName || 'Linah Makembu'} 
+                alt={settings.founderName || 'Linah Makembu, Founder of Jambo Apparels'} 
                 className="w-full h-full object-cover object-top aspect-[4/5]"
               />
             </div>
@@ -70,13 +71,13 @@ export const About: React.FC = () => {
         <section className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-brand-dark text-white p-10 md:p-12 rounded-3xl shadow-xl flex flex-col justify-center text-center h-full">
-              <span className="font-bold text-xs uppercase tracking-widest text-brand-hope mb-4">The Mission</span>
+              <h2 className="font-bold text-xs uppercase tracking-widest text-brand-hope mb-4">The Mission</h2>
               <p className="font-serif text-2xl md:text-3xl font-bold leading-snug">
                 {settings.mission}
               </p>
             </div>
             <div className="bg-brand-testament text-white p-10 md:p-12 rounded-3xl shadow-xl flex flex-col justify-center text-center h-full">
-              <span className="font-bold text-xs uppercase tracking-widest text-white/70 mb-4">The Vision</span>
+              <h2 className="font-bold text-xs uppercase tracking-widest text-white/70 mb-4">The Vision</h2>
               <p className="font-serif text-2xl md:text-3xl font-bold leading-snug">
                 {settings.vision}
               </p>

@@ -249,6 +249,7 @@ export type Database = {
           about_seo_description: string | null
           gemini_api_key: string | null
           logo_image: string | null
+          priority_pages: Json | null
         }
         Insert: {
           id?: number
