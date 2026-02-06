@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-// FIX: Replaced deprecated useApp with useShop
 import { useShop } from '../context/ShopContext';
 
 export interface SEOProps {
@@ -29,82 +28,78 @@ export const SEO: React.FC<SEOProps> = ({
   const { settings } = useShop();
   const location = useLocation();
 
-  // --- 1. Defaults & Logic ---
+  // --- Defaults & Logic ---
   const siteName = 'Jambo Apparels';
   const defaultTitle = settings.seoTitle || siteName;
   const defaultDescription = settings.seoDescription || 'Divinely threaded scriptures.';
   const defaultImage = settings.defaultOgImage || settings.logoImage || 'https://i.imgur.com/pkaScEv.png';
   
-  const finalTitle = title ? `${title} | ${siteName}` : defaultTitle;
+  const finalTitle = title ? (title.includes('|') ? title : `${title} | ${siteName}`) : defaultTitle;
   const finalDesc = description || defaultDescription;
   const finalImage = image || defaultImage;
-  
-  // --- SMART CANONICAL LOGIC (CRITICAL FOR SEO) ---
-  // 1. Get the path without query params (e.g. "/shop" instead of "/shop?sort=price")
-  // 2. Remove trailing slash if present (standardize to no-trailing-slash)
-  // 3. Prepend production domain.
-  // This forces Google to ignore junk params like "?products-2-order=asc"
   
   let cleanPath = location.pathname;
   if (cleanPath !== '/' && cleanPath.endsWith('/')) {
     cleanPath = cleanPath.slice(0, -1);
   }
-
   const autoCanonical = `https://jamboapparels.com${cleanPath}`;
   const finalCanonical = canonical || autoCanonical;
-
   const robotsContent = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
 
-  // --- 2. Side Effect to Update DOM ---
   useEffect(() => {
-    // Title
+    // 1. Update Title
     document.title = finalTitle;
 
-    // Helper to update/create meta tags
-    const updateMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
-      let element = document.querySelector(`meta[${attr}="${name}"]`);
+    // 2. Helper to set meta tags
+    const setMeta = (selector: string, content: string) => {
+      let element = document.querySelector(selector);
       if (!element) {
+        // If not found (e.g. CSR navigation), create it
         element = document.createElement('meta');
-        element.setAttribute(attr, name);
-        document.head.appendChild(element);
+        
+        // Parse selector to set attributes
+        const attrMatch = selector.match(/meta\[(name|property)="(.+?)"\]/);
+        if (attrMatch) {
+            element.setAttribute(attrMatch[1], attrMatch[2]);
+            document.head.appendChild(element);
+        }
       }
       element.setAttribute('content', content);
     };
 
-    // Helper to update/create link tags
-    const updateLink = (rel: string, href: string) => {
-      let element = document.querySelector(`link[rel="${rel}"]`);
-      if (!element) {
-        element = document.createElement('link');
-        element.setAttribute('rel', rel);
-        document.head.appendChild(element);
-      }
-      element.setAttribute('href', href);
+    const setLink = (rel: string, href: string) => {
+        let element = document.querySelector(`link[rel="${rel}"]`);
+        if (!element) {
+            element = document.createElement('link');
+            element.setAttribute('rel', rel);
+            document.head.appendChild(element);
+        }
+        element.setAttribute('href', href);
     };
 
-    // Standard Meta
-    updateMeta('description', finalDesc);
-    updateMeta('keywords', keywords.join(', '));
-    updateMeta('robots', robotsContent);
+    // 3. Update Standard Meta
+    setMeta('meta[name="description"]', finalDesc);
+    setMeta('meta[name="keywords"]', keywords.join(', '));
+    setMeta('meta[name="robots"]', robotsContent);
 
-    // Open Graph
-    updateMeta('og:title', finalTitle, 'property');
-    updateMeta('og:description', finalDesc, 'property');
-    updateMeta('og:image', finalImage, 'property');
-    updateMeta('og:url', finalCanonical, 'property');
-    updateMeta('og:type', type, 'property');
-    updateMeta('og:site_name', siteName, 'property');
+    // 4. Update Open Graph
+    setMeta('meta[property="og:title"]', finalTitle);
+    setMeta('meta[property="og:description"]', finalDesc);
+    setMeta('meta[property="og:image"]', finalImage);
+    setMeta('meta[property="og:url"]', finalCanonical);
+    setMeta('meta[property="og:type"]', type);
+    setMeta('meta[property="og:site_name"]', siteName);
 
-    // Twitter
-    updateMeta('twitter:card', 'summary_large_image');
-    updateMeta('twitter:title', finalTitle);
-    updateMeta('twitter:description', finalDesc);
-    updateMeta('twitter:image', finalImage);
+    // 5. Update Twitter
+    setMeta('meta[name="twitter:card"]', 'summary_large_image');
+    setMeta('meta[name="twitter:title"]', finalTitle);
+    setMeta('meta[name="twitter:description"]', finalDesc);
+    setMeta('meta[name="twitter:image"]', finalImage);
 
-    // Canonical - THE MOST IMPORTANT FIX
-    updateLink('canonical', finalCanonical);
+    // 6. Update Canonical
+    setLink('canonical', finalCanonical);
 
-    // JSON-LD Structured Data
+    // 7. Update JSON-LD Schema
     let schemaScript = document.getElementById('json-ld-schema');
     if (!schemaScript) {
       schemaScript = document.createElement('script');
@@ -132,9 +127,6 @@ export const SEO: React.FC<SEOProps> = ({
 
     schemaScript.textContent = JSON.stringify(baseSchema);
 
-    return () => {
-      // Optional cleanup
-    };
   }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, keywords, schema, settings]);
 
   return null;
