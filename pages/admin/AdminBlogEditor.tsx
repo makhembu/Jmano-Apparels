@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -7,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { BlogEditorSidebar } from '../../components/admin/blog/BlogEditorSidebar';
 import { BlogEditorPreview } from '../../components/admin/blog/BlogEditorPreview';
-import { SafeReactQuill } from '../../components/admin/blog/SafeReactQuill';
+import { TiptapEditor } from '../../components/admin/blog/TiptapEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 
 export const AdminBlogEditor: React.FC = () => {
@@ -195,10 +196,10 @@ export const AdminBlogEditor: React.FC = () => {
                   
                   <div className="mb-12 flex flex-col">
                      <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                     <SafeReactQuill 
+                     <TiptapEditor
                         value={formData.content || ''}
                         onChange={handleEditorChange}
-                        className=""
+                        placeholder="Thread your testimony here..."
                      />
                   </div>
                </div>
