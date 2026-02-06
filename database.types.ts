@@ -340,6 +340,7 @@ export type Database = {
           is_nofollow: boolean | null
           keywords: string[] | null
           scheduled_for: string | null
+          likes: number
         }
         Insert: {
           [key: string]: any
@@ -355,6 +356,48 @@ export type Database = {
             referencedRelation: "blog_categories"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      blog_comments: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          comment: string
+          is_approved: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          comment: string
+          is_approved?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          comment?: string
+          is_approved?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
       // NEW TABLES

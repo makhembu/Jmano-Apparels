@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ReturnStatus, AnalyticsEvent
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ReturnStatus, AnalyticsEvent, BlogComment
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -166,6 +166,29 @@ export const api = {
     for (const id of ids) await blogService.deletePost(id);
   },
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
+  incrementBlogPostLike: async (postId: string) => {
+    const { data, error } = await supabase.rpc('increment_blog_like', { post_id_to_inc: postId });
+    if (error) throw error;
+    return data;
+  },
+  getBlogComments: async (postId: string): Promise<BlogComment[]> => {
+    const { data, error } = await supabase
+      .from('blog_comments')
+      .select('*, user:users(name)')
+      .eq('post_id', postId)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as any[];
+  },
+  addBlogComment: async (postId: string, userId: string, comment: string): Promise<void> => {
+    const { error } = await (supabase.from('blog_comments') as any).insert({
+      post_id: postId,
+      user_id: userId,
+      comment: comment
+    });
+    if (error) throw error;
+  },
   getAppSettings: () => settingsService.get(),
   getAdminSettings: () => settingsService.getAdminSettings(),
   updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),

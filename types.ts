@@ -84,6 +84,17 @@ export interface BlogPost {
   keywords?: string[];
   viewCount: number;
   scheduledFor?: string;
+  likes: number;
+}
+
+export interface BlogComment {
+  id: string;
+  postId: string;
+  userId: string;
+  comment: string;
+  createdAt: string;
+  isApproved: boolean;
+  user: { name: string };
 }
 
 export interface CartItem extends Product {
@@ -383,3 +394,4 @@ export type DbOrder = Tables<'orders'>;
 export type DbNewsletterSubscriber = Tables<'newsletter_subscribers'>;
 export type DbContactSubmission = Tables<'contact_submissions'>;
 export type DbEmailTemplate = Tables<'email_templates'>;
+export type DbBlogComment = Tables<'blog_comments'>;

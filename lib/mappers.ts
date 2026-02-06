@@ -180,6 +180,7 @@ export const Mappers = {
 
     viewCount: b.view_count || 0,
     scheduledFor: b.scheduled_for || undefined,
+    likes: b.likes || 0,
   }),
 
   toOrder: (o: DbOrder): Order => {
