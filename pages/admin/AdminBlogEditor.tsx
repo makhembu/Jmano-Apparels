@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -194,12 +193,12 @@ export const AdminBlogEditor: React.FC = () => {
                     />
                   </div>
                   
-                  <div className="h-[500px] mb-12 flex flex-col">
+                  <div className="mb-12 flex flex-col">
                      <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
                      <SafeReactQuill 
                         value={formData.content || ''}
                         onChange={handleEditorChange}
-                        className="flex-grow bg-white"
+                        className=""
                      />
                   </div>
                </div>
