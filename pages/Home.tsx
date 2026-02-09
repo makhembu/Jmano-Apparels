@@ -355,15 +355,15 @@ export const Home: React.FC = () => {
         </section>
       )}
 
-      {/* Follow Our Journey */}
+      {/* Follow Our Journey - Uses Dynamic Text */}
       {(settings.enableSocialSection ?? true) && !showSkeletons && settings.socialLinks && (
         <section className="bg-brand-dark py-16" aria-labelledby="social-heading">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 id="social-heading" className="text-3xl font-bold font-serif text-white mb-4">
-              Follow Our Journey
+              {settings.socialSectionTitle || "Follow Our Journey"}
             </h2>
             <p className="text-brand-light/70 max-w-xl mx-auto mb-8">
-              Join our community on social media for behind-the-scenes content, new drops, and daily inspiration.
+              {settings.socialSectionBody || "Join our community on social media for behind-the-scenes content, new drops, and daily inspiration."}
             </p>
             <nav className="flex justify-center space-x-6" aria-label="Social media links">
               {Object.entries(settings.socialLinks).map(([platform, url]) =>

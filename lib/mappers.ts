@@ -153,6 +153,10 @@ export const Mappers = {
     seoContentCol2Title: s.seo_content_col2_title || 'Ethical, Sustainable, Faithful',
     seoContentCol2Body: s.seo_content_col2_body || 'We don\'t compromise on quality or integrity. Our commitment to ethical manufacturing reflects our stewardship of God\'s creation. Every stitch in our Christian clothing collection is placed with care, ensuring that your apparel lasts as long as your testimony.',
     
+    // Social Section Text
+    socialSectionTitle: s.social_section_title || 'Follow Our Journey',
+    socialSectionBody: s.social_section_body || 'Join our community on social media for behind-the-scenes content, new drops, and daily inspiration.',
+
     // Sitelinks
     priorityPages: (s.priority_pages as any[]) || undefined,
   }),

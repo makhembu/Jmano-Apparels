@@ -192,6 +192,27 @@ export const GeneralSettingsTab: React.FC = () => {
                 checked={generalForm.enableSocialSection ?? true}
                 onChange={(val) => handleSwitchChange('enableSocialSection', val)}
             />
+            
+            {generalForm.enableSocialSection && (
+                <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2 space-y-3">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Social Section Content</h5>
+                    <Input 
+                        label="Title"
+                        name="socialSectionTitle" 
+                        value={generalForm.socialSectionTitle || ''} 
+                        onChange={handleGeneralChange} 
+                        placeholder="Follow Our Journey"
+                    />
+                    <Textarea
+                        label="Body Text"
+                        name="socialSectionBody" 
+                        value={generalForm.socialSectionBody || ''} 
+                        onChange={handleGeneralChange} 
+                        rows={2}
+                        placeholder="Join our community..."
+                    />
+                </div>
+            )}
         </div>
 
         {/* Homepage SEO Content Editor */}

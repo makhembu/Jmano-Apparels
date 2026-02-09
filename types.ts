@@ -251,6 +251,9 @@ export interface AppSettings {
   seoContentCol1Body?: string;
   seoContentCol2Title?: string;
   seoContentCol2Body?: string;
+  // Social Section Text
+  socialSectionTitle?: string;
+  socialSectionBody?: string;
   // Sitelinks Management
   priorityPages?: PriorityPage[];
 }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
@@ -49,24 +50,7 @@ export const Footer: React.FC = () => {
             <p className="text-brand-light text-sm italic">{settings.slogan}</p>
             <p className="text-brand-light text-sm mt-2">{settings.coreValues}</p>
             
-            {settings.socialLinks && Object.values(settings.socialLinks).some(v => v) && (
-              <div className="flex space-x-4 mt-6">
-                {Object.entries(settings.socialLinks).map(([platform, url]) =>
-                  url && SocialIcons[platform] ? (
-                    <a
-                      key={platform}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-brand-light/70 hover:text-brand-hope transition-colors"
-                      aria-label={`Jambo Apparels on ${platform}`}
-                    >
-                      {React.cloneElement(SocialIcons[platform], { className: "w-6 h-6" })}
-                    </a>
-                  ) : null
-                )}
-              </div>
-            )}
+            {/* Removed Social Icons to avoid duplication with Home page section */}
 
             {settings.enableNewsletterSignup && (
               <div className="mt-6">
