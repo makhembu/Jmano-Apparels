@@ -215,48 +215,62 @@ export const Home: React.FC = () => {
       )}
 
       {/* SEO Content Section (Dynamic) */}
-      <section className="bg-white py-16 border-t border-gray-100" aria-labelledby="seo-content-heading">
-         <div className="max-w-5xl mx-auto px-6">
-            <div className="prose prose-slate max-w-none text-center">
-               <h2 id="seo-content-heading" className="text-3xl font-serif font-bold text-brand-dark mb-8">
+      <section className="py-24 bg-white relative overflow-hidden" aria-labelledby="seo-content-heading">
+         {/* Decorative blobs */}
+         <div className="absolute top-0 left-0 w-64 h-64 bg-brand-green/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+         <div className="absolute bottom-0 right-0 w-96 h-96 bg-brand-hope/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+
+         <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+               <span className="text-brand-green font-bold text-xs uppercase tracking-widest mb-3 block">Our Philosophy</span>
+               <h2 id="seo-content-heading" className="text-4xl md:text-5xl font-serif font-bold text-brand-dark mb-6 leading-tight">
                    {settings.seoContentTitle || "Faith & Fashion: The Jambo Difference"}
                </h2>
                
-               <div className="text-lg leading-relaxed text-gray-600 mb-6">
+               <div className="text-lg md:text-xl leading-relaxed text-slate-600">
                  <ReactMarkdown components={{
-                     p: ({node, ...props}) => <p className="mb-4" {...props} />,
-                     strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                     p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                     strong: ({node, ...props}) => <strong className="font-bold text-brand-green" {...props} />
                  }}>
                      {settings.seoContentIntro || ""}
                  </ReactMarkdown>
                </div>
+            </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-left mt-12">
-                  <div>
-                     <h3 className="text-xl font-bold text-brand-green mb-3">
-                         {settings.seoContentCol1Title || "Why Choose Christian Streetwear?"}
-                     </h3>
-                     <div className="text-gray-600 mb-4">
-                        <ReactMarkdown components={{
-                            p: ({node, ...props}) => <p className="mb-4" {...props} />,
-                            strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
-                        }}>
-                             {settings.seoContentCol1Body || ""}
-                        </ReactMarkdown>
-                     </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+               {/* Card 1 */}
+               <div className="bg-brand-light rounded-[2.5rem] p-10 md:p-12 transition-transform hover:-translate-y-1 duration-300">
+                  <div className="w-12 h-12 bg-brand-dark text-white rounded-2xl flex items-center justify-center mb-6 text-xl">
+                    ✝️
                   </div>
-                  <div>
-                     <h3 className="text-xl font-bold text-brand-green mb-3">
-                         {settings.seoContentCol2Title || "Ethical, Sustainable, Faithful"}
-                     </h3>
-                     <div className="text-gray-600 mb-4">
-                        <ReactMarkdown components={{
-                             p: ({node, ...props}) => <p className="mb-4" {...props} />,
-                             strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
-                         }}>
-                             {settings.seoContentCol2Body || ""}
-                        </ReactMarkdown>
-                     </div>
+                  <h3 className="text-2xl font-serif font-bold text-brand-dark mb-4">
+                      {settings.seoContentCol1Title || "Why Choose Christian Streetwear?"}
+                  </h3>
+                  <div className="text-brand-dark/80 font-medium leading-relaxed">
+                     <ReactMarkdown components={{
+                         p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                         strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                     }}>
+                          {settings.seoContentCol1Body || ""}
+                     </ReactMarkdown>
+                  </div>
+               </div>
+
+               {/* Card 2 */}
+               <div className="bg-brand-hope rounded-[2.5rem] p-10 md:p-12 transition-transform hover:-translate-y-1 duration-300">
+                  <div className="w-12 h-12 bg-brand-dark text-white rounded-2xl flex items-center justify-center mb-6 text-xl">
+                    🌿
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-brand-dark mb-4">
+                      {settings.seoContentCol2Title || "Ethical, Sustainable, Faithful"}
+                  </h3>
+                  <div className="text-brand-dark/80 font-medium leading-relaxed">
+                     <ReactMarkdown components={{
+                          p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                          strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                      }}>
+                          {settings.seoContentCol2Body || ""}
+                     </ReactMarkdown>
                   </div>
                </div>
             </div>
