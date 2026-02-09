@@ -16,6 +16,13 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   priority?: boolean;
 }
 
+// Extend React.ImgHTMLAttributes to include fetchPriority
+declare module 'react' {
+  interface ImgHTMLAttributes<T> extends React.HTMLAttributes<T> {
+    fetchPriority?: 'high' | 'low' | 'auto';
+  }
+}
+
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
   src, 
   alt, 
@@ -75,7 +82,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       )}
       
       {priority ? (
-        // For priority images (LCP candidates), use standard img with eager loading
+        // For priority images (LCP candidates), use standard img with eager loading and high fetch priority
         <img
           src={optimizedSrc}
           srcSet={srcSet}
@@ -88,7 +95,6 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           onError={() => setError(true)}
           loading="eager"
           decoding="sync"
-          // @ts-ignore - fetchPriority is standard but React types might lag
           fetchPriority="high"
           {...props}
         />

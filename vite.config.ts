@@ -5,18 +5,23 @@ import { readFileSync } from 'fs';
 // Read version from package.json at build time
 const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
-// Custom plugin to remove Tailwind CDN in production builds (Hybrid Approach)
-const removeTailwindCDN = () => {
+// Custom plugin to remove Dev-only scripts (Tailwind CDN, Importmaps) in production
+const removeDevScripts = () => {
   return {
-    name: 'remove-tailwind-cdn',
+    name: 'remove-dev-scripts',
     transformIndexHtml(html, { command }) {
       if (command === 'build') {
-        // In production (Vercel), remove the CDN script.
-        // The build process will generate standard CSS via postcss.
-        return html.replace(/<script id="tailwind-cdn".*?<\/script>/gs, '')
-                   .replace(/<script id="tailwind-config".*?<\/script>/gs, '');
+        // 1. Remove Tailwind CDN (We use the build step for CSS)
+        html = html.replace(/<script id="tailwind-cdn"[\s\S]*?<\/script>/gi, '')
+                   .replace(/<script id="tailwind-config"[\s\S]*?<\/script>/gi, '');
+        
+        // 2. Remove Importmap (We use bundled node_modules in production)
+        // This prevents version conflicts (e.g. React 19 vs 18) and double-loading.
+        html = html.replace(/<script type="importmap"[\s\S]*?<\/script>/gi, '');
+        
+        return html;
       }
-      // In dev (Sandbox), keep it for immediate feedback.
+      // In dev (Sandbox), keep them for immediate feedback if node_modules aren't fully utilized by the environment.
       return html;
     }
   }
@@ -30,7 +35,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    removeTailwindCDN()
+    removeDevScripts()
   ],
   build: {
     target: 'esnext',
@@ -45,16 +50,18 @@ export default defineConfig({
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
         manualChunks: {
-          // Core React dependencies
+          // Core React dependencies - Keep these together for efficient caching
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          // UI Libraries
-          'vendor-ui': ['recharts', 'react-lazy-load-image-component'],
-          // Utilities
-          'vendor-utils': ['uuid', 'dompurify', 'react-markdown', 'remark-gfm'],
-          // Backend/API
+          // Utilities - Lightweight enough to keep global
+          'vendor-utils': ['uuid', 'dompurify', 'clsx', 'tailwind-merge'],
+          // Database - Core app requirement
           'supabase': ['@supabase/supabase-js'],
-          // AI
-          'ai-sdk': ['@google/genai']
+          
+          // NOTE: 'recharts', '@google/genai', 'react-markdown', and editors 
+          // are intentionally removed from manualChunks. 
+          // Vite will now automatically split them into the lazy-loaded chunks 
+          // (AdminDashboard, Copilot, etc.) where they are actually imported.
+          // This massively reduces the Homepage FCP/LCP.
         },
       },
     },
