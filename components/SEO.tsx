@@ -34,7 +34,6 @@ export const SEO: React.FC<SEOProps> = ({
   const defaultDescription = settings.seoDescription || "Wear your scriptures in Humility and Boldness. Premium Christian streetwear, hoodies, and tees designed to spread the Gospel.";
   const defaultImage = settings.defaultOgImage || settings.logoImage || 'https://i.imgur.com/pkaScEv.png';
   
-  // Logic to append Site Name only if not already present and short enough
   const finalTitle = title 
     ? (title.includes('|') ? title : `${title} | ${siteName}`) 
     : defaultTitle;
@@ -42,17 +41,23 @@ export const SEO: React.FC<SEOProps> = ({
   const finalDesc = description || defaultDescription;
   const finalImage = image || defaultImage;
   
+  // Construct absolute canonical URL
   let cleanPath = location.pathname;
   if (cleanPath !== '/' && cleanPath.endsWith('/')) {
     cleanPath = cleanPath.slice(0, -1);
   }
-  const autoCanonical = `https://jamboapparels.com${cleanPath}`;
+  // Ensure we don't have double slashes if path is root
+  const autoCanonical = `https://jamboapparels.com${cleanPath === '/' ? '' : cleanPath}`;
   const finalCanonical = canonical || autoCanonical;
+  
   const robotsContent = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
 
-  // Default keywords if none provided
+  // Default keywords
   const baseKeywords = ["Christian Clothing", "Faith Apparel", "Streetwear", "Scripture Hoodies", "Jambo Apparels"];
   const finalKeywords = keywords.length > 0 ? keywords : baseKeywords;
+
+  // Prepare Social Links for Schema
+  const socialSameAs = settings.socialLinks ? Object.values(settings.socialLinks).filter(Boolean) : [];
 
   useEffect(() => {
     // 1. Update Title
@@ -63,14 +68,10 @@ export const SEO: React.FC<SEOProps> = ({
       let element = document.querySelector(selector);
       if (!element) {
         element = document.createElement('meta');
-        
-        // Parse selector to set attributes
         const nameMatch = selector.match(/meta\[name="(.+?)"\]/);
         const propMatch = selector.match(/meta\[property="(.+?)"\]/);
-        
         if (nameMatch) element.setAttribute('name', nameMatch[1]);
         if (propMatch) element.setAttribute('property', propMatch[1]);
-        
         document.head.appendChild(element);
       }
       element.setAttribute('content', content);
@@ -105,7 +106,7 @@ export const SEO: React.FC<SEOProps> = ({
     setMeta('meta[name="twitter:description"]', finalDesc);
     setMeta('meta[name="twitter:image"]', finalImage);
 
-    // 6. Update Canonical
+    // 6. Update Canonical (Critical for SEO)
     setLink('canonical', finalCanonical);
 
     // 7. Update JSON-LD Schema
@@ -128,15 +129,22 @@ export const SEO: React.FC<SEOProps> = ({
           "logo": {
             "@type": "ImageObject",
             "url": settings.logoImage
+          },
+          "sameAs": socialSameAs,
+          "contactPoint": {
+             "@type": "ContactPoint",
+             "telephone": settings.contactPhone,
+             "contactType": "customer service",
+             "email": settings.contactEmail
           }
         },
-        schema // Merge specific page schema
+        schema // Merge specific page schema (product, article, etc)
       ].filter(Boolean)
     };
 
     schemaScript.textContent = JSON.stringify(baseSchema);
 
-  }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, finalKeywords, schema, settings]);
+  }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, finalKeywords, schema, settings, socialSameAs]);
 
   return null;
 };

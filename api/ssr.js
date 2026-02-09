@@ -49,7 +49,7 @@ function sanitizeSlug(slug) {
 
 export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  // Use Service Role if available for robust SSR data fetching, or Anon/Publishable as fallback
+  // Use Service Role if available for robust SSR data fetching
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
                       process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
                       process.env.SUPABASE_ANON_KEY || 
@@ -68,14 +68,15 @@ export default async function handler(req, res) {
   const baseUrl = `${protocol}://${host}`;
 
   // Robust path cleaning for canonical URL
-  const cleanPath = (path || '/').split('?')[0] || '/';
+  const cleanPath = (path || '/').split('?')[0];
+  const canonicalUrl = `${baseUrl}${cleanPath === '/' ? '' : cleanPath}`;
 
   // Default Meta
   let meta = {
-    title: 'Jambo Apparels | Christian Streetwear',
-    description: 'Divinely threaded scriptures. Wear your faith boldly.',
+    title: 'Jambo Apparels | Premium Christian Streetwear',
+    description: 'Divinely threaded scriptures. Wear your faith boldly with premium Christian hoodies and tees.',
     image: 'https://i.imgur.com/pkaScEv.png',
-    url: `${baseUrl}${cleanPath === '/' ? '' : cleanPath}`,
+    url: canonicalUrl,
     type: 'website',
     imageWidth: '1200',
     imageHeight: '630'
@@ -84,37 +85,48 @@ export default async function handler(req, res) {
   let structuredData = null;
 
   try {
-    // 4. Robust Settings Query (.maybeSingle instead of .single)
+    // 4. Robust Settings Query
     const { data: settings } = await supabase
       .from('app_settings')
       .select('*')
       .limit(1)
       .maybeSingle();
 
+    // Base Schema for Organization
     if (settings) {
        meta.title = settings.seo_title || meta.title;
        meta.description = settings.seo_description || meta.description;
-       // Only use default OG if specifically set, otherwise logo or fallback
        meta.image = settings.default_og_image || settings.logo_image || meta.image;
+
+       // Fix: Parse social links for Schema
+       const socialLinks = [];
+       if (settings.social_links) {
+          Object.values(settings.social_links).forEach(link => {
+              if (link) socialLinks.push(link);
+          });
+       }
+
+       structuredData = {
+         "@context": "https://schema.org",
+         "@type": "Organization",
+         "name": "Jambo Apparels",
+         "url": baseUrl,
+         "logo": settings.logo_image || meta.image,
+         "description": meta.description,
+         "sameAs": socialLinks,
+         "contactPoint": {
+           "@type": "ContactPoint",
+           "telephone": settings.contact_phone,
+           "contactType": "customer service",
+           "email": settings.contact_email
+         }
+       };
     }
 
     // 5. Route Logic
     if (cleanPath === '/' || cleanPath === '/index.html') {
-       // Homepage specific: Use Hero Banner for social sharing if available
        if (settings?.hero_banner_image && settings.hero_banner_image.length > 5) {
           meta.image = settings.hero_banner_image;
-       }
-       
-       // Add Organization structured data for homepage
-       if (settings) {
-         structuredData = {
-           "@context": "https://schema.org",
-           "@type": "Organization",
-           "name": "Jambo Apparels",
-           "url": baseUrl,
-           "logo": settings.logo_image || meta.image,
-           "description": meta.description
-         };
        }
     } 
     else if (cleanPath.startsWith('/shop')) {
@@ -132,10 +144,8 @@ export default async function handler(req, res) {
     else if (cleanPath.includes('/product/')) {
        const parts = cleanPath.split('/product/');
        if (parts.length > 1) {
-           // 6. Safer Slug Extraction
            const slug = sanitizeSlug(parts[1]);
            
-           // Optimized single query with OR condition
            const { data: product } = await supabase
              .from('products')
              .select('*')
@@ -145,36 +155,32 @@ export default async function handler(req, res) {
            if (product) {
               meta.title = product.seo_title || `${product.title} | Jambo Apparels`;
               meta.description = product.seo_description || product.description?.substring(0, 160) || meta.description;
-              
-              // Safer array check
               if (Array.isArray(product.images) && product.images.length > 0) {
                  meta.image = product.images[0];
               }
               meta.type = 'product';
               
-              // Add Product structured data
+              // Product Schema
               structuredData = {
                 "@context": "https://schema.org/",
                 "@type": "Product",
                 "name": product.title,
                 "description": product.description || meta.description,
                 "image": meta.image,
+                "sku": product.sku || product.id,
                 "brand": {
                   "@type": "Brand",
                   "name": "Jambo Apparels"
+                },
+                "offers": {
+                  "@type": "Offer",
+                  "url": meta.url,
+                  "priceCurrency": settings?.currency || "GBP",
+                  "price": product.sale_price || product.price,
+                  "availability": (product.stock_quantity > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                  "itemCondition": "https://schema.org/NewCondition"
                 }
               };
-              
-              // Add offer data if price exists
-              if (product.price) {
-                structuredData.offers = {
-                  "@type": "Offer",
-                  "price": product.price,
-                  "priceCurrency": product.currency || "USD",
-                  "availability": product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-                  "url": meta.url
-                };
-              }
            }
        }
     }
@@ -194,15 +200,14 @@ export default async function handler(req, res) {
               meta.image = post.featured_image || post.thumbnail || meta.image;
               meta.type = 'article';
               
-              // Add Article structured data
+              // Article Schema
               structuredData = {
                 "@context": "https://schema.org",
                 "@type": "BlogPosting",
                 "headline": post.title,
                 "description": post.summary || meta.description,
                 "image": meta.image,
-                "datePublished": post.created_at,
-                "dateModified": post.updated_at || post.created_at,
+                "datePublished": post.date,
                 "author": {
                   "@type": "Organization",
                   "name": "Jambo Apparels"
@@ -220,7 +225,7 @@ export default async function handler(req, res) {
        }
     }
 
-    // 7. Absolute URL enforcement
+    // 7. Absolute URL enforcement for images
     if (meta.image && meta.image.startsWith('/')) {
         meta.image = `${baseUrl}${meta.image}`;
     }
@@ -237,31 +242,21 @@ export default async function handler(req, res) {
     const safeImage = esc(meta.image);
     const safeUrl = esc(meta.url);
     const safeType = esc(meta.type);
-    const safeImageWidth = esc(meta.imageWidth);
-    const safeImageHeight = esc(meta.imageHeight);
 
-    // Strip existing tags to prevent duplicates
+    // Strip existing tags
+    html = html.replace(/<title>.*?<\/title>/i, '');
     html = html.replace(/<meta[^>]+property="og:[^"]+"[^>]*>/gi, '');
     html = html.replace(/<meta[^>]+name="description"[^>]*>/gi, '');
     html = html.replace(/<meta[^>]+name="twitter:[^"]+"[^>]*>/gi, '');
     html = html.replace(/<link[^>]+rel="canonical"[^>]*>/gi, '');
 
-    // Replace Title
-    if (html.includes('<title>')) {
-        html = html.replace(/<title>.*?<\/title>/i, `<title>${safeTitle}</title>`);
-    } else {
-        html = html.replace(/<head>/i, `<head><title>${safeTitle}</title>`);
-    }
-    
-    // Construct Meta Tags with canonical URL and image dimensions
-    const tags = `
+    const headTags = `
+    <title>${safeTitle}</title>
     <link rel="canonical" href="${safeUrl}" />
     <meta name="description" content="${safeDesc}" />
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
     <meta property="og:image" content="${safeImage}" />
-    <meta property="og:image:width" content="${safeImageWidth}" />
-    <meta property="og:image:height" content="${safeImageHeight}" />
     <meta property="og:url" content="${safeUrl}" />
     <meta property="og:type" content="${safeType}" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -270,25 +265,18 @@ export default async function handler(req, res) {
     <meta name="twitter:image" content="${safeImage}" />
     `;
 
-    // Inject meta tags before </head>
-    html = html.replace(/<\/head>/i, `${tags}</head>`);
+    // Inject meta tags
+    html = html.replace(/<head>/i, `<head>${headTags}`);
     
-    // Inject structured data if exists
+    // Inject structured data
     if (structuredData) {
-      const safeStructuredData = JSON.stringify(structuredData)
-        .replace(/</g, '\\u003c')
-        .replace(/>/g, '\\u003e');
-      
+      const safeStructuredData = JSON.stringify(structuredData).replace(/</g, '\\u003c');
       html = html.replace(
         /<\/head>/i,
         `<script type="application/ld+json">${safeStructuredData}</script></head>`
       );
     }
 
-    // 9. Debug Header
-    res.setHeader('x-meta-image', safeImage);
-
-    // 10. Cache Strategy
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=86400');
     
@@ -296,7 +284,6 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('SSR Error:', e);
-    // In case of error, redirect to the app shell so the site still loads (CSR fallback)
     res.redirect(302, '/__app_shell');
   }
 }
