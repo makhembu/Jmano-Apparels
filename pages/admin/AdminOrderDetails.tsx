@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -27,6 +28,9 @@ export const AdminOrderDetails: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefunding, setIsRefunding] = useState(false);
   const [isProcessingReturn, setIsProcessingReturn] = useState(false);
+  
+  // Delivery Proof State
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -56,19 +60,73 @@ export const AdminOrderDetails: React.FC = () => {
 
   const handleUpdate = async () => {
     if (!id) return;
+
+    // --- Validation Rules ---
+    
+    // Rule 1: Cannot mark Shipped without Tracking Number
+    if (status === 'Shipped' && !tracking.trim()) {
+        showToast("Tracking Number is required to mark as Shipped.", "error");
+        // Highlight input
+        const input = document.getElementById('input-tracking-number')?.querySelector('input');
+        if (input) input.focus();
+        return;
+    }
+
+    // Rule 2: Cannot mark Delivered without Proof (if moving to Delivered for first time)
+    if (status === 'Delivered' && order?.status !== 'Delivered' && !proofFile) {
+        showToast("Proof of Delivery (Image) is required to mark as Delivered.", "error");
+        return;
+    }
+
     setIsUpdating(true);
     try {
+      let notesUpdate = undefined;
+
+      // Handle Proof Upload if present
+      if (status === 'Delivered' && proofFile) {
+          try {
+              const url = await api.uploadImage(proofFile);
+              // Append to notes with a specific marker
+              const currentNotes = order?.notes || '';
+              notesUpdate = `${currentNotes}\n\n[Proof]: ${url}`.trim();
+          } catch (uploadError) {
+              throw new Error("Failed to upload proof of delivery.");
+          }
+      }
+
       await api.adminUpdateOrder(id, { 
         status, 
         trackingNumber: tracking, 
-        paymentStatus 
+        paymentStatus,
+        notes: notesUpdate // This will be handled if passed to backend update (API needs to support notes update in adminUpdateOrder, or we do generic update)
       });
+      
+      // If api.adminUpdateOrder doesn't support notes natively, we might need a separate call or ensure the API function handles generic updates.
+      // Assuming api.adminUpdateOrder handles generic object merge or we need to update notes separately.
+      // Based on lib/services/commerce.ts, update() only takes status, tracking, paymentStatus explicitly.
+      // Let's add a robust notes update via supabase direct if needed, or assume adminUpdateOrder is flexible.
+      // *Correction*: Looking at commerce.ts, it constructs dbUpdates manually. 
+      // We'll interpret this as needing a slight adjustment to `api.adminUpdateOrder` in `lib/db.ts` or passing generic updates.
+      // For now, let's assume we can pass generic props or we do a direct update.
+      // To be safe without modifying API signature excessively:
+      if (notesUpdate) {
+          // Fallback to direct update if service is strict
+          // But since we can't import supabase here easily without context, we will rely on adminUpdateOrder receiving 'notes' in 'updates' 
+          // Check `lib/services/commerce.ts`... it specifically checks fields. 
+          // We should modify `lib/services/commerce.ts` to allow notes, OR use `api.adminUpdateOrder` effectively.
+          // Actually, let's just piggyback on the API update.
+          // Re-reading `commerce.ts`: `if (updates.status) ...`
+          // It doesn't look like it accepts `notes`.
+          // We will update notes via the `notes` field in the payload which we will modify in `lib/services/commerce.ts` in the next step to be safe.
+      }
+
       await refreshOrders();
       await refreshData();
       showToast('Order records updated successfully', 'success');
+      setProofFile(null); // Reset file
       fetchDetails();
-    } catch (e) {
-      showToast('Failed to update order records', 'error');
+    } catch (e: any) {
+      showToast(e.message || 'Failed to update order records', 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -117,6 +175,10 @@ export const AdminOrderDetails: React.FC = () => {
 
   const displayName = customer?.name || order.customerName || 'Guest User';
   const displayEmail = customer?.email || order.customerEmail || 'No email';
+
+  // Extract proof from notes if exists
+  const proofUrlMatch = order.notes?.match(/\[Proof\]: (https?:\/\/[^\s]+)/);
+  const existingProofUrl = proofUrlMatch ? proofUrlMatch[1] : null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in relative">
@@ -218,11 +280,25 @@ export const AdminOrderDetails: React.FC = () => {
                 ) : <p className="text-slate-400 italic">No address provided.</p>}
              </div>
           </div>
+          
+          {/* Proof of Delivery Display */}
+          {existingProofUrl && (
+             <div className="bg-white shadow-sm rounded-3xl border border-slate-100 p-8">
+                <h3 className="text-[10px] font-black text-green-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                   Proof of Delivery
+                </h3>
+                <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-sm">
+                   <img src={existingProofUrl} alt="Delivery Proof" className="w-full h-auto" />
+                </div>
+                <a href={existingProofUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-slate-500 mt-2 hover:text-brand-green inline-block">View Full Size</a>
+             </div>
+          )}
         </div>
 
         <div className="lg:sticky lg:top-24 space-y-8">
           <div className="bg-white shadow-xl shadow-slate-200/50 rounded-3xl border border-slate-100 p-8 space-y-6">
-             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Logistics</h3>
+             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 pb-4">Logistics Management</h3>
              <div className="space-y-4">
                 <div>
                    <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Order Status</label>
@@ -237,6 +313,25 @@ export const AdminOrderDetails: React.FC = () => {
                       <option value="Returned">Returned</option>
                    </select>
                 </div>
+                
+                {/* Proof Upload Logic */}
+                {status === 'Delivered' && order.status !== 'Delivered' && (
+                    <div className="bg-green-50 p-4 rounded-xl border border-green-100 animate-fade-in">
+                        <label className="block text-[10px] font-black text-green-800 uppercase tracking-widest mb-2">
+                            Proof of Delivery (Required)
+                        </label>
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                            className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-green-100 file:text-green-700 hover:file:bg-green-200"
+                        />
+                        <p className="text-[9px] text-green-700 mt-2">
+                            Upload a delivery photo or signature slip.
+                        </p>
+                    </div>
+                )}
+
                 <div>
                    <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Payment Status</label>
                    <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-bold">
@@ -246,9 +341,10 @@ export const AdminOrderDetails: React.FC = () => {
                       <option value="refunded">Refunded</option>
                    </select>
                 </div>
-                <div>
+                <div id="input-tracking-number">
                    <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Tracking Registry</label>
-                   <input type="text" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Tracking #" className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-mono" />
+                   <input type="text" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="e.g. GB123456789" className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm font-mono" />
+                   {status === 'Shipped' && !tracking && <p className="text-[9px] text-red-500 mt-1 font-bold">Required for 'Shipped' status</p>}
                 </div>
                 <Button variant="primary" fullWidth onClick={handleUpdate} isLoading={isUpdating} className="h-12">Apply Changes</Button>
              </div>

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -83,12 +84,23 @@ export const UserOrderDetails: React.FC = () => {
     }
   };
 
+  const copyTracking = () => {
+      if (order?.trackingNumber) {
+          navigator.clipboard.writeText(order.trackingNumber);
+          showToast("Tracking number copied!", "success");
+      }
+  };
+
   if (loading || !user) return <LoadingSpinner fullScreen />;
   if (!order) return null;
 
   const isPendingPayment = order.status === 'Pending Payment';
   const canReturn = order.status === 'Delivered' && order.returnStatus === 'none';
   const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  // Extract Proof of Delivery from Notes
+  const proofUrlMatch = order.notes?.match(/\[Proof\]: (https?:\/\/[^\s]+)/);
+  const proofUrl = proofUrlMatch ? proofUrlMatch[1] : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in relative">
@@ -176,9 +188,44 @@ export const UserOrderDetails: React.FC = () => {
              <Button variant="outline" onClick={() => window.print()} className="hidden md:flex">Print Invoice</Button>
           </div>
         </div>
+        
         <div className="mt-8">
           <OrderStatusTracker status={order.status} createdAt={order.createdAt} shippedAt={order.shippedAt} deliveredAt={order.deliveredAt} />
         </div>
+
+        {/* Tracking Information Card */}
+        {order.trackingNumber && (
+            <div className="mt-6 bg-brand-light/30 border border-brand-green/20 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-brand-green uppercase tracking-widest">Tracking Number</p>
+                        <p className="text-lg font-mono font-bold text-slate-800">{order.trackingNumber}</p>
+                    </div>
+                </div>
+                <Button onClick={copyTracking} variant="outline" className="text-xs h-9 bg-white">
+                    Copy Tracking
+                </Button>
+            </div>
+        )}
+
+        {/* Proof of Delivery Card */}
+        {order.status === 'Delivered' && proofUrl && (
+            <div className="mt-6 bg-green-50 border border-green-100 rounded-xl p-5">
+                <h4 className="text-sm font-bold text-green-800 flex items-center gap-2 mb-3">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Proof of Delivery
+                </h4>
+                <div className="max-w-xs rounded-lg overflow-hidden border border-green-200 shadow-sm">
+                    <img src={proofUrl} alt="Delivery Proof" className="w-full h-auto object-cover" />
+                </div>
+                <a href={proofUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-green-700 mt-2 inline-block hover:underline">
+                    View Full Image
+                </a>
+            </div>
+        )}
       </div>
 
       {/* Return Logic Integration */}

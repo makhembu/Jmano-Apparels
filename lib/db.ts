@@ -162,6 +162,34 @@ export const api = {
       .match({ id: orderId, user_id: userId });
     
     if (error) throw error;
+
+    // EMAIL TRIGGER: Return Requested
+    try {
+      const order = await orderService.getById(orderId);
+      const settings = await settingsService.get();
+      
+      if (order && order.customerEmail) {
+         // To Customer
+         settingsService.sendTransactionalEmail('return_requested', order.customerEmail, {
+             '{{name}}': order.customerName || 'Customer',
+             '{{order_number}}': order.orderNumber,
+             '{{return_reason}}': reason
+         });
+         
+         // To Admin
+         if (settings?.contactEmail) {
+             settingsService.sendTransactionalEmail('admin_return_alert', settings.contactEmail, {
+                 '{{customer_name}}': order.customerName || 'Customer',
+                 '{{order_number}}': order.orderNumber,
+                 '{{return_reason}}': reason,
+                 '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}`
+             });
+         }
+      }
+    } catch (e) {
+      console.error("Failed to send return email", e);
+    }
+
     return { success: true };
   },
 
@@ -182,6 +210,28 @@ export const api = {
 
     const { error } = await (supabase.from('orders') as any).update(updates).eq('id', orderId);
     if (error) throw error;
+
+    // EMAIL TRIGGER: Return Decision
+    try {
+      const order = await orderService.getById(orderId);
+      if (order && order.customerEmail) {
+          if (returnStatus === 'approved') {
+              settingsService.sendTransactionalEmail('return_approved', order.customerEmail, {
+                  '{{name}}': order.customerName || 'Customer',
+                  '{{order_number}}': order.orderNumber
+              });
+          } else if (returnStatus === 'rejected') {
+              settingsService.sendTransactionalEmail('return_rejected', order.customerEmail, {
+                  '{{name}}': order.customerName || 'Customer',
+                  '{{order_number}}': order.orderNumber,
+                  '{{rejection_reason}}': notes || 'Return criteria not met.'
+              });
+          }
+      }
+    } catch (e) {
+      console.error("Failed to send return decision email", e);
+    }
+
     return { success: true };
   },
 
@@ -196,6 +246,20 @@ export const api = {
     if (!response.ok || !data.success) {
       throw new Error(data.message || 'Refund failed');
     }
+
+    // EMAIL TRIGGER: Refund Issued
+    try {
+      const order = await orderService.getById(orderId);
+      if (order && order.customerEmail) {
+          settingsService.sendTransactionalEmail('order_refunded', order.customerEmail, {
+              '{{name}}': order.customerName || 'Customer',
+              '{{order_number}}': order.orderNumber
+          });
+      }
+    } catch (e) {
+      console.error("Failed to send refund email", e);
+    }
+
     return data;
   },
 

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Button } from '../ui/Button';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -23,6 +24,9 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
 }) => {
   const { showToast } = useToast();
   const [paypalError, setPaypalError] = useState(false);
+  
+  // Cast to any to resolve type definition conflicts with style prop in newer TS versions
+  const PayPalButtonsComponent = PayPalButtons as any;
   
   const initialOptions = useMemo(() => ({
     // FIX: Corrected property name from "client-id" to "clientId" to match ReactPayPalScriptOptions type.
@@ -73,16 +77,15 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
              </div>
           ) : (
              <PayPalScriptProvider options={initialOptions}>
-                {/* @ts-ignore - style prop typing issue in some versions of react-paypal-js */}
-                <PayPalButtons 
+                <PayPalButtonsComponent 
                   key={`${currency}-${paypalConfig?.clientId}`}
                   style={{ 
                       layout: "vertical", 
                       shape: "rect", 
                       height: 48,
                       label: 'checkout'
-                  } as any}
-                  onClick={(data, actions) => {
+                  }}
+                  onClick={(data: any, actions: any) => {
                     // Check local form validation before opening PayPal
                     if (!onValidate()) {
                         showToast("Please complete your delivery details first.", "info");

@@ -143,7 +143,7 @@ export class OrderService {
     return createdOrder;
   }
 
-  async update(id: string, updates: { status?: string; trackingNumber?: string; paymentStatus?: string }): Promise<void> {
+  async update(id: string, updates: { status?: string; trackingNumber?: string; paymentStatus?: string; notes?: string }): Promise<void> {
     log('UPDATE', 'orders', { id, ...updates });
     const dbUpdates: any = {};
     if (updates.status) {
@@ -154,6 +154,7 @@ export class OrderService {
     }
     if (updates.trackingNumber) dbUpdates.tracking_number = updates.trackingNumber;
     if (updates.paymentStatus) dbUpdates.payment_status = updates.paymentStatus;
+    if (updates.notes) dbUpdates.notes = updates.notes;
 
     const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
     if (error) throw error;
@@ -184,7 +185,8 @@ export class OrderService {
                     const vars: any = {
                         '{{name}}': order.customerName || 'Customer',
                         '{{order_number}}': order.orderNumber,
-                        '{{status}}': updates.status
+                        '{{status}}': updates.status,
+                        '{{order_link}}': `https://jamboapparels.com/order/${id}`
                     };
 
                     switch(updates.status) {
