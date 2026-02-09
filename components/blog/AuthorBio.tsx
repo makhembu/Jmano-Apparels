@@ -1,16 +1,32 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShop } from '../../context/ShopContext';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { api } from '../../lib/db';
+import { User } from '../../types';
 
 interface AuthorBioProps {
   authorName: string;
 }
 
 export const AuthorBio: React.FC<AuthorBioProps> = ({ authorName }) => {
-  const { settings, users } = useShop();
+  const { settings } = useShop();
+  // Store fetched author data locally since it's no longer in global context
+  const [author, setAuthor] = useState<Partial<User> | undefined>(undefined);
+
   const isFounder = authorName === settings.founderName;
-  const author = users.find(u => u.name === authorName);
+
+  useEffect(() => {
+    // Only fetch if it's not the founder (founder data is in settings) and we have a name
+    if (!isFounder && authorName) {
+      api.getPublicUsers().then((users) => {
+        const found = users.find((u) => u.name === authorName);
+        setAuthor(found);
+      }).catch(() => {
+        // Silently fail if user lookup fails
+      });
+    }
+  }, [authorName, isFounder]);
 
   let authorImage = null;
   if (isFounder && settings.founderImage) {

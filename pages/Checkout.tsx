@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -11,6 +12,7 @@ import { usePayment } from '../hooks/usePayment';
 import { CheckoutForm } from '../components/checkout/CheckoutForm';
 import { OrderSummary } from '../components/checkout/OrderSummary';
 import { PaymentOptions } from '../components/checkout/PaymentOptions';
+import { checkoutSchema } from '../lib/schemas';
 
 export const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
@@ -129,14 +131,18 @@ export const Checkout: React.FC = () => {
   const finalTotal = Math.max(0, cartTotal + shippingCost - discountAmount);
 
   const validateOrder = (): boolean => {
-    if (!user) {
-        if (!guestName || !guestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-            showToast('Invalid name or email.', 'error');
-            return false;
-        }
-    }
-    if (!address.address1 || !address.city || !address.postcode) {
-        showToast('Delivery details incomplete', 'error');
+    // Construct data object for Zod validation
+    const validationData = {
+        guest: !user ? { name: guestName, email: guestEmail } : undefined,
+        address: address,
+        user: user ? { id: user.id } : undefined
+    };
+
+    const result = checkoutSchema.safeParse(validationData);
+
+    if (!result.success) {
+        const firstError = result.error.errors[0];
+        showToast(firstError.message, 'error');
         return false;
     }
     return true;

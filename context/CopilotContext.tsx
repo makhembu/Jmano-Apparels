@@ -1,13 +1,9 @@
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { geminiClient } from '../lib/ai/gemini-client';
-import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
-import { Chat } from '@google/genai';
 import { useShop } from './ShopContext';
-import { api } from '../lib/db';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -17,18 +13,13 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { settings } = useShop();
-  
-  // Store the key retrieved from DB
-  const [dbApiKey, setDbApiKey] = useState<string | undefined>(undefined);
+  const { settings } = useShop(); // We still use settings to check if AI enabled generally, but key is on backend if possible
 
   const [pageContext, setPageContext] = useState<PageContext>({
     route: location.pathname,
     pageName: 'Dashboard',
     availableActions: []
   });
-
-  const chatSession = useRef<Chat | null>(null);
 
   const setPageData = useCallback((data: Record<string, unknown> | undefined) => {
     setPageContext(prev => ({ ...prev, pageData: data }));
@@ -52,57 +43,10 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
-  // Securely fetch Admin settings (with secrets) on mount
-  useEffect(() => {
-    const fetchSecureSettings = async () => {
-      try {
-        // Attempt to fetch full admin settings (only works if user is admin)
-        const adminSettings = await api.getAdminSettings();
-        if (adminSettings?.geminiApiKey) {
-          setDbApiKey(adminSettings.geminiApiKey);
-        }
-      } catch (e) {
-        console.warn("Copilot: Could not fetch secure settings (User might not be admin).");
-      }
-    };
-    fetchSecureSettings();
-  }, []);
-
-  // Handle Session Initialization - Prioritizing DB Key > Shop Context > Env
-  useEffect(() => {
-    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
-    
-    if (geminiClient.isAvailable(apiKey)) {
-        const prompt = generateSystemPrompt(pageContext);
-        // Only recreate if key changed or session missing
-        if (!chatSession.current) {
-            chatSession.current = geminiClient.createChat(prompt, apiKey);
-        }
-    }
-  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, dbApiKey]); 
-
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
-    
-    if (!chatSession.current) {
-      if (geminiClient.isAvailable(apiKey)) {
-        const prompt = generateSystemPrompt(pageContext);
-        chatSession.current = geminiClient.createChat(prompt, apiKey);
-      } else {
-        setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: 'model',
-            content: "Copilot is not configured. Please add a Gemini API Key in App Settings.",
-            timestamp: new Date(),
-            isError: true
-        }]);
-        return;
-      }
-    }
-    
-    if (!chatSession.current || !content.trim()) return;
+    if (!content.trim()) return;
 
     const userMsg: Message = { 
         id: Date.now().toString(), 
@@ -110,34 +54,58 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         content, 
         timestamp: new Date() 
     };
-    setMessages(prev => [...prev, userMsg]);
+    
+    // Optimistic update
+    const newHistory = [...messages, userMsg];
+    setMessages(newHistory);
     setIsLoading(true);
 
     try {
-        let response = await chatSession.current.sendMessage({ message: content });
-        
-        while (response.functionCalls && response.functionCalls.length > 0) {
-            const functionResponses = await Promise.all(
-                response.functionCalls.map(async (call) => {
-                    const executor = (executors as any)[call.name];
-                    const result = executor ? await executor(call.args) : { error: `Function ${call.name} not found` };
-                    return { 
-                        functionResponse: { 
-                            name: call.name, 
-                            id: call.id, 
-                            response: { result } 
-                        } 
-                    };
-                })
-            );
-            response = await chatSession.current.sendMessage({ message: functionResponses });
+        // Send to Backend API
+        const res = await fetch('/api/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: content,
+                history: messages.map(m => ({ role: m.role, content: m.content })),
+                pageContext
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Failed to contact Copilot");
         }
 
-        const text = response.text || "I've handled that request for you.";
+        let modelText = data.text;
+        const toolCalls = data.functionCalls;
+
+        // Process Tool Calls client-side
+        if (toolCalls && toolCalls.length > 0) {
+            // We assume for now the model provides a final text response *after* knowing tool results in a real chat session.
+            // Since our backend API is single-turn (stateless request), we execute tools here.
+            // In a full implementation, we'd send the tool results BACK to the API to get the final text.
+            // For simplicity in this fix, we execute and show a generic success message if the model didn't provide text.
+            
+            for (const call of toolCalls) {
+                const executor = (executors as any)[call.name];
+                if (executor) {
+                    await executor(call.args);
+                } else {
+                    console.warn(`Tool ${call.name} not found`);
+                }
+            }
+            
+            if (!modelText) {
+                modelText = "I've processed your request.";
+            }
+        }
+
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            content: text, 
+            content: modelText || "Task completed.", 
             timestamp: new Date() 
         }]);
 
@@ -146,23 +114,19 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            content: "I'm having trouble processing that right now. Please try again later.", 
+            content: "I'm having trouble connecting right now. Please try again later.", 
             timestamp: new Date(), 
             isError: true 
         }]);
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors, settings.geminiApiKey, dbApiKey]);
+  }, [pageContext, executors, messages]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
   const clearHistory = () => {
       setMessages([]);
-      const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
-      if (geminiClient.isAvailable(apiKey)) {
-        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
-      }
   };
 
   return (

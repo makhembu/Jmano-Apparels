@@ -1,0 +1,135 @@
+
+import { GoogleGenAI } from "@google/genai";
+import { createClient } from '@supabase/supabase-js';
+
+// Define tools server-side (must match client-side expectations)
+const functionDeclarations = [
+  {
+    name: 'navigate',
+    description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        path: { type: 'STRING', description: 'The full destination route starting with /admin.' },
+        tab: { type: 'STRING', description: 'The specific tab ID to open.' }
+      },
+      required: ['path']
+    }
+  },
+  {
+    name: 'getDetailedInventoryReport',
+    description: 'Get a full breakdown of products, stock levels, and historical sales performance.',
+    parameters: { type: 'OBJECT', properties: {} }
+  },
+  {
+    name: 'getLatestOrder',
+    description: 'Fetches the most recent order record.',
+    parameters: { type: 'OBJECT', properties: {} }
+  },
+  {
+    name: 'getDashboardStats',
+    description: 'Retrieve store performance KPIs.',
+    parameters: { type: 'OBJECT', properties: {} }
+  },
+  {
+    name: 'getLiveTraffic',
+    description: 'Get real-time data about who is currently on the website.',
+    parameters: { type: 'OBJECT', properties: {} }
+  },
+  {
+    name: 'highlightElement',
+    description: 'Visually pulse a gold ring around a specific UI element.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        elementId: { type: 'STRING', description: 'The DOM ID of the target element.' }
+      },
+      required: ['elementId']
+    }
+  }
+];
+
+// System Prompt Generator
+function generateSystemPrompt(context) {
+  return `You are a high-nuance administrative partner for Jambo Apparels. You don't just "show" pages; you anticipate needs and execute deep navigation.
+
+Current Context:
+Page: ${context?.pageName || 'Unknown'}
+Route: ${context?.route || '/'}
+
+## Critical Nuance Rules
+1. **The "Latest Invoice" Rule**: If a user asks for their latest invoice, last sale, or to print the recent order:
+   - Call \`getLatestOrder()\` to find the ID.
+   - Call \`navigate({ path: '/admin/orders/' + orderId })\` immediately.
+   - Call \`highlightElement({ elementId: 'btn-print-invoice' })\`.
+
+2. **Tool Chaining**: You can and should call multiple tools in sequence to satisfy a single user request.
+
+3. **Tone**: Nuanced, professional, results-oriented.
+`;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { history, message, pageContext } = req.body;
+
+  try {
+    // 1. Get API Key (Env or DB)
+    let apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+    // Fallback: Fetch from DB if not in Env (for Admins)
+    if (!apiKey) {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+        
+        if (supabaseUrl && supabaseKey) {
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            const { data } = await supabase.from('app_settings').select('gemini_api_key').single();
+            if (data?.gemini_api_key) apiKey = data.gemini_api_key;
+        }
+    }
+
+    if (!apiKey) {
+        return res.status(400).json({ error: "Gemini API Key not configured." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const model = 'gemini-3-flash-preview'; 
+
+    // 2. Prepare History for SDK
+    // Convert generic history array to Gemini Content format
+    const contents = (history || []).map(msg => ({
+        role: msg.role === 'model' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+    }));
+    
+    // Add current message
+    contents.push({ role: 'user', parts: [{ text: message }] });
+
+    // 3. Generate Content (One-shot with history context)
+    const result = await ai.models.generateContent({
+        model: model,
+        contents: contents,
+        config: {
+            systemInstruction: generateSystemPrompt(pageContext),
+            tools: [{ functionDeclarations }],
+        }
+    });
+
+    const response = result.response;
+    
+    // Extract Function Calls
+    const functionCalls = response.functionCalls();
+    const text = response.text();
+
+    return res.status(200).json({ 
+        text, 
+        functionCalls 
+    });
+
+  } catch (error) {
+    console.error("AI API Error:", error);
+    return res.status(500).json({ error: error.message || "An error occurred processing the request." });
+  }
+}

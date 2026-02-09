@@ -1,3 +1,4 @@
+
 import React, { useEffect, Suspense, lazy } from 'react';
 import { HashRouter, BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -64,6 +65,16 @@ const Router = isProduction ? BrowserRouter : HashRouter;
 const App: React.FC = () => {
   useEffect(() => {
     CacheManager.checkVersion();
+
+    // Global Error Handler for Promises
+    const handleRejection = (event: PromiseRejectionEvent) => {
+        console.error("Unhandled Promise Rejection:", event.reason);
+        // Prevent default browser UI for uncaught error if desired
+        // event.preventDefault();
+    };
+
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => window.removeEventListener('unhandledrejection', handleRejection);
   }, []);
 
   return (

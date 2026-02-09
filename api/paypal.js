@@ -1,8 +1,24 @@
+
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from './_lib/rate-limit.js';
+
+// Helper to retry fetches
+async function retryFetch(url, options, retries = 3, delay = 1000) {
+  try {
+    const res = await fetch(url, options);
+    // If 5xx error, throw to retry
+    if (res.status >= 500) throw new Error(`Server error: ${res.status}`);
+    return res;
+  } catch (err) {
+    if (retries <= 0) throw err;
+    await new Promise(r => setTimeout(r, delay));
+    return retryFetch(url, options, retries - 1, delay * 1.5);
+  }
+}
 
 const fetchWithTimeout = (url, options, timeout = 10000) => {
   return Promise.race([
-    fetch(url, options),
+    retryFetch(url, options),
     new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timeout')), timeout)
     )
@@ -13,11 +29,16 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Rate Limit: 5 requests per minute
+  const rateLimitResult = await checkRateLimit(req, 5, "60 s");
+  if (!rateLimitResult.success) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
   const { type = 'capture', orderId, paypalOrderId } = req.body;
 
   try {
     const sbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    // FIX: Use the correct server-side environment variable for Vercel.
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!sbUrl || !sbKey) {
@@ -27,7 +48,6 @@ export default async function handler(req, res) {
 
     const supabase = createClient(sbUrl, sbKey);
 
-    // Get Credentials from DB (must use service key)
     const { data: settings, error: settingsError } = await supabase.from('app_settings').select('*').eq('id', 1).single();
     if (settingsError || !settings?.paypal_client_id || !settings?.paypal_secret_key) {
       console.error("DB Error fetching PayPal keys:", settingsError?.message);
@@ -37,7 +57,6 @@ export default async function handler(req, res) {
     const baseUrl = settings.paypal_mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
     const auth = Buffer.from(`${settings.paypal_client_id}:${settings.paypal_secret_key}`).toString('base64');
 
-    // 1. Get Access Token
     const tokenRes = await fetchWithTimeout(`${baseUrl}/v1/oauth2/token`, {
       method: 'POST',
       headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -47,9 +66,7 @@ export default async function handler(req, res) {
     if (!tokenRes.ok) throw new Error(tokenData.error_description || 'Failed to get PayPal token');
     const { access_token } = tokenData;
 
-    // 2. Handle Actions (Capture or Refund)
     if (type === 'refund') {
-        // REFUND LOGIC
         const { data: order } = await supabase.from('orders').select('payment_intent_id, total').eq('id', orderId).single();
         if (!order || !order.payment_intent_id) throw new Error("Capture ID not found for this order.");
         
@@ -74,7 +91,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, refundId: refundData.id });
     }
     
-    // DEFAULT: CAPTURE LOGIC
     const captureRes = await fetchWithTimeout(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
@@ -86,11 +102,10 @@ export default async function handler(req, res) {
     if (!captureRes.ok) {
         const issue = captureData.details?.[0]?.issue;
         console.warn(`[PayPal Capture Failed] Order: ${orderId}, Issue: ${issue || 'Unknown'}`);
-        // Return a structured error for the frontend to handle gracefully
         return res.status(400).json({
             success: false,
             message: captureData.message || 'Payment capture failed.',
-            issue: issue // e.g., 'INSTRUMENT_DECLINED'
+            issue: issue
         });
     }
 

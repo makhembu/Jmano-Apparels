@@ -3,20 +3,23 @@ import { supabase } from './supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager, STORAGE_KEYS } from './cache';
 
+// Configuration
+const BATCH_SIZE = 10;
+const FLUSH_INTERVAL = 5000; // 5 seconds
+
+let eventQueue: any[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
 // Helper to check consent
 const checkConsent = (): boolean => {
   try {
-    // 1. Check explicit consent
     const stored = localStorage.getItem('jambo_cookie_consent');
     if (stored) {
       const parsed = JSON.parse(stored);
       if (parsed.analytics) return true;
     }
-    
-    // 2. Allow if user is logged in (Implied consent for service usage/admin testing)
-    const session = CacheManager.local.get<any>('sb-access-token'); // Check generic SB token presence
+    const session = CacheManager.local.get<any>('sb-access-token');
     if (session) return true;
-
     return false;
   } catch {
     return false;
@@ -43,8 +46,8 @@ const getApproxGeo = () => {
 
     if (timeZone && timeZone.includes('/')) {
         const parts = timeZone.split('/');
-        country = parts[0]; // e.g. Europe, America (Continent as proxy for region)
-        city = parts[1].replace(/_/g, ' '); // e.g. London, New York
+        country = parts[0]; 
+        city = parts[1].replace(/_/g, ' '); 
     }
     
     const geo = { country, city };
@@ -63,13 +66,40 @@ const getSource = (): string => {
   try { return new URL(referrer).hostname; } catch { return 'unknown'; }
 };
 
+const flushEvents = async () => {
+  if (eventQueue.length === 0) return;
+
+  const eventsToUpload = [...eventQueue];
+  eventQueue = [];
+
+  try {
+     // Added any cast to bypass type error on insert
+    const { error } = await (supabase.from('analytics_events') as any).insert(eventsToUpload);
+    if (error) {
+      console.warn("[Analytics] Batch upload failed, requeuing", error.message);
+      // Re-queue events on failure (optional, mostly for resilience)
+      eventQueue = [...eventsToUpload, ...eventQueue];
+    }
+  } catch (e) {
+    console.warn("[Analytics] Network error", e);
+  }
+};
+
+// Ensure flush on unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (eventQueue.length > 0) {
+      // Use sendBeacon for reliability on unload if simple POST
+      // Since we rely on Supabase client which wraps fetch, we attempt a sync flush or trust the browser
+      // Best effort flush
+      flushEvents();
+    }
+  });
+}
+
 export const analytics = {
   track: async (eventType: string, metadata: Record<string, any> = {}, duration: number = 0) => {
-    // GDPR Check
-    if (!checkConsent()) {
-        // console.debug(`[Analytics] Skipped ${eventType} (No Consent)`);
-        return;
-    }
+    if (!checkConsent()) return;
 
     try {
       let userId = null;
@@ -90,16 +120,21 @@ export const analytics = {
         metadata: metadata,
         geo_country: geo.country,
         geo_city: geo.city,
-        duration: Math.round(duration || 0)
+        duration: Math.round(duration || 0),
+        created_at: new Date().toISOString()
       };
 
-      // Fire and forget
-      // Added any cast to bypass type error on insert
-      (supabase.from('analytics_events') as any).insert(payload as any).then(({ error }: any) => {
-        if (error && error.code !== 'PGRST204') {
-            console.warn("[Analytics] Tracking failed:", error.message);
-        }
-      }); 
+      eventQueue.push(payload);
+
+      if (eventQueue.length >= BATCH_SIZE) {
+        if (flushTimer) clearTimeout(flushTimer);
+        flushEvents();
+      } else if (!flushTimer) {
+        flushTimer = setTimeout(() => {
+          flushEvents();
+          flushTimer = null;
+        }, FLUSH_INTERVAL);
+      }
 
     } catch (e) { /* ignore */ }
   },

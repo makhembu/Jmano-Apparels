@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
 import { User, Product, ShippingAddress } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-// FIX: Replaced deprecated useApp with useOrders
 import { useOrders } from '../../context/OrderContext';
 import { useShop } from '../../context/ShopContext';
 
@@ -16,7 +16,6 @@ interface OrderItemDraft {
   size: string;
   selectedColor: string;
   quantity: number;
-  // Added image property to draft
   image: string;
 }
 
@@ -27,11 +26,15 @@ export const AdminOrderNew: React.FC = () => {
   const { refreshData } = useShop();
   
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   
+  // User Search State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [userResults, setUserResults] = useState<User[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   // Form State
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [items, setItems] = useState<OrderItemDraft[]>([]);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     address1: '', city: '', postcode: '', country: 'United Kingdom', phone: ''
@@ -50,15 +53,44 @@ export const AdminOrderNew: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
 
+  // Initial Load (Only Products)
   useEffect(() => {
-    Promise.all([
-      api.getAllUsers(),
-      api.getProducts()
-    ]).then(([fetchedUsers, fetchedProducts]) => {
-      setUsers(fetchedUsers);
+    api.getProducts().then((fetchedProducts) => {
       setProducts(fetchedProducts);
     }).finally(() => setLoading(false));
   }, []);
+
+  // Debounced User Search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchTerm.length >= 2) {
+        setIsSearchingUsers(true);
+        try {
+          const result = await api.getPaginatedUsers(1, 10, searchTerm);
+          setUserResults(result.data);
+        } catch (error) {
+          console.error("Search failed", error);
+        } finally {
+          setIsSearchingUsers(false);
+        }
+      } else {
+        setUserResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleSelectUser = (user: User) => {
+    setSelectedUser(user);
+    setSearchTerm('');
+    setUserResults([]);
+  };
+
+  const clearSelectedUser = () => {
+    setSelectedUser(null);
+    setSearchTerm('');
+  };
 
   const handleQuickCreateUser = async () => {
     if (!newUserForm.name || !newUserForm.email) {
@@ -72,8 +104,7 @@ export const AdminOrderNew: React.FC = () => {
         email: newUserForm.email,
         role: 'user'
       });
-      setUsers(prev => [newUser, ...prev]);
-      setSelectedUserId(newUser.id);
+      handleSelectUser(newUser);
       setIsNewUser(false);
       showToast('Customer created', 'success');
     } catch (e: any) {
@@ -87,7 +118,6 @@ export const AdminOrderNew: React.FC = () => {
     if (!selectedProduct) return;
     if (!selectedSize) { showToast('Select a size', 'error'); return; }
     
-    // Updated: included product image in draft item
     setItems(prev => [...prev, {
       productId: selectedProduct.id,
       title: selectedProduct.title,
@@ -98,7 +128,6 @@ export const AdminOrderNew: React.FC = () => {
       image: selectedProduct.images[0]
     }]);
     
-    // Reset selection
     setSelectedSize('');
     setSelectedColor('');
     setQuantity(1);
@@ -109,23 +138,20 @@ export const AdminOrderNew: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedUserId) { showToast('Select a customer', 'error'); return; }
+    if (!selectedUser) { showToast('Select a customer', 'error'); return; }
     if (items.length === 0) { showToast('Add items to order', 'error'); return; }
     if (!shippingAddress.address1 || !shippingAddress.postcode) { showToast('Shipping address incomplete', 'error'); return; }
 
     setProcessing(true);
     try {
-      // Calculate basic total for client-side valid (real calculation happens on server RPC)
-      // We pass the items array compatible with RPC expectation
       await api.createOrder({
-        userId: selectedUserId,
+        userId: selectedUser.id,
         products: items,
-        total: 0, // Ignored by RPC usually, or recalculated
+        total: 0, 
         shippingAddress: shippingAddress,
         notes: notes
       });
       
-      // SYNC: Force global states to update
       await refreshOrders();
       await refreshData();
       
@@ -157,7 +183,7 @@ export const AdminOrderNew: React.FC = () => {
           <div id="section-customer-info" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4 flex justify-between items-center">
               Customer
-              {!isNewUser && (
+              {!isNewUser && !selectedUser && (
                 <button 
                   onClick={() => setIsNewUser(true)} 
                   className="text-sm text-brand-green hover:underline font-medium"
@@ -189,18 +215,50 @@ export const AdminOrderNew: React.FC = () => {
                   <Button onClick={() => setIsNewUser(false)} variant="outline" className="h-8 py-0">Cancel</Button>
                 </div>
               </div>
+            ) : selectedUser ? (
+               <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-3">
+                     <div className="h-10 w-10 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold">
+                        {selectedUser.name.charAt(0)}
+                     </div>
+                     <div>
+                        <p className="text-sm font-bold text-slate-900">{selectedUser.name}</p>
+                        <p className="text-xs text-slate-500">{selectedUser.email}</p>
+                     </div>
+                  </div>
+                  <button onClick={clearSelectedUser} className="text-red-500 text-xs font-bold hover:underline">Change</button>
+               </div>
             ) : (
-              <div>
-                <select 
-                  value={selectedUserId} 
-                  onChange={e => setSelectedUserId(e.target.value)} 
-                  className="w-full border border-gray-300 rounded p-2 bg-white text-gray-900"
-                >
-                  <option value="">Select Existing Customer...</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <input 
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search customer by name or email..."
+                  className="w-full border border-gray-300 rounded p-2 bg-white text-gray-900 focus:ring-2 focus:ring-brand-green/20 outline-none"
+                />
+                {isSearchingUsers && (
+                   <div className="absolute right-3 top-2.5">
+                      <div className="w-4 h-4 border-2 border-brand-green border-t-transparent rounded-full animate-spin"></div>
+                   </div>
+                )}
+                {userResults.length > 0 && (
+                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                      {userResults.map(u => (
+                         <button
+                            key={u.id}
+                            onClick={() => handleSelectUser(u)}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                         >
+                            <p className="text-sm font-bold text-slate-800">{u.name}</p>
+                            <p className="text-xs text-slate-500">{u.email}</p>
+                         </button>
+                      ))}
+                   </div>
+                )}
+                {searchTerm.length >= 2 && !isSearchingUsers && userResults.length === 0 && (
+                   <p className="text-xs text-slate-400 mt-2">No customers found.</p>
+                )}
               </div>
             )}
           </div>

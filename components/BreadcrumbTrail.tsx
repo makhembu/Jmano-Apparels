@@ -54,11 +54,14 @@ export const BreadcrumbTrail: React.FC = () => {
     }))
   };
 
+  // SECURITY FIX: Sanitize JSON to prevent XSS via closing script tags
+  const safeSchema = JSON.stringify(schema).replace(/</g, '\\u003c');
+
   return (
     <div className="bg-white border-b border-gray-100 hidden lg:block">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{ __html: safeSchema }}
       />
       <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ol className="flex items-center space-x-2 py-4">

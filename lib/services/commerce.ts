@@ -44,12 +44,11 @@ export class OrderService {
         image: item.image
     }));
 
-    // Added any cast to bypass type error for create_order_secure
-    const { data, error } = await (supabase.rpc as any)('create_order_secure', {
+    const { data, error } = await supabase.rpc('create_order_secure', {
       p_user_id: order.userId || null,
       p_customer_email: order.customerEmail || null,
       p_customer_name: order.customerName || null,
-      p_items: itemsPayload,
+      p_items: itemsPayload as any,
       p_shipping_address: order.shippingAddress as any,
       p_discount_code: order.discountCode || null,
       p_notes: order.notes || null,
@@ -110,8 +109,7 @@ export class OrderService {
     if (updates.trackingNumber) dbUpdates.tracking_number = updates.trackingNumber;
     if (updates.paymentStatus) dbUpdates.payment_status = updates.paymentStatus;
 
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('orders') as any).update(dbUpdates as any).eq('id', id);
+    const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
     if (error) throw error;
 
     // --- SEND EMAILS (Status Updates) ---
@@ -179,26 +177,23 @@ export class OrderService {
     log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
     
     // Check if order is in a cancellable state first
-    // FIX: Cast Supabase query builder to any early to prevent type issues with 'never'
-    const { data: order, error: fetchError } = await (supabase.from('orders') as any)
+    const { data: order, error: fetchError } = await supabase.from('orders')
       .select('*')
       .match({ id: orderId, user_id: userId })
       .single();
 
     if (fetchError || !order) throw new Error("Order not found or permission denied.");
     
-    // FIX: Cast order to any to access properties safely
     if (!['Pending', 'Processing', 'Pending Payment'].includes((order as any).status)) {
       throw new Error("This order can no longer be cancelled.");
     }
 
-    // FIX: Cast Supabase query builder to any early to prevent type issues with 'never'
-    const { error } = await (supabase.from('orders') as any)
+    const { error } = await supabase.from('orders')
       .update({ 
         status: 'Cancelled', 
         cancelled_at: new Date().toISOString(), 
         total: (order as any).total 
-      })
+      } as any)
       .match({ id: orderId, user_id: userId });
 
     if (error) throw error;
@@ -235,8 +230,7 @@ export class OrderService {
 export class CartService {
   async sync(userId: string, cartItems: CartItem[]): Promise<void> {
     log('SYNC', 'cart_items', userId);
-    // Fix: Added 'as any' to bypass 'never' type error when environment schema is out of sync
-    await (supabase.from('cart_items') as any).delete().eq('user_id', userId);
+    await supabase.from('cart_items').delete().eq('user_id', userId);
     if (cartItems.length > 0) {
       const rows = cartItems.map(item => ({
         user_id: userId,
@@ -245,15 +239,13 @@ export class CartService {
         selected_size: item.selectedSize,
         selected_color: item.selectedColor
       }));
-      // Added any cast to bypass type error on insert
-      await (supabase.from('cart_items') as any).insert(rows as any);
+      await supabase.from('cart_items').insert(rows as any);
     }
   }
 
   async fetch(userId: string): Promise<CartItem[]> {
     log('FETCH', 'cart_items', userId);
-    // Fix: Added 'as any' to bypass 'never' type error when environment schema is out of sync
-    const { data, error } = await (supabase.from('cart_items') as any).select(`
+    const { data, error } = await supabase.from('cart_items').select(`
       quantity, selected_size, selected_color, 
       product:products (*)
     `).eq('user_id', userId);
@@ -276,8 +268,7 @@ export class ShippingService {
 
   async createZone(zone: Partial<ShippingZone>): Promise<void> {
     log('INSERT', 'shipping_zones', zone);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('shipping_zones') as any).insert({
+    const { error } = await supabase.from('shipping_zones').insert({
       name: zone.name,
       countries: zone.countries,
       base_rate: zone.baseRate,
@@ -291,8 +282,7 @@ export class ShippingService {
 
   async updateZone(id: string, zone: Partial<ShippingZone>): Promise<void> {
     log('UPDATE', 'shipping_zones', id);
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('shipping_zones') as any).update({
+    const { error } = await supabase.from('shipping_zones').update({
       name: zone.name,
       countries: zone.countries,
       base_rate: zone.baseRate,
@@ -314,26 +304,23 @@ export class ShippingService {
 export class DiscountService {
   async validate(code: string, total: number): Promise<DiscountCode | null> {
     log('RPC', 'validate_discount_code', code);
-    // Added any cast to bypass type error
-    const { data, error } = await (supabase.rpc as any)('validate_discount_code', { code_input: code, order_total: total });
+    const { data, error } = await supabase.rpc('validate_discount_code', { code_input: code, order_total: total });
     
     if (!error && data) {
        return Mappers.toDiscountCode(data);
     }
     
     // Fallback: Client-side validation
-    // Added any cast to bypass type error
-    const { data: codeData, error: tableError } = await (supabase
+    const { data: codeData, error: tableError } = await supabase
       .from('discount_codes')
       .select('*')
       .eq('code', code)
-      .eq('is_active', true) as any)
+      .eq('is_active', true)
       .single();
 
     if (tableError || !codeData) return null;
 
     const now = new Date();
-    // Fix: access properties on codeData by casting to any
     if ((codeData as any).valid_from && new Date((codeData as any).valid_from) > now) return null;
     if ((codeData as any).valid_until && new Date((codeData as any).valid_until) < now) return null;
     if ((codeData as any).minimum_purchase && total < (codeData as any).minimum_purchase) return null;
@@ -350,8 +337,7 @@ export class DiscountService {
 
   async create(code: Partial<DiscountCode>): Promise<void> {
     log('INSERT', 'discount_codes', code.code);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('discount_codes') as any).insert({
+    const { error } = await supabase.from('discount_codes').insert({
       code: code.code,
       discount_type: code.discountType,
       discount_value: code.discountValue,
@@ -382,8 +368,7 @@ export class DiscountService {
     // Clean payload
     Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('discount_codes') as any).update(payload as any).eq('id', id);
+    const { error } = await supabase.from('discount_codes').update(payload as any).eq('id', id);
     if (error) throw error;
   }
 

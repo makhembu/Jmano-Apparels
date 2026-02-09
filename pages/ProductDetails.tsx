@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BackButton } from '../components/ui/BackButton';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/db';
@@ -18,6 +18,33 @@ import { ProductReviews } from '../components/product/ProductReviews';
 import { MobileStickyBar } from '../components/product/MobileStickyBar';
 import { ImageExpandModal } from '../components/product/ImageExpandModal';
 import { SEO } from '../components/SEO';
+
+const ProductDetailsSkeleton = () => (
+  <div className="bg-white min-h-screen animate-pulse">
+      <div className="hidden lg:block border-b border-gray-100 bg-white h-12 w-full mb-8"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
+             <div className="lg:col-span-7">
+                <div className="aspect-[4/5] bg-gray-200 rounded-3xl w-full"></div>
+             </div>
+             <div className="lg:col-span-5 mt-12 lg:mt-0 space-y-8">
+                <div className="space-y-4">
+                   <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                   <div className="h-10 w-3/4 bg-gray-200 rounded"></div>
+                   <div className="h-8 w-32 bg-gray-200 rounded"></div>
+                </div>
+                <div className="space-y-2">
+                   <div className="h-4 w-full bg-gray-200 rounded"></div>
+                   <div className="h-4 w-full bg-gray-200 rounded"></div>
+                   <div className="h-4 w-2/3 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-12 w-full bg-gray-200 rounded-xl"></div>
+                <div className="h-12 w-full bg-gray-200 rounded-xl"></div>
+             </div>
+          </div>
+      </div>
+  </div>
+);
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +149,7 @@ export const ProductDetails: React.FC = () => {
   // Increased top spacing for desktop sticky behavior
   const galleryTopClass = hasAnnouncement ? 'lg:top-[10rem]' : 'lg:top-32';
 
-  if (loading) return <LoadingSpinner fullScreen />;
+  if (loading) return <ProductDetailsSkeleton />;
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
 
   return (

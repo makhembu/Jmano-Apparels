@@ -5,60 +5,64 @@ import { api } from '../../lib/db';
 import { Order } from '../../types';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Button } from '../../components/ui/Button';
+import { Pagination } from '../../components/ui/Pagination';
 
 export const AdminPayments: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED'>('ALL');
   const [filterMethod, setFilterMethod] = useState<'ALL' | 'PAYPAL' | 'MANUAL'>('ALL');
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({
+      totalRevenue: 0,
+      pendingRevenue: 0,
+      failedCount: 0,
+      paidCount: 0,
+      aov: 0
+  });
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+        const result = await api.getAdminPaymentsPaginated(page, 20, filterStatus, filterMethod);
+        setOrders(result.data);
+        setTotalPages(result.totalPages);
+        
+        // Calculate Derived AOV
+        const rawStats = result.stats || {};
+        const aov = rawStats.paidCount > 0 ? (rawStats.totalRevenue / rawStats.paidCount) : 0;
+        
+        setStats({
+            totalRevenue: rawStats.totalRevenue || 0,
+            pendingRevenue: rawStats.pendingRevenue || 0,
+            failedCount: rawStats.failedCount || 0,
+            paidCount: rawStats.paidCount || 0,
+            aov
+        });
+
+    } catch (e) {
+        console.error("Payment data fetch failed", e);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Fetch last 100 to avoid timeouts
-    api.getAllOrders(100).then(setOrders).finally(() => setLoading(false));
-  }, []);
+    fetchData();
+  }, [page, filterStatus, filterMethod]);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter(o => {
-      // 1. Status Filter
-      if (filterStatus !== 'ALL') {
-        const pStatus = (o.paymentStatus || 'pending').toUpperCase();
-        // Map specific internal statuses if needed, otherwise strict match
-        if (pStatus !== filterStatus) return false;
-      }
+  const handleFilterChange = (status: any) => {
+      setFilterStatus(status);
+      setPage(1); // Reset to page 1 on filter change
+  };
 
-      // 2. Method Filter
-      if (filterMethod !== 'ALL') {
-        const hasIntent = !!o.paymentIntentId;
-        if (filterMethod === 'PAYPAL' && !hasIntent) return false;
-        if (filterMethod === 'MANUAL' && hasIntent) return false;
-      }
-
-      return true;
-    });
-  }, [orders, filterStatus, filterMethod]);
-
-  // KPI Calculations
-  const stats = useMemo(() => {
-    const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
-    const pendingOrders = orders.filter(o => o.paymentStatus === 'pending');
-    const failedOrders = orders.filter(o => o.paymentStatus === 'failed');
-
-    const totalRevenue = paidOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-    const pendingRevenue = pendingOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-    
-    // Average Order Value (Paid)
-    const aov = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
-
-    return {
-      totalRevenue,
-      pendingRevenue,
-      failedCount: failedOrders.length,
-      aov,
-      paidCount: paidOrders.length
-    };
-  }, [orders]);
-
-  if (loading) return <LoadingSpinner />;
+  const handleMethodChange = (method: any) => {
+      setFilterMethod(method);
+      setPage(1);
+  };
 
   const getStatusBadge = (status: string) => {
     const s = (status || 'pending').toLowerCase();
@@ -113,13 +117,13 @@ export const AdminPayments: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
         {/* Filters */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-4 justify-between items-center">
-           <div className="flex gap-2">
+           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider self-center mr-2">Status:</span>
               {['ALL', 'PAID', 'PENDING', 'REFUNDED'].map(status => (
                  <button
                     key={status}
-                    onClick={() => setFilterStatus(status as any)}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all ${filterStatus === status ? 'bg-brand-dark text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+                    onClick={() => handleFilterChange(status)}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all whitespace-nowrap ${filterStatus === status ? 'bg-brand-dark text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
                  >
                     {status}
                  </button>
@@ -130,7 +134,7 @@ export const AdminPayments: React.FC = () => {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gateway:</span>
               <select 
                 value={filterMethod} 
-                onChange={(e) => setFilterMethod(e.target.value as any)}
+                onChange={(e) => handleMethodChange(e.target.value)}
                 className="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg focus:ring-brand-green focus:border-brand-green block p-1.5 outline-none"
               >
                  <option value="ALL">All Gateways</option>
@@ -141,6 +145,7 @@ export const AdminPayments: React.FC = () => {
         </div>
 
         {/* Table */}
+        {loading ? <div className="p-10"><LoadingSpinner /></div> : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-white">
@@ -154,14 +159,14 @@ export const AdminPayments: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {filteredOrders.length === 0 ? (
+              {orders.length === 0 ? (
                  <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">
                        No payments found matching your filters.
                     </td>
                  </tr>
               ) : (
-                 filteredOrders.map(order => (
+                 orders.map(order => (
                     <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
@@ -215,10 +220,8 @@ export const AdminPayments: React.FC = () => {
             </tbody>
           </table>
         </div>
-        
-        <div className="bg-slate-50 p-4 border-t border-slate-200 text-right">
-           <span className="text-xs text-slate-500 font-medium">Showing {filteredOrders.length} transactions</span>
-        </div>
+        )}
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} isLoading={loading} />
       </div>
     </div>
   );

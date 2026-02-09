@@ -26,11 +26,15 @@ export const AdminOrderNew: React.FC = () => {
   const { refreshData } = useShop();
   
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   
+  // User Search State
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<User[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  
   // Form State
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [items, setItems] = useState<OrderItemDraft[]>([]);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     address1: '', city: '', postcode: '', country: 'United Kingdom', phone: ''
@@ -49,15 +53,52 @@ export const AdminOrderNew: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
 
+  // Initial Load (Products only)
   useEffect(() => {
-    Promise.all([
-      api.getAllUsers(),
-      api.getProducts()
-    ]).then(([fetchedUsers, fetchedProducts]) => {
-      setUsers(fetchedUsers);
-      setProducts(fetchedProducts);
-    }).finally(() => setLoading(false));
+    api.getProducts().then(setProducts).finally(() => setLoading(false));
   }, []);
+
+  // Debounced User Search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (userSearch.length >= 2) {
+        setIsSearchingUsers(true);
+        try {
+          const result = await api.getPaginatedUsers(1, 10, userSearch);
+          setUserResults(result.data);
+        } catch (error) {
+          console.error("Search failed", error);
+        } finally {
+          setIsSearchingUsers(false);
+        }
+      } else {
+        setUserResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [userSearch]);
+
+  const handleSelectUser = (user: User) => {
+    setSelectedUser(user);
+    setUserSearch('');
+    setUserResults([]);
+    
+    // Auto-fill address if available
+    api.getUserAddresses(user.id).then(addresses => {
+        const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+        if (defaultAddr) {
+            setShippingAddress({
+                address1: defaultAddr.address1,
+                address2: defaultAddr.address2,
+                city: defaultAddr.city,
+                postcode: defaultAddr.postcode,
+                country: defaultAddr.country,
+                phone: defaultAddr.phone
+            });
+        }
+    });
+  };
 
   const handleQuickCreateUser = async () => {
     if (!newUserForm.name || !newUserForm.email) {
@@ -71,8 +112,7 @@ export const AdminOrderNew: React.FC = () => {
         email: newUserForm.email,
         role: 'user'
       });
-      setUsers(prev => [newUser, ...prev]);
-      setSelectedUserId(newUser.id);
+      handleSelectUser(newUser);
       setIsNewUser(false);
       showToast('Customer created', 'success');
     } catch (e: any) {
@@ -106,14 +146,14 @@ export const AdminOrderNew: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedUserId) { showToast('Select a customer', 'error'); return; }
+    if (!selectedUser) { showToast('Select a customer', 'error'); return; }
     if (items.length === 0) { showToast('Add items to order', 'error'); return; }
     if (!shippingAddress.address1 || !shippingAddress.postcode) { showToast('Shipping address incomplete', 'error'); return; }
 
     setProcessing(true);
     try {
       await api.createOrder({
-        userId: selectedUserId,
+        userId: selectedUser.id,
         products: items,
         total: 0,
         shippingAddress: shippingAddress,
@@ -151,7 +191,7 @@ export const AdminOrderNew: React.FC = () => {
           <div id="section-customer-info" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4 flex justify-between items-center">
               Customer
-              {!isNewUser && (
+              {!isNewUser && !selectedUser && (
                 <button 
                   onClick={() => setIsNewUser(true)} 
                   className="text-sm text-brand-green hover:underline font-medium"
@@ -183,18 +223,45 @@ export const AdminOrderNew: React.FC = () => {
                   <Button onClick={() => setIsNewUser(false)} variant="outline" className="h-8 py-0">Cancel</Button>
                 </div>
               </div>
+            ) : selectedUser ? (
+                <div className="flex justify-between items-center bg-brand-light/30 p-4 rounded-lg border border-brand-green/20">
+                    <div>
+                        <p className="font-bold text-brand-dark">{selectedUser.name}</p>
+                        <p className="text-sm text-slate-500">{selectedUser.email}</p>
+                    </div>
+                    <button onClick={() => setSelectedUser(null)} className="text-xs text-red-500 hover:underline font-bold">Change</button>
+                </div>
             ) : (
-              <div>
-                <select 
-                  value={selectedUserId} 
-                  onChange={e => setSelectedUserId(e.target.value)} 
-                  className="w-full border border-gray-300 rounded p-2 bg-white text-gray-900"
-                >
-                  <option value="">Select Existing Customer...</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="w-full border border-gray-300 rounded p-2 bg-white text-gray-900 focus:ring-2 focus:ring-brand-green/20 outline-none"
+                />
+                {isSearchingUsers && (
+                    <div className="absolute right-3 top-2.5">
+                        <div className="w-5 h-5 border-2 border-brand-green border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                )}
+                {userResults.length > 0 && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-b-lg shadow-xl max-h-60 overflow-y-auto mt-1">
+                        {userResults.map(u => (
+                            <button
+                                key={u.id}
+                                onClick={() => handleSelectUser(u)}
+                                className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                            >
+                                <p className="text-sm font-bold text-slate-800">{u.name}</p>
+                                <p className="text-xs text-slate-500">{u.email}</p>
+                            </button>
+                        ))}
+                    </div>
+                )}
+                {userSearch.length >= 2 && !isSearchingUsers && userResults.length === 0 && (
+                    <p className="text-xs text-slate-400 mt-2">No customers found.</p>
+                )}
               </div>
             )}
           </div>

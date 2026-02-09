@@ -48,8 +48,7 @@ export class ProductService {
     log('RPC', 'get_products_paginated', { page, ...filters });
     
     // Use public client for RPC
-    // Added any cast to bypass type error
-    const { data, error } = await (supabasePublic.rpc as any)('get_products_paginated', {
+    const { data, error } = await supabasePublic.rpc('get_products_paginated', {
       p_page: page,
       p_page_size: pageSize,
       p_category_key: filters.categoryKey || null,
@@ -84,16 +83,16 @@ export class ProductService {
   async create(product: Partial<Product>): Promise<void> {
     log('INSERT', 'products', product);
     const dbProduct = this.prepareDbProduct(product);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('products') as any).insert(dbProduct as any);
+    
+    const { error } = await supabase.from('products').insert(dbProduct as any);
     if (error) throw error;
   }
 
   async update(id: string, product: Partial<Product>): Promise<void> {
     log('UPDATE', 'products', id);
     const dbProduct = this.prepareDbProduct(product);
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('products') as any).update(dbProduct as any).eq('id', id);
+    
+    const { error } = await supabase.from('products').update(dbProduct as any).eq('id', id);
     if (error) throw error;
   }
 
@@ -122,6 +121,7 @@ export class ProductService {
       stock_quantity: product.stockQuantity,
       low_stock_threshold: product.lowStockThreshold,
       weight: product.weight,
+      is_free_shipping: product.isFreeShipping,
       
       // SEO
       seo_title: product.seoTitle,
@@ -145,8 +145,7 @@ export class CategoryService {
 
   async create(category: Category): Promise<void> {
     log('INSERT', 'categories', category);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('categories') as any).insert({
+    const { error } = await supabase.from('categories').insert({
       key: category.key,
       label: category.label,
       color: category.color,
@@ -160,8 +159,7 @@ export class CategoryService {
 
   async update(key: string, category: Partial<Category>): Promise<void> {
     log('UPDATE', 'categories', key);
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('categories') as any).update({
+    const { error } = await supabase.from('categories').update({
       label: category.label,
       color: category.color,
       bg_class: category.bgColorClass,
@@ -208,8 +206,7 @@ export class ReviewService {
 
   async add(review: Partial<ProductReview>): Promise<void> {
     log('INSERT', 'product_reviews', review);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('product_reviews') as any).insert({
+    const { error } = await supabase.from('product_reviews').insert({
       product_id: review.productId,
       user_id: review.userId,
       rating: review.rating,

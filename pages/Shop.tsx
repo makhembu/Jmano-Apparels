@@ -4,12 +4,27 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
 import { ProductCard } from '../components/ProductCard';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { SEO } from '../components/SEO';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+
+const ProductSkeleton = () => (
+  <div className="flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm animate-pulse">
+    <div className="aspect-square bg-gray-200" />
+    <div className="p-3 md:p-5 flex flex-col flex-grow space-y-3">
+      <div className="flex justify-between">
+         <div className="h-3 w-1/3 bg-gray-200 rounded" />
+         <div className="h-3 w-10 bg-gray-200 rounded" />
+      </div>
+      <div className="h-6 w-3/4 bg-gray-200 rounded" />
+      <div className="mt-auto flex justify-between items-center">
+         <div className="h-6 w-16 bg-gray-200 rounded" />
+      </div>
+    </div>
+  </div>
+);
 
 export const Shop: React.FC = () => {
   const { 
@@ -65,8 +80,8 @@ export const Shop: React.FC = () => {
     ? `Searching for "${filters.search}"`
     : (activeCategory?.seoDescription || `"${settings.secondarySlogan}"`);
 
-
-  if (loading && products.length === 0) return <LoadingSpinner fullScreen />;
+  // Loading Logic: Show skeletons if initial load OR if filtering/searching
+  const showSkeletons = loading || (productsLoading && products.length === 0);
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -245,29 +260,30 @@ export const Shop: React.FC = () => {
           </div>
 
           <div className="flex-grow min-w-0 relative">
-            {productsLoading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center pt-20 rounded-3xl transition-opacity">
-                    <LoadingSpinner />
-                </div>
-            )}
-
             {/* PRODUCT GRID: 2 Columns on Mobile, 3 on Desktop */}
-            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10 transition-opacity duration-300 ${productsLoading ? 'opacity-20' : 'opacity-100'}`}>
-              {products.length > 0 ? (
+            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10`}>
+              {showSkeletons ? (
+                  // SKELETON LOADERS
+                  Array.from({ length: 6 }).map((_, idx) => (
+                      <div key={idx} className="h-[300px] md:h-[400px]">
+                          <ProductSkeleton />
+                      </div>
+                  ))
+              ) : products.length > 0 ? (
+                // REAL PRODUCTS
                 products.map((product, idx) => (
                   <ProductCard key={product.id} product={product} index={idx} />
                 ))
               ) : (
-                !productsLoading && (
-                    <div className="col-span-full pt-10">
-                      <EmptyState 
-                        title="No pieces found" 
-                        description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
-                        actionLabel="Reset Gallery"
-                        actionLink="/shop"
-                      />
-                    </div>
-                )
+                // EMPTY STATE
+                <div className="col-span-full pt-10">
+                  <EmptyState 
+                    title="No pieces found" 
+                    description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
+                    actionLabel="Reset Gallery"
+                    actionLink="/shop"
+                  />
+                </div>
               )}
             </div>
             

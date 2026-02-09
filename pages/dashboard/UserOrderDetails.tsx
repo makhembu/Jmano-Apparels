@@ -14,6 +14,7 @@ import { OrderStatusTracker } from '../../components/dashboard/OrderStatusTracke
 import { usePayment } from '../../hooks/usePayment';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { canViewOrder } from '../../lib/authorization';
 
 export const UserOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,7 +46,9 @@ export const UserOrderDetails: React.FC = () => {
     setLoading(true);
     try {
       const o = await api.getOrderById(id);
-      if (o && o.userId === user.id) {
+      
+      // Authorization Check
+      if (canViewOrder(user, o)) {
         setOrder(o);
       } else {
         showToast("Order not found or access denied.", "error");

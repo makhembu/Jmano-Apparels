@@ -29,8 +29,7 @@ export class BlogService {
 
   async createCategory(category: Partial<BlogCategory>): Promise<void> {
     log('INSERT', 'blog_categories', category);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('blog_categories') as any).insert({
+    const { error } = await supabase.from('blog_categories').insert({
       name: category.name,
       slug: category.slug,
       description: category.description
@@ -47,16 +46,14 @@ export class BlogService {
   async createPost(post: Partial<BlogPost>): Promise<void> {
     log('INSERT', 'blog_posts', post.title);
     const dbPost = this.prepareDbBlogPost(post);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('blog_posts') as any).insert(dbPost as any);
+    const { error } = await supabase.from('blog_posts').insert(dbPost as any);
     if (error) throw error;
   }
 
   async updatePost(id: string, post: Partial<BlogPost>): Promise<void> {
     log('UPDATE', 'blog_posts', id);
     const dbPost = this.prepareDbBlogPost(post);
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('blog_posts') as any).update(dbPost as any).eq('id', id);
+    const { error } = await supabase.from('blog_posts').update(dbPost as any).eq('id', id);
     if (error) throw error;
   }
 
@@ -70,8 +67,7 @@ export class BlogService {
     log('RPC/UPDATE', 'blog_posts', `increment views for ${id}`);
     const { data } = await supabasePublic.from('blog_posts').select('view_count').eq('id', id).single();
     if (data) {
-       // Added any cast to bypass type error on update
-       await (supabase.from('blog_posts') as any).update({ view_count: ((data as any).view_count || 0) + 1 } as any).eq('id', id);
+       await supabase.from('blog_posts').update({ view_count: ((data as any).view_count || 0) + 1 } as any).eq('id', id);
     }
   }
 
@@ -103,7 +99,7 @@ export class SettingsService {
     log('FETCH', 'public_settings');
     try {
       log('RPC_CALL', 'get_public_site_settings');
-      const { data, error } = await (supabasePublic.rpc as any)('get_public_site_settings');
+      const { data, error } = await supabasePublic.rpc('get_public_site_settings');
       
       if (error) {
         console.error("Failed to load public settings via RPC", error);
@@ -132,8 +128,7 @@ export class SettingsService {
 
   async getPublicPaymentSettings(): Promise<{ paypalClientId: string; paypalMode: string; paymentGatewayEnabled: boolean; currency: string } | null> {
     log('RPC', 'get_public_payment_settings');
-    // Added any cast to bypass type error
-    const { data, error } = await (supabasePublic.rpc as any)('get_public_payment_settings');
+    const { data, error } = await supabasePublic.rpc('get_public_payment_settings');
     if (error) return null;
     const settings = data as any;
     return {
@@ -217,10 +212,12 @@ export class SettingsService {
       seo_content_col1_body: settings.seoContentCol1Body,
       seo_content_col2_title: settings.seoContentCol2Title,
       seo_content_col2_body: settings.seoContentCol2Body,
+      social_section_title: settings.socialSectionTitle,
+      social_section_body: settings.socialSectionBody
     };
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('app_settings') as any).update(dbSettings as any).eq('id', id);
+    
+    const { error } = await supabase.from('app_settings').update(dbSettings as any).eq('id', id);
     if (error) throw error;
   }
 
@@ -236,8 +233,8 @@ export class SettingsService {
     const payload: any = {};
     if (template.subject) payload.subject = template.subject;
     if (template.bodyHtml) payload.body_html = template.bodyHtml;
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('email_templates') as any).update(payload as any).eq('id', id);
+    
+    const { error } = await supabase.from('email_templates').update(payload as any).eq('id', id);
     if (error) throw error;
   }
   
@@ -299,7 +296,6 @@ export class SettingsService {
     }
   }
 
-  // --- NEW: Universal Email Sender for App Logic ---
   async sendTransactionalEmail(templateName: string, recipient: string, variables: Record<string, string>): Promise<void> {
     try {
         log('SEND_EMAIL', templateName, recipient);
@@ -339,7 +335,7 @@ export class SettingsService {
         let body = template.bodyHtml;
 
         Object.entries(allVariables).forEach(([key, value]) => {
-            const regex = new RegExp(key, 'g'); // Simple replacement, for robust use a library
+            const regex = new RegExp(key, 'g');
             subject = subject.replace(regex, value);
             body = body.split(key).join(value);
         });
@@ -358,8 +354,7 @@ export class SupportService {
 
   async subscribeNewsletter(email: string, source: string = 'website'): Promise<void> {
     log('INSERT', 'newsletter_subscribers', email);
-    // Added any cast to bypass type error on upsert
-    const { error } = await (supabase.from('newsletter_subscribers') as any).upsert({ 
+    const { error } = await supabase.from('newsletter_subscribers').upsert({ 
         email, 
         source, 
         subscribed_at: new Date().toISOString(), 
@@ -375,8 +370,7 @@ export class SupportService {
 
   async submitContact(data: { name: string, email: string, message: string, subject?: string }): Promise<void> {
     log('INSERT', 'contact_submissions', data.email);
-    // Added any cast to bypass type error on insert
-    const { error } = await (supabase.from('contact_submissions') as any).insert({
+    const { error } = await supabase.from('contact_submissions').insert({
         name: data.name,
         email: data.email,
         message: data.message,
@@ -424,8 +418,7 @@ export class SupportService {
 
   async markContactSubmissionAsRead(id: string): Promise<void> {
     log('UPDATE', 'contact_submissions', { id, is_read: true });
-    // Added any cast to bypass type error on update
-    const { error } = await (supabase.from('contact_submissions') as any).update({ is_read: true } as any).eq('id', id);
+    const { error } = await supabase.from('contact_submissions').update({ is_read: true } as any).eq('id', id);
     if (error) throw error;
   }
 

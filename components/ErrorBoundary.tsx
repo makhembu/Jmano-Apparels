@@ -1,3 +1,4 @@
+
 import React, { ErrorInfo, ReactNode } from 'react';
 import { Button } from './ui/Button';
 
@@ -22,6 +23,23 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+  }
+
+  // Handle async errors (Promise rejections) that React ErrorBoundary misses
+  public componentDidMount() {
+    window.addEventListener('unhandledrejection', this.handlePromiseRejection);
+  }
+
+  public componentWillUnmount() {
+    window.removeEventListener('unhandledrejection', this.handlePromiseRejection);
+  }
+
+  private handlePromiseRejection = (event: PromiseRejectionEvent) => {
+    event.preventDefault();
+    this.setState({
+      hasError: true,
+      error: new Error(event.reason?.message || 'Unexpected async error occurred'),
+    });
   }
 
   public render() {
@@ -58,7 +76,6 @@ export class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Explicitly cast this to any to bypass potential TS error where props is not found on ErrorBoundary type
     return (this as any).props.children || null;
   }
 }

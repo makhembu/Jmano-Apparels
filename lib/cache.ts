@@ -18,7 +18,7 @@ const getAppVersion = () => {
 
 export const CACHE_CONFIG = {
   // 1. Service Workers: Handles offline capabilities and asset caching
-  ENABLE_SERVICE_WORKER: false, 
+  ENABLE_SERVICE_WORKER: true, 
   
   // 2. Local Persistence: Saves Cart, Settings, and Auth state to browser
   ENABLE_LOCAL_STORAGE: true,
@@ -174,6 +174,7 @@ export const CacheManager = {
     if ('serviceWorker' in navigator) {
       if (CACHE_CONFIG.ENABLE_SERVICE_WORKER) {
         // Registration logic would go here if we had a sw.js
+        // For now we just prepare the environment
         // console.log('Service Worker registration enabled');
       } else {
         // Force Unregister existing workers AND clear Cache Storage API
@@ -189,9 +190,6 @@ export const CacheManager = {
             await Promise.all(
               cacheNames.map(name => caches.delete(name))
             );
-            if (cacheNames.length > 0) {
-              console.log('[CacheManager] Cleared stale Cache Storage entries.');
-            }
           }
         } catch (error) {
           // Ignore errors in sandboxed environments or if caches API is unavailable

@@ -43,6 +43,19 @@ export const isAbortError = (error: any): boolean => {
 };
 
 /**
+ * Wraps a promise with a timeout
+ */
+export function withTimeout<T>(promise: Promise<T>, ms: number = 10000): Promise<T> {
+  const timeout = new Promise<T>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Operation timed out after ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]);
+}
+
+/**
  * A custom hook to detect clicks outside a specified element.
  */
 export const useClickOutside = (ref: RefObject<HTMLElement>, handler: (event: MouseEvent) => void) => {

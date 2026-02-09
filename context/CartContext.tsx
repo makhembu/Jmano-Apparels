@@ -25,7 +25,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [cartAnnouncement, setCartAnnouncement] = useState('');
   
+  // Calculate derived state early to be available for callbacks
+  const cartTotal = cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
   const userRef = useRef(user);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -102,10 +107,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
   }, [cart, isLoaded]); 
+  
+  // Accessibility Helper
+  const announceCartUpdate = useCallback((message: string) => {
+    setCartAnnouncement(message);
+    // Clear message shortly after to allow re-announcements of same message if needed
+    setTimeout(() => setCartAnnouncement(''), 3000);
+  }, []);
 
   const addToCart = useCallback((product: Product, size: string, quantity: number, color?: string) => {
     if (product.stockQuantity !== undefined && product.stockQuantity < quantity) {
         showToast(`Only ${product.stockQuantity} items left.`, 'error');
+        announceCartUpdate(`Could not add item. Only ${product.stockQuantity} items left.`);
         return;
     }
 
@@ -122,6 +135,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (product.stockQuantity !== undefined && newQty > product.stockQuantity) {
             showToast(`Stock limit reached.`, 'error');
+            announceCartUpdate(`Stock limit reached for ${product.title}`);
             return prev;
         }
 
@@ -131,20 +145,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return [...prev, { ...product, quantity, selectedSize: size, selectedColor: color }];
     });
+    
     showToast(`Added ${product.title}`, 'success');
-  }, [showToast]);
+    announceCartUpdate(`${quantity} ${product.title} added to cart. Total items in cart: ${cartCount + quantity}`);
+  }, [showToast, cartCount]); // Added cartCount to dependency for accurate announcement
 
   const updateQuantity = useCallback((productId: string, size: string, color: string | undefined, newQuantity: number) => {
     if (newQuantity < 1) return;
     setCart(prev => prev.map(item => {
       if (item.id === productId && item.selectedSize === size && item.selectedColor === color) {
-        // Optional: Check stock limit here if we had access to product object easily, 
-        // but typically cart items snapshot essential data. 
-        // For strict checking, we'd need to re-fetch or store maxStock on the item.
         return { ...item, quantity: newQuantity };
       }
       return item;
     }));
+    announceCartUpdate(`Cart item quantity updated to ${newQuantity}`);
   }, []);
 
   const removeFromCart = useCallback((productId: string, size: string, color?: string) => {
@@ -154,6 +168,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (item.selectedColor === color || (!item.selectedColor && !color)))
     ));
     showToast('Item removed', 'info');
+    announceCartUpdate('Item removed from cart');
   }, [showToast]);
 
   const clearCart = useCallback(() => {
@@ -164,10 +179,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       api.syncCart(currentUser.id, []).catch(console.error);
     }
+    announceCartUpdate('Cart cleared');
   }, []);
-
-  const cartTotal = cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const value = useMemo(() => ({ 
       cart, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartTotal, cartCount 
@@ -176,6 +189,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <CartContext.Provider value={value}>
       {children}
+      {/* ARIA Live Region for Cart Updates */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {cartAnnouncement}
+      </div>
     </CartContext.Provider>
   );
 };

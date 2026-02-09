@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Switch } from '../../ui/Switch';
+import { PayPalWebhookManager } from './PayPalWebhookManager';
 
 interface PaymentSectionProps {
   settings: AppSettings;
@@ -12,7 +12,6 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
   const isEnabled = settings.paymentGatewayEnabled;
   const hasClientId = !!settings.paypalClientId;
   const hasWebhookId = !!settings.paypalWebhookId;
-  const isLive = settings.paypalMode === 'live';
   
   const [riskAccepted, setRiskAccepted] = useState(false);
 
@@ -26,6 +25,19 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
     onChange({
         target: { name: 'paymentGatewayEnabled', value: val, type: 'checkbox', checked: val }
     } as any);
+  };
+
+  const handleWebhookUpdate = (newId: string | null) => {
+    // Manually trigger an update to the parent state so the UI reflects the new Webhook ID status
+    // without requiring a full page reload.
+    const syntheticEvent = {
+        target: {
+            name: 'paypalWebhookId',
+            value: newId,
+            type: 'text'
+        }
+    } as any;
+    onChange(syntheticEvent);
   };
 
   return (
@@ -48,7 +60,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
               onChange={handleSwitchChange}
           />
 
-          <div className={`space-y-6 transition-all duration-300 ${!settings.paymentGatewayEnabled ? 'opacity-50 grayscale' : ''}`}>
+          <div className={`space-y-6 transition-all duration-300 ${!settings.paymentGatewayEnabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div>
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Environment Mode</label>
@@ -63,25 +75,27 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
                </div>
             </div>
 
-            <div>
-               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Webhook ID</label>
-               <input type="text" name="paypalWebhookId" value={settings.paypalWebhookId || ''} onChange={onChange} className="w-full border border-gray-300 rounded-xl p-3 text-sm font-mono" placeholder="WH-..." />
-               <p className="text-[10px] text-slate-400 mt-2 italic leading-relaxed">
-                 Create a webhook in your PayPal Dashboard. URL: <code>https://jamboapparels.com/api/paypal-webhook</code>. 
-                 Enable events: <code>PAYMENT.CAPTURE.COMPLETED</code>, <code>PAYMENT.CAPTURE.REFUNDED</code>, and <code>PAYMENT.CAPTURE.DENIED</code>.
-               </p>
-            </div>
-
             <div className="border-t border-gray-100 pt-6">
-               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Secret Key</label>
+               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Secret Key (Server-Side Only)</label>
                {!riskAccepted ? (
                   <button type="button" onClick={() => setRiskAccepted(true)} className="w-full py-4 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-50">
                     Click to reveal/edit Secret Key
                   </button>
                ) : (
-                  <input type="password" name="paypalSecretKey" value={settings.paypalSecretKey || ''} onChange={onChange} className="w-full border border-gray-300 rounded-xl p-3 text-sm font-mono" />
+                  <input type="password" name="paypalSecretKey" value={settings.paypalSecretKey || ''} onChange={onChange} className="w-full border border-gray-300 rounded-xl p-3 text-sm font-mono" placeholder="Never shared with client..." />
                )}
             </div>
+
+            {/* Advanced Webhook Manager */}
+            {hasClientId && (settings.paypalSecretKey || riskAccepted) && (
+                <div className="border-t border-gray-100 pt-6">
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Webhook Management</label>
+                    <PayPalWebhookManager 
+                        currentWebhookId={settings.paypalWebhookId} 
+                        onUpdate={handleWebhookUpdate}
+                    />
+                </div>
+            )}
           </div>
         </div>
       </div>

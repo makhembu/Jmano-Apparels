@@ -42,8 +42,7 @@ export class UserService {
         bio: updates.bio
      };
      Object.keys(dbUpdates).forEach(key => dbUpdates[key] === undefined && delete dbUpdates[key]);
-     // Added any cast to bypass type error on update
-     const { error } = await (supabase.from('users') as any).update(dbUpdates as any).eq('id', userId);
+     const { error } = await supabase.from('users').update(dbUpdates as any).eq('id', userId);
      if (error) throw error;
   }
 
@@ -91,8 +90,7 @@ export class UserService {
     } 
     
     // Fallback: Just insert into DB (Legacy/Shell profile only - cannot log in)
-    // Added any cast to bypass type error on insert
-    const { data, error } = await (supabase.from('users') as any).insert({
+    const { data, error } = await supabase.from('users').insert({
         id: user.id || crypto.randomUUID(),
         name: user.name!,
         email: user.email!,
@@ -149,9 +147,8 @@ export class UserService {
       is_default: address.isDefault ?? false
     };
 
-    // Added any cast to bypass type error on upsert
-    const { data, error } = await (supabase
-      .from('user_addresses') as any)
+    const { data, error } = await supabase
+      .from('user_addresses')
       .upsert(payload as any)
       .select()
       .single();
@@ -206,12 +203,10 @@ export class WishlistService {
     log('TOGGLE', 'wishlists', { userId, productId });
     const { data } = await supabase.from('wishlists').select('id').match({ user_id: userId, product_id: productId }).single();
     if (data) {
-      // Added any cast to bypass 'id' does not exist on type 'never'
       await supabase.from('wishlists').delete().eq('id', (data as any).id);
       return false; // Removed
     } else {
-      // Added any cast to bypass type error on insert
-      await (supabase.from('wishlists') as any).insert({ user_id: userId, product_id: productId } as any);
+      await supabase.from('wishlists').insert({ user_id: userId, product_id: productId } as any);
       return true; // Added
     }
   }

@@ -1,20 +1,57 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { Pagination } from '../../components/ui/Pagination';
+import { Input } from '../../components/ui/Input';
+import { Product } from '../../types';
 
 export const AdminProducts: React.FC = () => {
-  const { products, categories, refreshData } = useShop();
+  const { categories, refreshData } = useShop();
   const { showToast } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
   
+  // Local state for pagination and search
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+
   // Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  // Fetch products with pagination
+  const fetchProducts = async (pageNum: number, searchTerm: string) => {
+    setLoading(true);
+    try {
+        const result = await api.getPaginatedProducts(pageNum, 20, { search: searchTerm, sortBy: 'newest' });
+        setProducts(result.data);
+        setTotalPages(Math.ceil(result.total / 20));
+    } catch (e) {
+        showToast("Failed to load products", "error");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Debounce search
+    const timer = setTimeout(() => {
+        setPage(1);
+        fetchProducts(1, search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchProducts(page, search);
+  }, [page]); // Re-fetch on page change (search handled by debounce effect)
 
   // Toggle single item selection
   const toggleSelection = (id: string) => {
@@ -23,12 +60,15 @@ export const AdminProducts: React.FC = () => {
     );
   };
 
-  // Toggle all items selection
+  // Toggle all items selection (current page only)
   const toggleSelectAll = () => {
-    if (selectedIds.length === products.length) {
-      setSelectedIds([]);
+    const pageIds = products.map(p => p.id);
+    const allSelected = pageIds.every(id => selectedIds.includes(id));
+    
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
     } else {
-      setSelectedIds(products.map(p => p.id));
+      setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
     }
   };
 
@@ -36,7 +76,8 @@ export const AdminProducts: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         await api.adminDeleteProduct(id);
-        await refreshData();
+        await refreshData(); // Refresh context
+        fetchProducts(page, search); // Refresh list
         showToast("Product deleted", 'success');
       } catch (e) {
         showToast("Failed to delete", 'error');
@@ -52,7 +93,7 @@ export const AdminProducts: React.FC = () => {
       await api.adminBulkUpdateProducts(selectedIds, { isPublished: published });
       showToast(`Updated ${selectedIds.length} products to ${published ? 'Published' : 'Draft'}`, 'success');
       setSelectedIds([]);
-      await refreshData();
+      fetchProducts(page, search);
     } catch (e) {
       showToast("Bulk status update failed", 'error');
     } finally {
@@ -67,7 +108,7 @@ export const AdminProducts: React.FC = () => {
       await api.adminBulkUpdateProducts(selectedIds, { categoryKey });
       showToast(`Moved ${selectedIds.length} products to new category`, 'success');
       setSelectedIds([]);
-      await refreshData();
+      fetchProducts(page, search);
     } catch (e) {
       showToast("Bulk category move failed", 'error');
     } finally {
@@ -83,6 +124,7 @@ export const AdminProducts: React.FC = () => {
         showToast(`Successfully deleted ${selectedIds.length} products`, 'success');
         setSelectedIds([]);
         await refreshData();
+        fetchProducts(page, search);
       } catch (e) {
         showToast("Bulk deletion failed", 'error');
       } finally {
@@ -152,6 +194,15 @@ export const AdminProducts: React.FC = () => {
             </Link>
         </div>
       </div>
+
+      <div className="mb-6">
+        <Input 
+            placeholder="Search products..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-md bg-white"
+        />
+      </div>
       
       {/* Selection Actions Header (Mobile) */}
       {selectedIds.length > 0 && isMobile && (
@@ -165,12 +216,15 @@ export const AdminProducts: React.FC = () => {
          </div>
       )}
 
-      {isMobile ? (
+      {loading ? (
+          <div className="py-20 text-center text-slate-500">Loading inventory...</div>
+      ) : isMobile ? (
         // Mobile Card View
         <div className="space-y-1">
-           {products.map(product => (
+           {products.length === 0 ? <p className="text-center py-8 text-slate-500">No products found.</p> : products.map(product => (
               <MobileProductCard key={product.id} product={product} />
            ))}
+           <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       ) : (
         // Desktop Table View
@@ -181,7 +235,7 @@ export const AdminProducts: React.FC = () => {
                 <th className="px-6 py-4 text-left w-10">
                   <input 
                     type="checkbox" 
-                    checked={products.length > 0 && selectedIds.length === products.length}
+                    checked={products.length > 0 && products.every(p => selectedIds.includes(p.id))}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 text-brand-green rounded border-slate-300 focus:ring-brand-green"
                   />
@@ -196,7 +250,9 @@ export const AdminProducts: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {products.map(product => {
+              {products.length === 0 ? (
+                 <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500">No products found.</td></tr>
+              ) : products.map(product => {
                 const category = categories.find(c => c.key === product.categoryKey);
                 const isSelected = selectedIds.includes(product.id);
                 return (
@@ -270,6 +326,7 @@ export const AdminProducts: React.FC = () => {
               })}
             </tbody>
           </table>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 
