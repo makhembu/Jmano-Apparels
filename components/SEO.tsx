@@ -30,11 +30,15 @@ export const SEO: React.FC<SEOProps> = ({
 
   // --- Defaults & Logic ---
   const siteName = 'Jambo Apparels';
-  const defaultTitle = settings.seoTitle || siteName;
-  const defaultDescription = settings.seoDescription || 'Divinely threaded scriptures.';
+  const defaultTitle = settings.seoTitle || "Jambo Apparels | Christian Streetwear & Faith Based Fashion";
+  const defaultDescription = settings.seoDescription || "Wear your scriptures in Humility and Boldness. Premium Christian streetwear, hoodies, and tees designed to spread the Gospel.";
   const defaultImage = settings.defaultOgImage || settings.logoImage || 'https://i.imgur.com/pkaScEv.png';
   
-  const finalTitle = title ? (title.includes('|') ? title : `${title} | ${siteName}`) : defaultTitle;
+  // Logic to append Site Name only if not already present and short enough
+  const finalTitle = title 
+    ? (title.includes('|') ? title : `${title} | ${siteName}`) 
+    : defaultTitle;
+    
   const finalDesc = description || defaultDescription;
   const finalImage = image || defaultImage;
   
@@ -46,23 +50,28 @@ export const SEO: React.FC<SEOProps> = ({
   const finalCanonical = canonical || autoCanonical;
   const robotsContent = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
 
+  // Default keywords if none provided
+  const baseKeywords = ["Christian Clothing", "Faith Apparel", "Streetwear", "Scripture Hoodies", "Jambo Apparels"];
+  const finalKeywords = keywords.length > 0 ? keywords : baseKeywords;
+
   useEffect(() => {
     // 1. Update Title
     document.title = finalTitle;
 
-    // 2. Helper to set meta tags
+    // 2. Helper to set meta tags safely
     const setMeta = (selector: string, content: string) => {
       let element = document.querySelector(selector);
       if (!element) {
-        // If not found (e.g. CSR navigation), create it
         element = document.createElement('meta');
         
         // Parse selector to set attributes
-        const attrMatch = selector.match(/meta\[(name|property)="(.+?)"\]/);
-        if (attrMatch) {
-            element.setAttribute(attrMatch[1], attrMatch[2]);
-            document.head.appendChild(element);
-        }
+        const nameMatch = selector.match(/meta\[name="(.+?)"\]/);
+        const propMatch = selector.match(/meta\[property="(.+?)"\]/);
+        
+        if (nameMatch) element.setAttribute('name', nameMatch[1]);
+        if (propMatch) element.setAttribute('property', propMatch[1]);
+        
+        document.head.appendChild(element);
       }
       element.setAttribute('content', content);
     };
@@ -79,7 +88,7 @@ export const SEO: React.FC<SEOProps> = ({
 
     // 3. Update Standard Meta
     setMeta('meta[name="description"]', finalDesc);
-    setMeta('meta[name="keywords"]', keywords.join(', '));
+    setMeta('meta[name="keywords"]', finalKeywords.join(', '));
     setMeta('meta[name="robots"]', robotsContent);
 
     // 4. Update Open Graph
@@ -127,7 +136,7 @@ export const SEO: React.FC<SEOProps> = ({
 
     schemaScript.textContent = JSON.stringify(baseSchema);
 
-  }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, keywords, schema, settings]);
+  }, [finalTitle, finalDesc, finalImage, type, finalCanonical, robotsContent, finalKeywords, schema, settings]);
 
   return null;
 };
