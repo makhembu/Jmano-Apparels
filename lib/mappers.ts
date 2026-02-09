@@ -144,6 +144,14 @@ export const Mappers = {
     enableCommunitySection: s.enable_community_section ?? true,
     enableJournalSection: s.enable_journal_section ?? true,
     enableSocialSection: s.enable_social_section ?? true,
+
+    // Homepage SEO Content
+    seoContentTitle: s.seo_content_title || 'Faith & Fashion: The Jambo Difference',
+    seoContentIntro: s.seo_content_intro || 'At Jambo Apparels, we believe that clothing is more than just fabric—it\'s a statement. As a premier Christian streetwear brand, we bridge the gap between modern style and timeless truth. Our collection of scripture-inspired hoodies, t-shirts, and accessories are designed for the believer who isn\'t afraid to stand out.',
+    seoContentCol1Title: s.seo_content_col1_title || 'Why Choose Christian Streetwear?',
+    seoContentCol1Body: s.seo_content_col1_body || 'Fashion is a language. What you wear speaks before you do. Faith-based fashion allows you to carry a message of hope, humility, and boldness into every room you enter. Whether it\'s the gym, the campus, or the coffee shop, our apparel is designed to be a conversation starter for the Gospel.',
+    seoContentCol2Title: s.seo_content_col2_title || 'Ethical, Sustainable, Faithful',
+    seoContentCol2Body: s.seo_content_col2_body || 'We don\'t compromise on quality or integrity. Our commitment to ethical manufacturing reflects our stewardship of God\'s creation. Every stitch in our Christian clothing collection is placed with care, ensuring that your apparel lasts as long as your testimony.',
     
     // Sitelinks
     priorityPages: (s.priority_pages as any[]) || undefined,

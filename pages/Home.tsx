@@ -1,3 +1,4 @@
+
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SEO } from '../components/SEO';
 import { OptimizedImage } from '../components/ui/OptimizedImage';
 import { Button } from '../components/ui/Button';
+import ReactMarkdown from 'react-markdown';
 
 // FIX: Explicitly typed the ReactElement to include SVGProps, resolving the cloneElement type error.
 const SocialIcons: Record<string, React.ReactElement<React.SVGProps<SVGSVGElement>>> = {
@@ -212,33 +214,49 @@ export const Home: React.FC = () => {
         </section>
       )}
 
-      {/* SEO Content Section (New) */}
+      {/* SEO Content Section (Dynamic) */}
       <section className="bg-white py-16 border-t border-gray-100" aria-labelledby="seo-content-heading">
          <div className="max-w-5xl mx-auto px-6">
             <div className="prose prose-slate max-w-none text-center">
-               <h2 id="seo-content-heading" className="text-3xl font-serif font-bold text-brand-dark mb-8">Faith & Fashion: The Jambo Difference</h2>
+               <h2 id="seo-content-heading" className="text-3xl font-serif font-bold text-brand-dark mb-8">
+                   {settings.seoContentTitle || "Faith & Fashion: The Jambo Difference"}
+               </h2>
                
-               <p className="text-lg leading-relaxed text-gray-600 mb-6">
-                 At <strong>Jambo Apparels</strong>, we believe that clothing is more than just fabric—it's a statement. 
-                 As a premier <strong>Christian streetwear brand</strong>, we bridge the gap between modern style and timeless truth. 
-                 Our collection of <strong>scripture-inspired hoodies</strong>, t-shirts, and accessories are designed for the believer who isn't afraid to stand out.
-               </p>
+               <div className="text-lg leading-relaxed text-gray-600 mb-6">
+                 <ReactMarkdown components={{
+                     p: ({node, ...props}) => <p className="mb-4" {...props} />,
+                     strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                 }}>
+                     {settings.seoContentIntro || ""}
+                 </ReactMarkdown>
+               </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-left mt-12">
                   <div>
-                     <h3 className="text-xl font-bold text-brand-green mb-3">Why Choose Christian Streetwear?</h3>
-                     <p className="text-gray-600 mb-4">
-                        Fashion is a language. What you wear speaks before you do. 
-                        <strong>Faith-based fashion</strong> allows you to carry a message of hope, humility, and boldness into every room you enter. 
-                        Whether it's the gym, the campus, or the coffee shop, our apparel is designed to be a conversation starter for the Gospel.
-                     </p>
+                     <h3 className="text-xl font-bold text-brand-green mb-3">
+                         {settings.seoContentCol1Title || "Why Choose Christian Streetwear?"}
+                     </h3>
+                     <div className="text-gray-600 mb-4">
+                        <ReactMarkdown components={{
+                            p: ({node, ...props}) => <p className="mb-4" {...props} />,
+                            strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                        }}>
+                             {settings.seoContentCol1Body || ""}
+                        </ReactMarkdown>
+                     </div>
                   </div>
                   <div>
-                     <h3 className="text-xl font-bold text-brand-green mb-3">Ethical, Sustainable, Faithful</h3>
-                     <p className="text-gray-600 mb-4">
-                        We don't compromise on quality or integrity. Our commitment to <strong>ethical manufacturing</strong> reflects our stewardship of God's creation. 
-                        Every stitch in our <strong>Christian clothing</strong> collection is placed with care, ensuring that your apparel lasts as long as your testimony.
-                     </p>
+                     <h3 className="text-xl font-bold text-brand-green mb-3">
+                         {settings.seoContentCol2Title || "Ethical, Sustainable, Faithful"}
+                     </h3>
+                     <div className="text-gray-600 mb-4">
+                        <ReactMarkdown components={{
+                             p: ({node, ...props}) => <p className="mb-4" {...props} />,
+                             strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
+                         }}>
+                             {settings.seoContentCol2Body || ""}
+                        </ReactMarkdown>
+                     </div>
                   </div>
                </div>
             </div>

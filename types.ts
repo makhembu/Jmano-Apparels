@@ -244,6 +244,13 @@ export interface AppSettings {
   enableCommunitySection?: boolean;
   enableJournalSection?: boolean;
   enableSocialSection?: boolean;
+  // Homepage SEO Content
+  seoContentTitle?: string;
+  seoContentIntro?: string;
+  seoContentCol1Title?: string;
+  seoContentCol1Body?: string;
+  seoContentCol2Title?: string;
+  seoContentCol2Body?: string;
   // Sitelinks Management
   priorityPages?: PriorityPage[];
 }

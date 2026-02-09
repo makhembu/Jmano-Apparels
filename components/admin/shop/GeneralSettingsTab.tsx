@@ -6,6 +6,8 @@ import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../../context/ToastContext';
+import { Input } from '../../ui/Input';
+import { Textarea } from '../../ui/Textarea';
 
 export const GeneralSettingsTab: React.FC = () => {
   const { settings, updateSettings } = useShop();
@@ -33,7 +35,7 @@ export const GeneralSettingsTab: React.FC = () => {
     api.getCategories().then(setProdCats);
   }, []);
 
-  const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
         const checked = (e.target as HTMLInputElement).checked;
@@ -190,6 +192,67 @@ export const GeneralSettingsTab: React.FC = () => {
                 checked={generalForm.enableSocialSection ?? true}
                 onChange={(val) => handleSwitchChange('enableSocialSection', val)}
             />
+        </div>
+
+        {/* Homepage SEO Content Editor */}
+        <div className="pt-6 border-t border-gray-100 space-y-6">
+            <div className="flex justify-between items-center">
+                <h4 className="text-sm font-bold text-gray-700">Homepage SEO Content</h4>
+                <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded">Supports Markdown</span>
+            </div>
+            
+            <div className="space-y-4">
+                <Input 
+                    label="Main Title" 
+                    name="seoContentTitle" 
+                    value={generalForm.seoContentTitle || ''} 
+                    onChange={handleGeneralChange} 
+                    placeholder="Faith & Fashion: The Jambo Difference" 
+                />
+                <Textarea 
+                    label="Intro Text" 
+                    name="seoContentIntro" 
+                    value={generalForm.seoContentIntro || ''} 
+                    onChange={handleGeneralChange} 
+                    rows={4}
+                    placeholder="At Jambo Apparels..."
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h5 className="text-xs font-bold uppercase text-gray-500">Left Column</h5>
+                        <Input 
+                            label="Title" 
+                            name="seoContentCol1Title" 
+                            value={generalForm.seoContentCol1Title || ''} 
+                            onChange={handleGeneralChange} 
+                        />
+                        <Textarea 
+                            label="Body" 
+                            name="seoContentCol1Body" 
+                            value={generalForm.seoContentCol1Body || ''} 
+                            onChange={handleGeneralChange} 
+                            rows={6}
+                        />
+                    </div>
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h5 className="text-xs font-bold uppercase text-gray-500">Right Column</h5>
+                        <Input 
+                            label="Title" 
+                            name="seoContentCol2Title" 
+                            value={generalForm.seoContentCol2Title || ''} 
+                            onChange={handleGeneralChange} 
+                        />
+                        <Textarea 
+                            label="Body" 
+                            name="seoContentCol2Body" 
+                            value={generalForm.seoContentCol2Body || ''} 
+                            onChange={handleGeneralChange} 
+                            rows={6}
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div className="pt-4">
