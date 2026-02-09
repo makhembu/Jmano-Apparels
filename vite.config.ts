@@ -53,7 +53,8 @@ export default defineConfig({
           // Core React dependencies - Keep these together for efficient caching
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // Utilities - Lightweight enough to keep global
-          'vendor-utils': ['uuid', 'dompurify', 'clsx', 'tailwind-merge'],
+          // REMOVED 'clsx' and 'tailwind-merge' as they are not in package.json dependencies
+          'vendor-utils': ['uuid', 'dompurify'],
           // Database - Core app requirement
           'supabase': ['@supabase/supabase-js'],
           
