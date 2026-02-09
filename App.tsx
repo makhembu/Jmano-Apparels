@@ -15,10 +15,11 @@ import { CacheManager } from './lib/cache';
 import { AppInitializer } from './components/AppInitializer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-// Lazy Loaded Components
-import { Home } from './pages/Home';
-import { Shop } from './pages/Shop';
-import { ProductDetails } from './pages/ProductDetails';
+// Lazy Loaded Components - Code Splitting for Performance
+// Converted eager imports to dynamic imports to reduce initial bundle size
+const Home = lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
+const Shop = lazy(() => import('./pages/Shop').then(module => ({ default: module.Shop })));
+const ProductDetails = lazy(() => import('./pages/ProductDetails').then(module => ({ default: module.ProductDetails })));
 
 const Cart = lazy(() => import('./pages/Cart').then(module => ({ default: module.Cart })));
 const Checkout = lazy(() => import('./pages/Checkout').then(module => ({ default: module.Checkout })));
