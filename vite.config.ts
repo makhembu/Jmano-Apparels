@@ -29,6 +29,7 @@ const removeDevScripts = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',
   define: {
     // Inject the version into the client environment
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
