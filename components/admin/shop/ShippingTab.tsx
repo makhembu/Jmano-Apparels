@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ShippingZone } from '../../../types';
+import { ShippingZone, ShippingOption } from '../../../types';
 import { api } from '../../../lib/db';
 import { Button } from '../../ui/Button';
 import { useToast } from '../../../context/ToastContext';
@@ -9,10 +9,13 @@ export const ShippingTab: React.FC = () => {
   const { showToast } = useToast();
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [zoneForm, setZoneForm] = useState<Partial<ShippingZone>>({
-    name: '', baseRate: 0, perKgRate: 0, freeShippingThreshold: 0, estimatedDays: '3-5 days', countries: []
+    name: '', baseRate: 0, freeShippingThreshold: 0, countries: [], options: []
   });
   const [countriesInput, setCountriesInput] = useState('');
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
+  
+  // New State for adding options to a zone
+  const [newOption, setNewOption] = useState<Partial<ShippingOption>>({ name: 'Standard', rate: 0, description: '3-5 Days' });
   
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -46,13 +49,30 @@ export const ShippingTab: React.FC = () => {
       } catch(e) { showToast('Operation failed', 'error'); }
   };
 
+  const handleAddOption = async (zoneId: string) => {
+      if (!newOption.name) return;
+      try {
+          await api.addShippingOption(zoneId, newOption);
+          showToast('Option added', 'success');
+          setNewOption({ name: 'Standard', rate: 0, description: '3-5 Days' });
+          refreshData();
+      } catch(e) { showToast('Failed to add option', 'error'); }
+  };
+
+  const handleDeleteOption = async (optionId: string) => {
+      if (!window.confirm('Remove this shipping method?')) return;
+      try {
+          await api.deleteShippingOption(optionId);
+          showToast('Option removed', 'success');
+          refreshData();
+      } catch(e) { showToast('Failed to delete option', 'error'); }
+  };
+
   const startEditZone = (z: ShippingZone) => {
       setZoneForm({
           name: z.name,
           baseRate: z.baseRate,
-          perKgRate: z.perKgRate || 0,
           freeShippingThreshold: z.freeShippingThreshold || 0,
-          estimatedDays: z.estimatedDays || '',
           isActive: z.isActive
       });
       setCountriesInput(z.countries.join(', '));
@@ -65,7 +85,7 @@ export const ShippingTab: React.FC = () => {
   };
 
   const resetZoneForm = () => {
-      setZoneForm({ name: '', baseRate: 0, perKgRate: 0, freeShippingThreshold: 0, estimatedDays: '3-5 days', countries: [] });
+      setZoneForm({ name: '', baseRate: 0, freeShippingThreshold: 0, countries: [] });
       setCountriesInput('');
       setEditingZoneId(null);
   };
@@ -79,35 +99,62 @@ export const ShippingTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-        <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-            <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                        <th className="px-6 py-4 text-left font-bold text-gray-500 uppercase tracking-wider text-xs">Zone Name</th>
-                        <th className="px-6 py-4 text-left font-bold text-gray-500 uppercase tracking-wider text-xs">Base Rate</th>
-                        <th className="px-6 py-4 text-left font-bold text-gray-500 uppercase tracking-wider text-xs">Per Kg</th>
-                        <th className="px-6 py-4 text-left font-bold text-gray-500 uppercase tracking-wider text-xs">Free Over</th>
-                        <th className="px-6 py-4 text-left font-bold text-gray-500 uppercase tracking-wider text-xs">Countries</th>
-                        <th className="px-6 py-4"></th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {zones.map(z => (
-                        <tr key={z.id} className="hover:bg-gray-50 group">
-                            <td className="px-6 py-4 font-bold text-gray-900">{z.name}</td>
-                            <td className="px-6 py-4 font-mono text-slate-600">£{z.baseRate.toFixed(2)}</td>
-                            <td className="px-6 py-4 font-mono text-slate-600">£{z.perKgRate?.toFixed(2) || '0.00'}</td>
-                            <td className="px-6 py-4 text-green-600 font-bold">{z.freeShippingThreshold ? `£${z.freeShippingThreshold}` : '-'}</td>
-                            <td className="px-6 py-4 text-xs text-gray-500 max-w-xs truncate" title={z.countries.join(', ')}>{z.countries.join(', ')}</td>
-                            <td className="px-6 py-4 text-right flex justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => startEditZone(z)} className="text-brand-green hover:text-brand-dark text-xs font-bold uppercase tracking-wider">Edit</button>
-                                <button onClick={() => handleDeleteZone(z.id)} className="text-red-500 hover:text-red-700 text-xs font-bold uppercase tracking-wider">Delete</button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+    <div className="space-y-12">
+        <div className="space-y-6">
+            {zones.map(z => (
+                <div key={z.id} className="bg-white shadow rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <h4 className="font-bold text-gray-900">{z.name}</h4>
+                            <p className="text-xs text-gray-500 max-w-md truncate">{z.countries.join(', ')}</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => startEditZone(z)} className="text-brand-green hover:text-brand-dark text-xs font-bold uppercase tracking-wider">Edit Zone</button>
+                            <button onClick={() => handleDeleteZone(z.id)} className="text-red-500 hover:text-red-700 text-xs font-bold uppercase tracking-wider">Delete</button>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <div className="mb-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Shipping Methods</div>
+                        
+                        {/* Options List */}
+                        <div className="space-y-2 mb-6">
+                            {z.options.length > 0 ? z.options.map(opt => (
+                                <div key={opt.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <div>
+                                        <span className="font-bold text-sm text-slate-800">{opt.name}</span>
+                                        <span className="text-xs text-slate-500 ml-2">{opt.description}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="font-mono font-bold text-slate-900">£{opt.rate.toFixed(2)}</span>
+                                        <button onClick={() => handleDeleteOption(opt.id)} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none">×</button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-slate-400 italic">No specific methods configured. Base rate (£{z.baseRate}) will apply.</p>
+                            )}
+                        </div>
+
+                        {/* Add Option Form */}
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <div className="sm:col-span-1">
+                                <label className="text-[10px] font-bold text-blue-800 mb-1 block">Method Name</label>
+                                <input type="text" value={newOption.name} onChange={e => setNewOption({...newOption, name: e.target.value})} className="w-full border border-blue-200 rounded p-1.5 text-xs" placeholder="e.g. Express" />
+                            </div>
+                            <div className="sm:col-span-1">
+                                <label className="text-[10px] font-bold text-blue-800 mb-1 block">Description</label>
+                                <input type="text" value={newOption.description} onChange={e => setNewOption({...newOption, description: e.target.value})} className="w-full border border-blue-200 rounded p-1.5 text-xs" placeholder="e.g. 1-2 Days" />
+                            </div>
+                            <div className="sm:col-span-1">
+                                <label className="text-[10px] font-bold text-blue-800 mb-1 block">Cost (£)</label>
+                                <input type="number" step="0.01" value={newOption.rate} onChange={e => setNewOption({...newOption, rate: +e.target.value})} className="w-full border border-blue-200 rounded p-1.5 text-xs" />
+                            </div>
+                            <button onClick={() => handleAddOption(z.id)} className="bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded shadow-sm hover:bg-blue-700 h-[34px]">
+                                Add Method
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
         
         <div ref={formRef} className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg shadow-slate-200/50">
@@ -118,30 +165,22 @@ export const ShippingTab: React.FC = () => {
                 )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
                     <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Zone Name</label>
                     <input type="text" value={zoneForm.name} onChange={e => setZoneForm({...zoneForm, name: e.target.value})} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none" placeholder="e.g. Europe" />
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Base Rate (£)</label>
+                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Countries (Comma separated)</label>
+                    <textarea value={countriesInput} onChange={e => setCountriesInput(e.target.value)} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none h-[46px] resize-none" placeholder="France, Germany, Spain..." />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Base Rate Fallback (£)</label>
                     <input type="number" step="0.01" value={zoneForm.baseRate} onChange={e => setZoneForm({...zoneForm, baseRate: +e.target.value})} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none" />
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Rate per Kg (£)</label>
-                    <input type="number" step="0.01" value={zoneForm.perKgRate} onChange={e => setZoneForm({...zoneForm, perKgRate: +e.target.value})} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none" />
-                </div>
-                    <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Free Threshold (£)</label>
+                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Free Shipping Over (£)</label>
                     <input type="number" step="0.01" value={zoneForm.freeShippingThreshold} onChange={e => setZoneForm({...zoneForm, freeShippingThreshold: +e.target.value})} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Est. Days</label>
-                    <input type="text" value={zoneForm.estimatedDays || ''} onChange={e => setZoneForm({...zoneForm, estimatedDays: e.target.value})} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none" placeholder="3-5 days" />
-                </div>
-                <div className="md:col-span-2">
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Countries (Comma separated)</label>
-                    <textarea value={countriesInput} onChange={e => setCountriesInput(e.target.value)} className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none h-[50px] resize-none" placeholder="France, Germany, Spain..." />
                 </div>
             </div>
             <div className="mt-6 flex justify-end">

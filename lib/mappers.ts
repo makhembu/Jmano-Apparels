@@ -4,7 +4,7 @@ import {
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
   DbBlogPost, DbOrder, ProductReview, DiscountCode, ShippingZone, CartItem,
   BlogCategory, DbBlogCategory, NewsletterSubscriber, ContactSubmission,
-  DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, EmailTemplate
+  DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, EmailTemplate, ShippingOption
 } from '../types';
 
 export const Mappers = {
@@ -27,8 +27,8 @@ export const Mappers = {
     stockQuantity: p.stock_quantity ?? 0,
     lowStockThreshold: p.low_stock_threshold || 5,
     weight: p.weight || 0,
-    // Map isFreeShipping
     isFreeShipping: p.is_free_shipping || false,
+    shippingClass: p.shipping_class || undefined,
     
     // SEO
     seoTitle: p.seo_title || undefined,
@@ -286,10 +286,14 @@ export const Mappers = {
     name: z.name,
     countries: z.countries,
     baseRate: z.base_rate,
-    perKgRate: z.per_kg_rate,
     freeShippingThreshold: z.free_shipping_threshold,
-    estimatedDays: z.estimated_days,
-    isActive: z.is_active
+    isActive: z.is_active,
+    options: (z.options || []).map((o: any) => ({
+      id: o.id,
+      name: o.name,
+      rate: o.rate,
+      description: o.description
+    }))
   }),
 
   toDiscountCode: (d: any): DiscountCode => ({

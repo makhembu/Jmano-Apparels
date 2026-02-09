@@ -36,6 +36,7 @@ export interface Product {
   lowStockThreshold: number;
   weight: number;
   isFreeShipping?: boolean;
+  shippingClass?: string; // New field
   seoTitle?: string;
   seoDescription?: string;
   canonicalUrl?: string;
@@ -137,6 +138,7 @@ export interface Order {
   total: number;
   subtotal?: number;
   shippingCost?: number;
+  shippingMethod?: string; // New field
   taxAmount?: number;
   discountAmount?: number;
   discountCode?: string;
@@ -258,15 +260,21 @@ export interface AppSettings {
   priorityPages?: PriorityPage[];
 }
 
+export interface ShippingOption {
+  id: string;
+  name: string;
+  rate: number;
+  description?: string;
+}
+
 export interface ShippingZone {
   id: string;
   name: string;
   countries: string[];
-  baseRate: number;
-  perKgRate?: number;
+  baseRate: number; // Fallback if no options
   freeShippingThreshold?: number;
-  estimatedDays?: string;
   isActive: boolean;
+  options: ShippingOption[]; // Array of methods
 }
 
 export interface DiscountCode {

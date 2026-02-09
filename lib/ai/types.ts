@@ -1,4 +1,3 @@
-
 export type MessageRole = 'user' | 'model' | 'system';
 
 export interface FunctionCall {
@@ -33,6 +32,11 @@ export interface CopilotContextType {
   clearHistory: () => void;
   updatePageContext: (context: Partial<PageContext>) => void;
   setPageData: (data: Record<string, unknown> | undefined) => void;
+  
+  // Model Management
+  currentModel: string;
+  availableModels: string[];
+  setModel: (model: string) => void;
 }
 
 export interface HighlightTarget {

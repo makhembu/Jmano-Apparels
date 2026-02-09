@@ -17,7 +17,8 @@ const getEnv = (key: string) => {
 // Prioritize standard Vercel/Supabase environment variables
 // Fallback to SECRETS for local development without .env
 const supabaseUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL') || SECRETS.SUPABASE_URL;
-const supabaseKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY') || SECRETS.SUPABASE_PUBLISHABLE_KEY;
+// FIX: Changed SUPABASE_PUBLISHABLE_KEY to SUPABASE_PUBLISHABLE_DEFAULT_KEY
+const supabaseKey = getEnv('VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('SUPABASE_PUBLISHABLE_DEFAULT_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY') || SECRETS.SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('[Supabase] CRITICAL: Client configuration missing. Please check .env or secrets.ts');

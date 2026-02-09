@@ -95,7 +95,8 @@ export default async function handler(req, res) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const model = 'gemini-3-flash-preview'; 
+    // Use gemini-2.0-flash as it is the most reliable model for this use case
+    const model = 'gemini-2.0-flash'; 
 
     // 2. Prepare History for SDK
     // Convert generic history array to Gemini Content format
@@ -108,7 +109,7 @@ export default async function handler(req, res) {
     contents.push({ role: 'user', parts: [{ text: message }] });
 
     // 3. Generate Content (One-shot with history context)
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
         model: model,
         contents: contents,
         config: {
@@ -117,11 +118,10 @@ export default async function handler(req, res) {
         }
     });
 
-    const response = result.response;
-    
-    // Extract Function Calls
-    const functionCalls = response.functionCalls();
-    const text = response.text();
+    // Extract Function Calls and Text using Properties (Getters)
+    // IMPORTANT: .functionCalls and .text are getters, NOT methods in @google/genai SDK
+    const functionCalls = response.functionCalls; 
+    const text = response.text;
 
     return res.status(200).json({ 
         text, 

@@ -2,7 +2,7 @@
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { Order, OrderItem, ShippingAddress, DbOrder, CartItem, ShippingZone, DiscountCode } from '../../types';
+import { Order, ShippingAddress, DbOrder, CartItem, ShippingZone, DiscountCode, ShippingOption } from '../../types';
 import { SettingsService } from './content';
 
 // Instantiate settings service for email logic
@@ -91,6 +91,14 @@ export class OrderService {
     if (error) throw error;
     
     const createdOrder = Mappers.toOrder(data as DbOrder);
+
+    // Update shipping method if provided separately (as RPC handles base logic)
+    if (order.shippingCost && order.shippingCost > 0) {
+        await supabase.from('orders').update({ 
+            shipping_cost: order.shippingCost 
+        }).eq('id', createdOrder.id);
+        createdOrder.shippingCost = order.shippingCost;
+    }
 
     // --- SEND EMAILS (Client-Side Logic) ---
     // Only send for successful orders (paid/pending).
@@ -309,23 +317,31 @@ export class CartService {
 export class ShippingService {
   async getZones(): Promise<ShippingZone[]> {
     log('SELECT', 'shipping_zones');
-    const { data, error } = await supabase.from('shipping_zones').select('*').eq('is_active', true);
+    // We join options so the frontend gets nested data
+    const { data, error } = await supabase
+        .from('shipping_zones')
+        .select(`
+            *,
+            options:shipping_options(*)
+        `)
+        .eq('is_active', true);
+        
     if (error) throw error;
     return ((data || []) as any[]).map(Mappers.toShippingZone);
   }
 
-  async createZone(zone: Partial<ShippingZone>): Promise<void> {
+  async createZone(zone: Partial<ShippingZone>): Promise<ShippingZone> {
     log('INSERT', 'shipping_zones', zone);
-    const { error } = await supabase.from('shipping_zones').insert({
+    const { data, error } = await supabase.from('shipping_zones').insert({
       name: zone.name,
       countries: zone.countries,
       base_rate: zone.baseRate,
-      per_kg_rate: zone.perKgRate,
       free_shipping_threshold: zone.freeShippingThreshold,
-      estimated_days: zone.estimatedDays,
       is_active: true
-    } as any);
+    } as any).select().single();
+    
     if (error) throw error;
+    return Mappers.toShippingZone(data);
   }
 
   async updateZone(id: string, zone: Partial<ShippingZone>): Promise<void> {
@@ -334,9 +350,7 @@ export class ShippingService {
       name: zone.name,
       countries: zone.countries,
       base_rate: zone.baseRate,
-      per_kg_rate: zone.perKgRate,
       free_shipping_threshold: zone.freeShippingThreshold,
-      estimated_days: zone.estimatedDays,
       is_active: zone.isActive
     } as any).eq('id', id);
     if (error) throw error;
@@ -346,6 +360,24 @@ export class ShippingService {
     log('DELETE', 'shipping_zones', id);
     const { error } = await supabase.from('shipping_zones').delete().eq('id', id);
     if (error) throw error;
+  }
+
+  // --- Shipping Options Management ---
+  async addOption(zoneId: string, option: Partial<ShippingOption>): Promise<void> {
+      log('INSERT', 'shipping_options', { zoneId, option });
+      const { error } = await supabase.from('shipping_options').insert({
+          zone_id: zoneId,
+          name: option.name,
+          rate: option.rate,
+          description: option.description
+      } as any);
+      if (error) throw error;
+  }
+
+  async deleteOption(optionId: string): Promise<void> {
+      log('DELETE', 'shipping_options', optionId);
+      const { error } = await supabase.from('shipping_options').delete().eq('id', optionId);
+      if (error) throw error;
   }
 }
 

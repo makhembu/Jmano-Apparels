@@ -1,9 +1,12 @@
-
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { geminiClient, AVAILABLE_MODELS } from '../lib/ai/gemini-client';
+import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
+import { Chat, Content } from '@google/genai';
 import { useShop } from './ShopContext';
+import { api } from '../lib/db';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
 
@@ -11,15 +14,22 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [messages, setMessages] = useState<Message[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0]);
+  
   const location = useLocation();
   const navigate = useNavigate();
-  const { settings } = useShop(); // We still use settings to check if AI enabled generally, but key is on backend if possible
+  const { settings, loading: settingsLoading } = useShop();
+  
+  // Store the key retrieved from DB
+  const [dbApiKey, setDbApiKey] = useState<string | undefined>(undefined);
 
   const [pageContext, setPageContext] = useState<PageContext>({
     route: location.pathname,
     pageName: 'Dashboard',
     availableActions: []
   });
+
+  const chatSession = useRef<Chat | null>(null);
 
   const setPageData = useCallback((data: Record<string, unknown> | undefined) => {
     setPageContext(prev => ({ ...prev, pageData: data }));
@@ -43,90 +53,174 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
+  // Securely fetch Admin settings (with secrets) on mount
+  useEffect(() => {
+    const fetchSecureSettings = async () => {
+      try {
+        const adminSettings = await api.getAdminSettings();
+        if (adminSettings?.geminiApiKey) {
+          setDbApiKey(adminSettings.geminiApiKey);
+        }
+      } catch (e) {
+        console.warn("Copilot: Could not fetch secure settings (User might not be admin).");
+      }
+    };
+    fetchSecureSettings();
+  }, []);
+
+  // Helper: Convert internal messages state to Gemini SDK Content format for history preservation
+  const getHistory = (): Content[] => {
+    return messages
+        .filter(m => !m.isError) // Skip error messages
+        .map(m => ({
+            role: m.role === 'model' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+        }));
+  };
+
+  // Helper: Initialize or Re-initialize Chat
+  const initChat = (modelToUse: string, history: Content[] = []) => {
+    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
+    if (geminiClient.isAvailable(apiKey)) {
+        const prompt = generateSystemPrompt(pageContext);
+        chatSession.current = geminiClient.createChat(prompt, apiKey, modelToUse, history);
+    }
+  };
+
+  // Initial Chat Session
+  useEffect(() => {
+    if (settingsLoading) return;
+    if (!chatSession.current) {
+        initChat(currentModel);
+    }
+  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, dbApiKey]); 
+
+  // If model changes manually, recreate session with history
+  useEffect(() => {
+      if (chatSession.current) {
+          const history = getHistory();
+          initChat(currentModel, history);
+      }
+  }, [currentModel]);
+
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
+    const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
+    
+    // Ensure session exists
+    if (!chatSession.current) {
+      if (geminiClient.isAvailable(apiKey)) {
+        initChat(currentModel);
+      } else {
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'model',
+            content: "Copilot is not configured. Please add a Gemini API Key in App Settings.",
+            timestamp: new Date(),
+            isError: true
+        }]);
+        return;
+      }
+    }
+    
+    if (!chatSession.current || !content.trim()) return;
 
+    // Add user message to UI
     const userMsg: Message = { 
         id: Date.now().toString(), 
         role: 'user', 
         content, 
         timestamp: new Date() 
     };
-    
-    // Optimistic update
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
+    setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    try {
-        // Send to Backend API
-        const res = await fetch('/api/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: content,
-                history: messages.map(m => ({ role: m.role, content: m.content })),
-                pageContext
-            })
-        });
+    // Recursive helper to handle retries/fallbacks
+    const attemptSend = async (model: string, retryCount = 0): Promise<string> => {
+        try {
+            // Ensure session matches model (for retry recursion)
+            if (model !== currentModel) {
+                const history = getHistory();
+                // Add current user message to history manually since state update is async
+                history.push({ role: 'user', parts: [{ text: content }] }); 
+                initChat(model, history);
+                setCurrentModel(model);
+            }
 
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.error || "Failed to contact Copilot");
-        }
-
-        let modelText = data.text;
-        const toolCalls = data.functionCalls;
-
-        // Process Tool Calls client-side
-        if (toolCalls && toolCalls.length > 0) {
-            // We assume for now the model provides a final text response *after* knowing tool results in a real chat session.
-            // Since our backend API is single-turn (stateless request), we execute tools here.
-            // In a full implementation, we'd send the tool results BACK to the API to get the final text.
-            // For simplicity in this fix, we execute and show a generic success message if the model didn't provide text.
+            let response = await chatSession.current!.sendMessage({ message: content });
             
-            for (const call of toolCalls) {
-                const executor = (executors as any)[call.name];
-                if (executor) {
-                    await executor(call.args);
+            while (response.functionCalls && response.functionCalls.length > 0) {
+                const functionResponses = await Promise.all(
+                    response.functionCalls.map(async (call) => {
+                        const executor = (executors as any)[call.name];
+                        const result = executor ? await executor(call.args) : { error: `Function ${call.name} not found` };
+                        return { 
+                            functionResponse: { 
+                                name: call.name, 
+                                id: call.id, 
+                                response: { result } 
+                            } 
+                        };
+                    })
+                );
+                response = await chatSession.current!.sendMessage({ message: functionResponses });
+            }
+
+            return response.text || "I've handled that request for you.";
+
+        } catch (e: any) {
+            console.error(`Attempt failed with ${model}:`, e);
+            
+            const isQuotaError = e.status === 429 || 
+                                 e.message?.includes('429') || 
+                                 e.message?.includes('RESOURCE_EXHAUSTED') ||
+                                 e.status === 'RESOURCE_EXHAUSTED';
+
+            if (isQuotaError) {
+                const fallback = geminiClient.getFallbackModel(model);
+                if (fallback) {
+                    console.log(`Quota exceeded on ${model}. Switching to fallback: ${fallback}`);
+                    return attemptSend(fallback, retryCount + 1);
                 } else {
-                    console.warn(`Tool ${call.name} not found`);
+                    throw new Error("All available models are currently overloaded. Please try again later.");
                 }
             }
-            
-            if (!modelText) {
-                modelText = "I've processed your request.";
-            }
+            throw e;
         }
+    };
 
+    try {
+        const responseText = await attemptSend(currentModel);
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            content: modelText || "Task completed.", 
+            content: responseText, 
             timestamp: new Date() 
         }]);
-
     } catch (e: any) {
-        console.error("Jambo Copilot Error:", e);
+        console.error("Jambo Copilot Fatal Error:", e);
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            content: "I'm having trouble connecting right now. Please try again later.", 
+            content: e.message || "I'm having trouble processing that right now. Please try again.", 
             timestamp: new Date(), 
             isError: true 
         }]);
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors, messages]);
+  }, [pageContext, executors, settings.geminiApiKey, dbApiKey, currentModel, messages]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
   const clearHistory = () => {
       setMessages([]);
+      initChat(currentModel, []); // Reset with empty history
+  };
+
+  const setModel = (model: string) => {
+      setCurrentModel(model);
   };
 
   return (
@@ -134,7 +228,10 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         messages, isOpen, isLoading, pageContext, 
         sendMessage, toggleDrawer, clearHistory, 
         updatePageContext: (ctx) => setPageContext(prev => ({...prev, ...ctx})),
-        setPageData
+        setPageData,
+        currentModel,
+        availableModels: AVAILABLE_MODELS,
+        setModel
     }}>
         {children}
     </CopilotContext.Provider>

@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ShippingOption
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -67,9 +67,7 @@ export const api = {
   getOrders: (userId: string) => orderService.getUserOrders(userId),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
   
-  // SCALABILITY FIX: Paginated Orders with robust type handling
   getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
       page_num: Number(page),
       page_size: Number(limit),
@@ -77,7 +75,6 @@ export const api = {
     });
     if (error) throw error;
     
-    // Fixed: Cast data to any to access custom properties returned by RPC
     const responseData = data as any;
     const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
     
@@ -89,7 +86,6 @@ export const api = {
     };
   },
 
-  // SCALABILITY FIX: Paginated Payments
   getAdminPaymentsPaginated: async (page: number, limit: number, status: string, method: string) => {
     const { data, error } = await (supabase.rpc as any)('get_admin_payments_paginated', {
       p_page: page,
@@ -110,26 +106,21 @@ export const api = {
     };
   },
 
-  // Helper for dashboard
   getLowStockProducts: async (limit: number = 5) => {
-    // Fetch products ordered by stock level ascending
-    // We use the authenticated client to ensure we get accurate stock data
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .order('stock_quantity', { ascending: true })
-      .limit(20); // Fetch a few more to filter locally for threshold
+      .limit(20); 
 
     if (error) throw error;
 
-    // Filter for low stock (<= threshold or default 5)
     return (data || [])
       .filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5))
       .slice(0, limit)
       .map(Mappers.toProduct);
   },
 
-  // Added fix for AdminDashboard error: getTopSellingProducts property existence
   getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
 
   getOrderById: (id: string) => orderService.getById(id),
@@ -137,7 +128,6 @@ export const api = {
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
   
-  // New Recovery Logic
   cancelAndRestoreStock: async (orderId: string, userId: string) => {
       const { data, error } = await (supabase.rpc as any)('cancel_and_restore_stock', { 
         p_order_id: orderId, 
@@ -148,9 +138,7 @@ export const api = {
       return { success: true };
   },
 
-  // Returns and Refunds API
   requestReturn: async (orderId: string, userId: string, reason: string) => {
-    // FIX: Cast to any to bypass Supabase client type error on update.
     const { error } = await (supabase
       .from('orders') as any)
       .update({
@@ -163,20 +151,17 @@ export const api = {
     
     if (error) throw error;
 
-    // EMAIL TRIGGER: Return Requested
     try {
       const order = await orderService.getById(orderId);
       const settings = await settingsService.get();
       
       if (order && order.customerEmail) {
-         // To Customer
          settingsService.sendTransactionalEmail('return_requested', order.customerEmail, {
              '{{name}}': order.customerName || 'Customer',
              '{{order_number}}': order.orderNumber,
              '{{return_reason}}': reason
          });
          
-         // To Admin
          if (settings?.contactEmail) {
              settingsService.sendTransactionalEmail('admin_return_alert', settings.contactEmail, {
                  '{{customer_name}}': order.customerName || 'Customer',
@@ -211,7 +196,6 @@ export const api = {
     const { error } = await (supabase.from('orders') as any).update(updates).eq('id', orderId);
     if (error) throw error;
 
-    // EMAIL TRIGGER: Return Decision
     try {
       const order = await orderService.getById(orderId);
       if (order && order.customerEmail) {
@@ -247,7 +231,6 @@ export const api = {
       throw new Error(data.message || 'Refund failed');
     }
 
-    // EMAIL TRIGGER: Refund Issued
     try {
       const order = await orderService.getById(orderId);
       if (order && order.customerEmail) {
@@ -270,6 +253,8 @@ export const api = {
   createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
   updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
   deleteShippingZone: (id: string) => shippingService.deleteZone(id),
+  addShippingOption: (zoneId: string, option: Partial<ShippingOption>) => shippingService.addOption(zoneId, option),
+  deleteShippingOption: (id: string) => shippingService.deleteOption(id),
 
   getDiscountCodes: () => discountService.getAll(),
   validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
@@ -323,10 +308,9 @@ export const api = {
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
+  // FIX: Changed settingsService.sendTestEmail to settingsService.sendTestTemplate
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  // Updated fix for NotificationSection error: checkEmailHealth argument count
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
-  // Added fix for AuthContext error: sendTransactionalEmail property existence
   sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
 
   // Support / Marketing
@@ -342,9 +326,7 @@ export const api = {
   getAllUsers: () => userService.getAll(),
   getPublicUsers: () => userService.getPublicProfiles(),
   
-  // SCALABILITY FIX: Paginated Users
   getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_users_paginated', {
         page_num: page,
         page_size: limit,
@@ -352,7 +334,6 @@ export const api = {
     });
     if (error) throw error;
     
-    // Fixed: Cast data to any to access custom properties returned by RPC
     const responseData = data as any;
     const users = (responseData.data || []).map((u: any) => Mappers.toUser(u));
     
@@ -406,7 +387,6 @@ export const api = {
   },
 
   deleteUserAccount: async (userId: string) => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
   },
 
@@ -423,7 +403,6 @@ export const api = {
 
   // Analytics
   getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_analytics_overview', {
       time_range_start: start.toISOString(),
       time_range_end: end.toISOString()
@@ -435,9 +414,7 @@ export const api = {
     return data as unknown as AnalyticsOverview;
   },
 
-  // SCALABILITY FIX: Fast Admin Dashboard Stats
   getAdminDashboardStats: async () => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_admin_stats');
     if (error) throw error;
     return data as {
@@ -464,7 +441,6 @@ export const api = {
   },
 
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
@@ -474,7 +450,6 @@ export const api = {
   },
 
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
     if (error) {
         console.error("Analytics Error", error);
@@ -484,7 +459,6 @@ export const api = {
   },
 
   getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
     if (error) {
       console.error("Analytics Error", error);
@@ -494,26 +468,23 @@ export const api = {
   },
 
   getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as GeoStat[];
   },
 
   getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as PageStat[];
   },
 
   getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    // Fixed: Cast supabase.rpc to any to bypass 'never' type error on arguments
     const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
     if (error) { console.error("Analytics Error", error); return []; }
     return data as unknown as LiveVisitor[];
   },
-  // Added fix for SystemLogViewer error: persistSystemLogs property existence
+  
   persistSystemLogs: async (logs: any[]) => {
     const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
       operation: l.operation,

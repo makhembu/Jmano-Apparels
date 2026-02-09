@@ -1,4 +1,3 @@
-
 import { HighlightTarget } from './types';
 import { api } from '../db';
 

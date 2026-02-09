@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
 import { api } from '../lib/db';
 import { EmptyState } from '../components/ui/EmptyState';
-import { ShippingAddress, ShippingZone, DiscountCode, UserAddress } from '../types';
+import { ShippingAddress, ShippingZone, DiscountCode, UserAddress, ShippingOption } from '../types';
 import { useToast } from '../context/ToastContext';
 import { usePayment } from '../hooks/usePayment';
 import { CheckoutForm } from '../components/checkout/CheckoutForm';
@@ -26,6 +26,10 @@ export const Checkout: React.FC = () => {
   const [discountCode, setDiscountCode] = useState('');
   const [activeDiscount, setActiveDiscount] = useState<DiscountCode | null>(null);
   const [orderNotes, setOrderNotes] = useState('');
+
+  // Shipping Selection State
+  const [availableMethods, setAvailableMethods] = useState<ShippingOption[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState<string>('');
 
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
@@ -96,18 +100,49 @@ export const Checkout: React.FC = () => {
     }
   };
 
+  // Logic to update shipping options when country changes
   useEffect(() => {
-    const totalWeight = cart.reduce((acc, item) => acc + ((item.weight || 0) * item.quantity), 0);
     const zone = zones.find(z => z.countries.includes(address.country)) || zones.find(z => z.countries.includes('Other'));
+    
     if (zone) {
-       if (zone.freeShippingThreshold && cartTotal >= zone.freeShippingThreshold) {
-          setShippingCost(0);
+       // Check if free shipping threshold is met
+       const isFree = zone.freeShippingThreshold && cartTotal >= zone.freeShippingThreshold;
+       
+       if (isFree) {
+           // If free shipping, clear cost and methods (or create a virtual free method)
+           setShippingCost(0);
+           setAvailableMethods([]);
+           setSelectedMethodId('free');
+       } else if (zone.options && zone.options.length > 0) {
+           // If options exist, let user select
+           setAvailableMethods(zone.options);
+           // Default to first option if none selected or invalid
+           if (!selectedMethodId || selectedMethodId === 'free' || !zone.options.find(o => o.id === selectedMethodId)) {
+               setSelectedMethodId(zone.options[0].id);
+               setShippingCost(zone.options[0].rate);
+           } else {
+               // Ensure cost matches selected method (re-validation)
+               const method = zone.options.find(o => o.id === selectedMethodId);
+               if (method) setShippingCost(method.rate);
+           }
        } else {
-          const weightCost = (zone.perKgRate || 0) * totalWeight;
-          setShippingCost(zone.baseRate + weightCost);
+           // Fallback to base rate
+           setAvailableMethods([]);
+           setShippingCost(zone.baseRate);
+           setSelectedMethodId('standard');
        }
+    } else {
+       // No zone matches (unlikely given 'Other' fallback)
+       setShippingCost(0);
+       setAvailableMethods([]);
     }
-  }, [address.country, cartTotal, zones, cart]);
+  }, [address.country, cartTotal, zones, selectedMethodId]);
+
+  const handleMethodChange = (methodId: string) => {
+      setSelectedMethodId(methodId);
+      const method = availableMethods.find(m => m.id === methodId);
+      if (method) setShippingCost(method.rate);
+  };
 
   const applyDiscount = async () => {
      if(!discountCode) return;
@@ -153,6 +188,15 @@ export const Checkout: React.FC = () => {
     if (user && selectedAddressId === 'new' && saveThisAddress) {
         api.saveUserAddress(user.id, { ...address, label: 'Saved Address' }).catch(console.error);
     }
+    
+    // Find method name
+    let selectedMethodName = 'Standard';
+    if (selectedMethodId === 'free') selectedMethodName = 'Free Shipping';
+    else {
+        const method = availableMethods.find(m => m.id === selectedMethodId);
+        if (method) selectedMethodName = method.name;
+    }
+
     return {
       userId: user?.id || null, 
       customerName: user ? user.name : guestName,
@@ -164,6 +208,7 @@ export const Checkout: React.FC = () => {
       total: finalTotal,
       subtotal: cartTotal,
       shippingCost: shippingCost,
+      shippingMethod: selectedMethodName,
       taxAmount: taxAmount,
       discountAmount: discountAmount,
       discountCode: activeDiscount?.code,
@@ -190,11 +235,40 @@ export const Checkout: React.FC = () => {
         <div className="w-full lg:w-2/5 lg:sticky lg:top-24 space-y-6">
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 relative">
             {isProcessing && <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-2xl"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green"></div></div>}
+            
             <OrderSummary 
               cart={cart} cartTotal={cartTotal} shippingCost={shippingCost} discountAmount={discountAmount} 
               taxAmount={taxAmount} taxRate={taxRate} finalTotal={finalTotal} activeDiscount={activeDiscount} 
               address={address} orderNotes={orderNotes}
             />
+
+            {/* Shipping Method Selection inside OrderSummary container for flow */}
+            {availableMethods.length > 0 && selectedMethodId !== 'free' && (
+                <div className="mt-6 border-t border-gray-100 pt-6">
+                    <h3 className="text-sm font-bold text-gray-900 mb-3">Shipping Method</h3>
+                    <div className="space-y-2">
+                        {availableMethods.map(method => (
+                            <label key={method.id} className={`flex justify-between items-center p-3 rounded-xl border cursor-pointer transition-all ${selectedMethodId === method.id ? 'border-brand-green bg-brand-light/10 ring-1 ring-brand-green' : 'border-gray-200 hover:border-gray-300'}`}>
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="radio" 
+                                        name="shippingMethod" 
+                                        checked={selectedMethodId === method.id} 
+                                        onChange={() => handleMethodChange(method.id)}
+                                        className="text-brand-green focus:ring-brand-green"
+                                    />
+                                    <div>
+                                        <span className="block text-sm font-bold text-slate-800">{method.name}</span>
+                                        {method.description && <span className="block text-xs text-slate-500">{method.description}</span>}
+                                    </div>
+                                </div>
+                                <span className="text-sm font-bold text-slate-900">£{method.rate.toFixed(2)}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <PaymentOptions 
               discountCode={discountCode} setDiscountCode={setDiscountCode} applyDiscount={applyDiscount}
               paypalConfig={paypalConfig} currency={settings.currency || 'GBP'} isProcessing={isProcessing}

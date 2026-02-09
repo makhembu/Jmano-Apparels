@@ -1,4 +1,3 @@
-
 import { FunctionDeclaration, Type } from '@google/genai';
 
 export const functionDeclarations: FunctionDeclaration[] = [
@@ -39,6 +38,14 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: 'getDashboardStats',
     description: 'Retrieve store performance KPIs.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {}
+    }
+  },
+  {
+    name: 'getLiveTraffic',
+    description: 'Get real-time data about who is currently on the website.',
     parameters: {
       type: Type.OBJECT,
       properties: {}

@@ -1,4 +1,3 @@
-
 import { ELEMENT_ID_MAP } from './tools';
 import { PageContext } from './types';
 

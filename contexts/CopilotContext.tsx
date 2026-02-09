@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { geminiClient } from '../lib/ai/gemini-client';
+// FIX: Imported AVAILABLE_MODELS
+import { geminiClient, AVAILABLE_MODELS } from '../lib/ai/gemini-client';
 import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
@@ -14,6 +15,8 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [messages, setMessages] = useState<Message[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // FIX: Added currentModel state
+  const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0]);
   const location = useLocation();
   const navigate = useNavigate();
   const { settings, loading: settingsLoading } = useShop();
@@ -54,9 +57,10 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const apiKey = settings.geminiApiKey || undefined;
     if (geminiClient.isAvailable(apiKey)) {
         const prompt = generateSystemPrompt(pageContext);
-        chatSession.current = geminiClient.createChat(prompt, apiKey);
+        // FIX: Passed currentModel to createChat
+        chatSession.current = geminiClient.createChat(prompt, apiKey, currentModel);
     }
-  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading]); 
+  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading, currentModel]); 
 
   const executors = createFunctionExecutors({ navigate });
 
@@ -65,7 +69,8 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     if (!chatSession.current) {
       const prompt = generateSystemPrompt(pageContext);
-      chatSession.current = geminiClient.createChat(prompt, apiKey);
+      // FIX: Passed currentModel to createChat
+      chatSession.current = geminiClient.createChat(prompt, apiKey, currentModel);
     }
     
     if (!chatSession.current || !content.trim()) return;
@@ -119,7 +124,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors, settings.geminiApiKey]);
+  }, [pageContext, executors, settings.geminiApiKey, currentModel]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
@@ -127,8 +132,14 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setMessages([]);
       const apiKey = settings.geminiApiKey || undefined;
       if (geminiClient.isAvailable(apiKey)) {
-        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey);
+        // FIX: Passed currentModel to createChat
+        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey, currentModel);
       }
+  };
+
+  // FIX: Implemented setModel
+  const setModel = (model: string) => {
+    setCurrentModel(model);
   };
 
   return (
@@ -136,7 +147,11 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         messages, isOpen, isLoading, pageContext, 
         sendMessage, toggleDrawer, clearHistory, 
         updatePageContext: (ctx) => setPageContext(prev => ({...prev, ...ctx})),
-        setPageData
+        setPageData,
+        // FIX: Included missing properties
+        currentModel,
+        availableModels: AVAILABLE_MODELS,
+        setModel
     }}>
         {children}
     </CopilotContext.Provider>

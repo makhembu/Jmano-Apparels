@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Product } from '../../../../../types';
 import { Switch } from '../../../../ui/Switch';
@@ -50,6 +51,20 @@ export const CommerceDataForm: React.FC<CommerceDataFormProps> = ({ formData, on
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Low Alert</label>
                         <input type="number" name="lowStockThreshold" value={formData.lowStockThreshold} onChange={onChange} className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50" />
                     </div>
+                </div>
+                
+                {/* Shipping Class */}
+                <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2">Shipping Class</label>
+                    <input 
+                        type="text" 
+                        name="shippingClass" 
+                        value={formData.shippingClass || ''} 
+                        onChange={onChange} 
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm" 
+                        placeholder="e.g. Standard, Heavy, Fragile"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Used to categorize products for special shipping rules.</p>
                 </div>
             </div>
         </div>
