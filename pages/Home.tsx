@@ -1,3 +1,4 @@
+
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
@@ -43,15 +44,15 @@ export const Home: React.FC = () => {
 
   const coreValueDetails = [
     {
-      bg: 'bg-brand-humility', textColor: 'text-white', iconBg: 'bg-white/20',
+      bg: 'bg-brand-humility', textColor: 'text-brand-dark', iconBg: 'bg-white/20', // Green bg needs dark text
       description: "Authentic faith, transparent practices, and integrity in every stitch."
     },
     {
-      bg: 'bg-brand-hope', textColor: 'text-brand-dark', iconBg: 'bg-black/10',
+      bg: 'bg-brand-hope', textColor: 'text-brand-dark', iconBg: 'bg-black/10', // Yellow bg needs dark text
       description: "Striving for the highest quality to reflect the character of God."
     },
     {
-      bg: 'bg-brand-patience', textColor: 'text-white', iconBg: 'bg-white/20',
+      bg: 'bg-brand-sainty', textColor: 'text-white', iconBg: 'bg-white/20', // Dark Red bg allows white text
       description: "Courage to share the Gospel without compromise in the modern world."
     }
   ];
@@ -75,7 +76,7 @@ export const Home: React.FC = () => {
                 <h1 id="hero-heading" className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-serif font-bold text-white leading-tight">
                   Wear Your Scriptures in Humility and Boldness
                 </h1>
-                <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-90 min-h-[3rem]">
+                <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-100 min-h-[3rem]">
                   {settings.mission || "Premium Christian streetwear combining faith, style, and ethical craftsmanship"}
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -166,7 +167,7 @@ export const Home: React.FC = () => {
                       {letter}
                     </div>
                     <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{value.trim()}</h3>
-                    <p className="text-sm font-light leading-relaxed">
+                    <p className="text-sm font-medium leading-relaxed opacity-90">
                       {detail.description}
                     </p>
                   </article>
@@ -193,8 +194,13 @@ export const Home: React.FC = () => {
                     [1,2,3,4].map(i => <div key={i} className="h-20 md:h-14 w-full md:w-32 bg-white/50 rounded-2xl animate-pulse" role="status" aria-label="Loading category"></div>)
                 ) : (
                     displayCategories.map(cat => {
-                      const isLightBg = cat.bgColorClass.includes('hope') || cat.key === 'HOPEHOODIES';
-                      const textColor = isLightBg ? 'text-brand-dark' : 'text-white';
+                      // Logic for accessible text color on category buttons
+                      const isLighter = cat.bgColorClass.includes('hope') || 
+                                        cat.bgColorClass.includes('testament') || 
+                                        cat.bgColorClass.includes('humility') ||
+                                        cat.bgColorClass.includes('triumph');
+                      
+                      const textColor = isLighter ? 'text-brand-dark' : 'text-white';
                       
                       return (
                         <Link 
@@ -226,7 +232,7 @@ export const Home: React.FC = () => {
                    {settings.seoContentTitle || "Faith & Fashion: The Jambo Difference"}
                </h2>
                
-               <div className="text-lg md:text-xl leading-relaxed text-slate-600">
+               <div className="text-lg md:text-xl leading-relaxed text-slate-700">
                  <ReactMarkdown components={{
                      p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
                      strong: ({node, ...props}) => <strong className="font-bold text-brand-green" {...props} />
@@ -245,7 +251,7 @@ export const Home: React.FC = () => {
                   <h3 className="text-2xl font-serif font-bold text-brand-dark mb-4">
                       {settings.seoContentCol1Title || "Why Choose Christian Streetwear?"}
                   </h3>
-                  <div className="text-brand-dark/80 font-medium leading-relaxed">
+                  <div className="text-brand-dark font-medium leading-relaxed">
                      <ReactMarkdown components={{
                          p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
                          strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
@@ -263,7 +269,7 @@ export const Home: React.FC = () => {
                   <h3 className="text-2xl font-serif font-bold text-brand-dark mb-4">
                       {settings.seoContentCol2Title || "Ethical, Sustainable, Faithful"}
                   </h3>
-                  <div className="text-brand-dark/80 font-medium leading-relaxed">
+                  <div className="text-brand-dark font-medium leading-relaxed">
                      <ReactMarkdown components={{
                           p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
                           strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />
@@ -292,7 +298,7 @@ export const Home: React.FC = () => {
                   <div className="text-amber-400 text-2xl mb-4" role="img" aria-label={`${review.rating} out of 5 stars`}>
                     {'★'.repeat(review.rating)}<span className="text-slate-300">{'★'.repeat(5 - review.rating)}</span>
                   </div>
-                  <blockquote className="text-slate-600 font-light italic leading-relaxed flex-1 mb-6">
+                  <blockquote className="text-slate-700 font-medium italic leading-relaxed flex-1 mb-6">
                     "{review.comment}"
                   </blockquote>
                   <p className="font-bold text-xs text-brand-green uppercase tracking-widest">Verified Buyer</p>
@@ -361,7 +367,7 @@ export const Home: React.FC = () => {
             <h2 id="social-heading" className="text-3xl font-bold font-serif text-white mb-4">
               {settings.socialSectionTitle || "Follow Our Journey"}
             </h2>
-            <p className="text-brand-light/70 max-w-xl mx-auto mb-8">
+            <p className="text-brand-light max-w-xl mx-auto mb-8 font-medium">
               {settings.socialSectionBody || "Join our community on social media for behind-the-scenes content, new drops, and daily inspiration."}
             </p>
             <nav className="flex justify-center space-x-6" aria-label="Social media links">
@@ -372,7 +378,7 @@ export const Home: React.FC = () => {
                     href={url as string}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-brand-light/70 hover:text-brand-hope transition-transform duration-300 hover:scale-110"
+                    className="text-brand-light hover:text-brand-hope transition-transform duration-300 hover:scale-110"
                     aria-label={`Follow Jambo Apparels on ${platform}`}
                   >
                     {React.cloneElement(SocialIcons[platform], { className: "w-8 h-8" })}

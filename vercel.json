@@ -56,35 +56,11 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/__app_shell",
-      "destination": "/index.html"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
     {
-      "source": "/product/(.*)",
-      "destination": "/api/ssr?path=/product/$1"
-    },
-    {
-      "source": "/blog/(.*)",
-      "destination": "/api/ssr?path=/blog/$1"
-    },
-    {
-      "source": "/shop",
-      "destination": "/api/ssr?path=/shop"
-    },
-    {
-      "source": "/about",
-      "destination": "/api/ssr?path=/about"
-    },
-    {
-      "source": "/",
-      "destination": "/api/ssr?path=/"
-    },
-    {
-      "source": "/((?!api/|_next/|static/|favicon.ico|sitemap.xml|robots.txt|__app_shell|assets/).*)",
+      "source": "/((?!api/|_next/|static/|favicon.ico|sitemap.xml|robots.txt|assets/).*)",
       "destination": "/index.html"
     }
   ]

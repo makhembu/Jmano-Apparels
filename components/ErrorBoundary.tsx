@@ -1,4 +1,3 @@
-
 import React, { ErrorInfo, ReactNode } from 'react';
 import { Button } from './ui/Button';
 
@@ -36,7 +35,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   private handlePromiseRejection = (event: PromiseRejectionEvent) => {
     event.preventDefault();
-    this.setState({
+    (this as any).setState({
       hasError: true,
       error: new Error(event.reason?.message || 'Unexpected async error occurred'),
     });

@@ -47,8 +47,8 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
             <h3 className="text-xl font-serif font-bold mb-4">Jambo Apparels</h3>
-            <p className="text-brand-light text-sm italic">{settings.slogan}</p>
-            <p className="text-brand-light text-sm mt-2">{settings.coreValues}</p>
+            <p className="text-brand-light text-sm italic opacity-100">{settings.slogan}</p>
+            <p className="text-brand-light text-sm mt-2 opacity-100">{settings.coreValues}</p>
             
             {/* Removed Social Icons to avoid duplication with Home page section */}
 
@@ -66,12 +66,12 @@ export const Footer: React.FC = () => {
                   />
                   <div className="flex items-start gap-2">
                      <input type="checkbox" required className="mt-1 w-3 h-3 rounded border-gray-300 text-brand-green focus:ring-brand-green" />
-                     <span className="text-[10px] text-brand-light">I consent to receive marketing emails.</span>
+                     <span className="text-[10px] text-brand-light font-medium">I consent to receive marketing emails.</span>
                   </div>
                   <button 
                     type="submit" 
                     disabled={loading}
-                    className="bg-brand-green hover:bg-green-700 text-white text-sm py-2 px-3 rounded transition-colors disabled:opacity-50"
+                    className="bg-brand-green hover:bg-green-700 text-white text-sm py-2 px-3 rounded transition-colors disabled:opacity-50 font-bold"
                   >
                     {loading ? 'Subscribing...' : 'Subscribe'}
                   </button>
@@ -82,44 +82,44 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Shop</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/shop" className="hover:text-brand-hope">All Products</Link></li>
-              <li><Link to="/cart" className="hover:text-brand-hope">View Cart</Link></li>
-              <li><Link to="/dashboard" className="hover:text-brand-hope">My Account</Link></li>
+              <li><Link to="/shop" className="text-brand-light hover:text-brand-hope font-medium">All Products</Link></li>
+              <li><Link to="/cart" className="text-brand-light hover:text-brand-hope font-medium">View Cart</Link></li>
+              <li><Link to="/dashboard" className="text-brand-light hover:text-brand-hope font-medium">My Account</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Company</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/about" className="hover:text-brand-hope">About Us</Link></li>
-              <li><Link to="/blog" className="hover:text-brand-hope">Journal</Link></li>
-              <li><Link to="/terms" className="hover:text-brand-hope">Terms & Conditions</Link></li>
-              <li><Link to="/privacy" className="hover:text-brand-hope">Privacy Policy</Link></li>
+              <li><Link to="/about" className="text-brand-light hover:text-brand-hope font-medium">About Us</Link></li>
+              <li><Link to="/blog" className="text-brand-light hover:text-brand-hope font-medium">Journal</Link></li>
+              <li><Link to="/terms" className="text-brand-light hover:text-brand-hope font-medium">Terms & Conditions</Link></li>
+              <li><Link to="/privacy" className="text-brand-light hover:text-brand-hope font-medium">Privacy Policy</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4 text-brand-hope">Help</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/returns" className="hover:text-brand-hope">Returns & Refunds</Link></li>
-              <li><Link to="/cookies" className="hover:text-brand-hope">Cookie Policy</Link></li>
+              <li><Link to="/returns" className="text-brand-light hover:text-brand-hope font-medium">Returns & Refunds</Link></li>
+              <li><Link to="/cookies" className="text-brand-light hover:text-brand-hope font-medium">Cookie Policy</Link></li>
               <li>
-                <button onClick={resetConsent} className="hover:text-brand-hope text-left">
+                <button onClick={resetConsent} className="text-brand-light hover:text-brand-hope text-left font-medium">
                   Cookie Settings
                 </button>
               </li>
-              <li className="pt-2 text-brand-light break-all">
+              <li className="pt-2 text-brand-light font-medium break-all">
                 {settings.contactEmail || 'support@jamboapparels.com'}
               </li>
-              <li className="text-brand-light">
+              <li className="text-brand-light font-medium">
                 {settings.contactPhone || '+44 7938 065717'}
               </li>
-              <li className="text-brand-light text-xs mt-1">
+              <li className="text-brand-light text-xs mt-1 font-medium">
                 {settings.contactAddress || 'London, UK'}
               </li>
             </ul>
           </div>
 
         </div>
-        <div className="mt-8 pt-8 border-t border-green-800 text-center text-xs text-brand-light">
+        <div className="mt-8 pt-8 border-t border-green-800 text-center text-xs text-brand-light font-medium">
           &copy; {new Date().getFullYear()} Jambo Apparels. All rights reserved. Registered in England & Wales.
         </div>
       </div>

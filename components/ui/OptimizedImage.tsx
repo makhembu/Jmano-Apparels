@@ -16,13 +16,6 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   priority?: boolean;
 }
 
-// Extend React.ImgHTMLAttributes to include fetchPriority
-declare module 'react' {
-  interface ImgHTMLAttributes<T> extends React.HTMLAttributes<T> {
-    fetchPriority?: 'high' | 'low' | 'auto';
-  }
-}
-
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
   src, 
   alt, 
@@ -95,7 +88,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           onError={() => setError(true)}
           loading="eager"
           decoding="sync"
-          fetchPriority="high"
+          {...({ fetchPriority: 'high' } as any)}
           {...props}
         />
       ) : (

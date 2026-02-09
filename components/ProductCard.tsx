@@ -16,45 +16,49 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const category = categories.find(c => c.key === product.categoryKey);
   
   // Define color rotation palette with Accessible Contrast Ratios
-  // Most text updated to text-brand-dark per user request for "green" titles
   const colors = [
     { 
+      // Yellow Background -> Dark Text
       bg: 'bg-brand-hope', 
       text: 'text-brand-dark', 
       price: 'text-brand-dark', 
-      muted: 'text-slate-800/80', 
+      muted: 'text-slate-900', 
       border: 'border-brand-hope', 
       hover: 'hover:shadow-brand-hope/30' 
     }, 
     { 
+      // Light Purple Background -> Dark Text
       bg: 'bg-brand-testament', 
       text: 'text-brand-dark', 
       price: 'text-brand-dark', 
-      muted: 'text-slate-800/80', 
+      muted: 'text-slate-900', 
       border: 'border-brand-testament', 
       hover: 'hover:shadow-brand-testament/30' 
     }, 
     { 
+      // Bright Green Background -> Dark Text
       bg: 'bg-brand-humility', 
       text: 'text-brand-dark', 
       price: 'text-brand-dark', 
-      muted: 'text-slate-800/80', 
+      muted: 'text-slate-900', 
       border: 'border-brand-humility', 
       hover: 'hover:shadow-brand-humility/30' 
     }, 
     { 
-      bg: 'bg-brand-patience', 
-      text: 'text-white', // Keep white for contrast on red
+      // Darker Red (Sainty) Background -> White Text (Better contrast than Patience)
+      bg: 'bg-brand-sainty', 
+      text: 'text-white', 
       price: 'text-white', 
-      muted: 'text-white/90', 
-      border: 'border-brand-patience', 
-      hover: 'hover:shadow-brand-patience/30' 
+      muted: 'text-white', 
+      border: 'border-brand-sainty', 
+      hover: 'hover:shadow-brand-sainty/30' 
     }, 
     { 
+      // Orange Background -> Dark Text
       bg: 'bg-brand-triumph', 
       text: 'text-brand-dark', 
       price: 'text-brand-dark', 
-      muted: 'text-slate-800/80', 
+      muted: 'text-slate-900', 
       border: 'border-brand-triumph', 
       hover: 'hover:shadow-brand-triumph/30' 
     }, 
@@ -100,13 +104,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       <div className="p-3 md:p-5 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-2 gap-2">
            <p 
-             className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${index !== undefined ? style.muted : ''}`}
+             className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${index !== undefined ? style.muted : ''}`}
              style={index === undefined ? { color: categoryColor } : {}}
            >
              {category?.label || product.categoryKey}
            </p>
            {product.stockQuantity !== undefined && product.stockQuantity <= 5 && product.stockQuantity > 0 && (
-             <span className="flex-shrink-0 text-[8px] md:text-[9px] text-red-500 font-bold bg-white/90 px-1.5 py-0.5 rounded shadow-sm">Low Stock</span>
+             <span className="flex-shrink-0 text-[8px] md:text-[9px] text-red-600 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-red-100">Low Stock</span>
            )}
         </div>
         <h3 className={`text-sm md:text-lg font-serif font-bold ${style.text} leading-tight transition-colors mb-auto`}>
@@ -120,7 +124,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
              £{product.price.toFixed(2)}
            </p>
            {product.isOnSale && (
-             <span className={`text-[10px] md:text-sm line-through ${index !== undefined ? style.muted : 'text-gray-400'}`}>
+             <span className={`text-[10px] md:text-sm line-through font-medium ${index !== undefined ? style.muted : 'text-gray-400'}`}>
                 £{product.salePrice?.toFixed(2)}
              </span>
            )}
