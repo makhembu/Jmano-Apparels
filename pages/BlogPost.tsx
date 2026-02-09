@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
-// @ts-ignore
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 import { api } from '../lib/db';
 import { BlogPost as BlogPostType, BlogCategory } from '../types';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -14,7 +14,6 @@ import { BlogComments } from '../components/blog/BlogComments';
 import { NextPost } from '../components/blog/NextPost';
 import { RelatedProducts } from '../components/blog/RelatedProducts';
 import { BlogShare } from '../components/blog/BlogShare';
-// FIX: Imported the 'ProductCard' component to resolve the 'Cannot find name' error.
 import { ProductCard } from '../components/ProductCard';
 
 // --- Reading Progress Component ---
@@ -54,8 +53,7 @@ export const BlogPost: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [blogCategories, setBlogCategories] = useState<BlogCategory[]>([]);
 
-  // --- Hashtag and Styling Logic ---
-  // FIX: Correctly typed 'node' and its props to resolve property access and spread operator errors.
+  // --- Hashtag and Styling Logic (Markdown Only) ---
   const processNode = (node: React.ReactNode, key: string | number): React.ReactNode => {
       if (React.isValidElement<{ children: React.ReactNode }>(node)) {
           if (node.props.children) {
@@ -132,7 +130,30 @@ export const BlogPost: React.FC = () => {
   if (loading) return <LoadingSpinner fullScreen />;
   if (!post) return <div className="p-32 text-center"><h1 className="text-4xl font-serif font-bold text-brand-dark mb-6">Entry Not Found</h1><Link to="/blog"><Button>Back to Journal</Button></Link></div>;
 
-  const contentBlocks = post.content.split(/(\n@\[product:[a-zA-Z0-9-]+\]\n)/g);
+  // Hybrid Content Render
+  // Check if content looks like HTML (starts with < and contains tags)
+  // Or fallback to markdown
+  const isHtml = (content: string) => {
+    return /<[a-z][\s\S]*>/i.test(content) && !content.trim().startsWith('#');
+  };
+
+  const renderContent = () => {
+     if (isHtml(post.content)) {
+         // Sanitize HTML
+         const cleanHtml = DOMPurify.sanitize(post.content);
+         return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+     } else {
+         const contentBlocks = post.content.split(/(\n@\[product:[a-zA-Z0-9-]+\]\n)/g);
+         return contentBlocks.map((block, index) => {
+            const match = block.match(/@\[product:([a-zA-Z0-9-]+)\]/);
+            if (match) {
+                const product = products.find(p => p.id === match[1]);
+                return product ? <div key={index} className="my-12 not-prose"><ProductCard product={product} /></div> : null;
+            }
+            return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} components={markdownComponents}>{block}</ReactMarkdown>;
+         });
+     }
+  };
 
   return (
     <div className="bg-white min-h-screen font-sans">
@@ -189,14 +210,9 @@ export const BlogPost: React.FC = () => {
               prose-a:text-brand-green prose-a:font-bold prose-a:no-underline hover:prose-a:underline
               prose-img:rounded-xl prose-img:shadow-lg
               prose-strong:font-black prose-strong:text-brand-green">
-              {contentBlocks.map((block, index) => {
-                  const match = block.match(/@\[product:([a-zA-Z0-9-]+)\]/);
-                  if (match) {
-                      const product = products.find(p => p.id === match[1]);
-                      return product ? <div key={index} className="my-12 not-prose"><ProductCard product={product} /></div> : null;
-                  }
-                  return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} components={markdownComponents}>{block}</ReactMarkdown>;
-              })}
+              
+              {renderContent()}
+
             </article>
 
             {/* Mobile-only author/share section */}

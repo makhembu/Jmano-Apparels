@@ -115,7 +115,8 @@ export const AdminBlogEditor: React.FC = () => {
   };
 
   const handleEditorChange = (content: string) => {
-    // Both editors return strings (Markdown).
+    // We expect 'content' to be either Markdown or HTML depending on the editor.
+    // For reading time, we strip tags to get pure text.
     const text = content.replace(/<[^>]*>?/gm, '');
     calculateReadingTime(text);
     setFormData(prev => ({ ...prev, content }));
@@ -278,7 +279,7 @@ export const AdminBlogEditor: React.FC = () => {
                         <RichTextEditor
                            value={formData.content || ''}
                            onChange={handleEditorChange}
-                           placeholder="Thread your testimony here..."
+                           placeholder="Type '/' to start writing..."
                         />
                      ) : (
                         <MarkdownEditor
