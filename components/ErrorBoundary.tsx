@@ -58,6 +58,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    return this.props.children || null;
+    // Explicitly cast this to any to bypass potential TS error where props is not found on ErrorBoundary type
+    return (this as any).props.children || null;
   }
 }

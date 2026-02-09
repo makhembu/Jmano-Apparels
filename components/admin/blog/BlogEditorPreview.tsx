@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { BlogPost, BlogCategory } from '../../../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 
 interface BlogEditorPreviewProps {
   formData: Partial<BlogPost>;
@@ -10,13 +10,19 @@ interface BlogEditorPreviewProps {
 }
 
 export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, categories }) => {
-  const contentToRender = formData.content || 'Start writing to see content here...';
+  const content = formData.content || '';
+  
+  // Simple heuristic: If it starts with HTML tag patterns, treat as HTML
+  const isHtml = /^\s*<[a-z][\s\S]*>/i.test(content) || content.includes('<p>') || content.includes('<h2>');
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden min-h-screen">
       <div className="border-b p-4 flex justify-between items-center bg-gray-50">
          <span className="font-serif font-bold text-brand-dark">Jambo Apparels Blog</span>
-         <span className="text-xs text-gray-400 uppercase tracking-widest">Preview Mode</span>
+         <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isHtml ? 'bg-blue-500' : 'bg-orange-500'}`}></span>
+            <span className="text-xs text-gray-400 uppercase tracking-widest">{isHtml ? 'Rich Text' : 'Markdown'} Preview</span>
+         </div>
       </div>
 
       {formData.featuredImage && (
@@ -48,9 +54,13 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
          </div>
 
          <article className="prose prose-lg max-w-none text-gray-700 font-light leading-relaxed prose-headings:font-serif prose-headings:text-brand-dark prose-a:text-brand-green">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {contentToRender}
-            </ReactMarkdown>
+            {isHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+            ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {content || 'Start writing to see content here...'}
+                </ReactMarkdown>
+            )}
          </article>
       </div>
     </div>
