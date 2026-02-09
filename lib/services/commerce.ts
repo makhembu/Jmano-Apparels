@@ -33,6 +33,38 @@ export class OrderService {
   async create(order: Partial<Order> & { shippingAddress: ShippingAddress }): Promise<Order> {
     log('RPC', 'create_order_secure', order);
     
+    // --- GUEST ACCOUNT AUTO-CREATION LOGIC ---
+    let targetUserId = order.userId;
+    let generatedPassword = null;
+    let isNewAccount = false;
+
+    // If guest checkout (no userId) but has email, try to create/link account
+    if (!targetUserId && order.customerEmail) {
+        try {
+            log('AUTH', 'Creating/Linking Guest Account', order.customerEmail);
+            const authResponse = await fetch('/api/guest-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: order.customerEmail, 
+                    name: order.customerName || 'Guest' 
+                })
+            });
+            
+            const authData = await authResponse.json();
+            
+            if (authResponse.ok && authData.success) {
+                targetUserId = authData.userId;
+                generatedPassword = authData.password;
+                isNewAccount = authData.isNew;
+                log('AUTH_SUCCESS', `Linked to ${targetUserId}. New: ${isNewAccount}`);
+            }
+        } catch (e) {
+            console.error("Guest auto-account creation failed:", e);
+            // Non-blocking: Proceed as standard guest order if auth fails
+        }
+    }
+
     // Map products to ensure correct field names for the RPC
     const itemsPayload = (order.products || []).map((item: any) => ({
         product_id: item.productId,
@@ -45,7 +77,7 @@ export class OrderService {
     }));
 
     const { data, error } = await supabase.rpc('create_order_secure', {
-      p_user_id: order.userId || null,
+      p_user_id: targetUserId || null, // Use the new ID if created/found
       p_customer_email: order.customerEmail || null,
       p_customer_name: order.customerName || null,
       p_items: itemsPayload as any,
@@ -70,12 +102,26 @@ export class OrderService {
 
         // 1. Send Customer Confirmation
         if (customerEmail) {
-            settingsService.sendTransactionalEmail('new_order_customer', customerEmail, {
-                '{{name}}': customerName,
-                '{{order_number}}': orderNumber,
-                '{{total}}': total,
-                '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
-            });
+            if (isNewAccount && generatedPassword) {
+                // Send SPECIAL Guest Welcome + Order email
+                settingsService.sendTransactionalEmail('guest_order_account_created', customerEmail, {
+                    '{{name}}': customerName,
+                    '{{order_number}}': orderNumber,
+                    '{{total}}': total,
+                    '{{email}}': customerEmail,
+                    '{{generated_password}}': generatedPassword,
+                    '{{login_link}}': 'https://jamboapparels.com/login',
+                    '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
+                });
+            } else {
+                // Send Standard Confirmation
+                settingsService.sendTransactionalEmail('new_order_customer', customerEmail, {
+                    '{{name}}': customerName,
+                    '{{order_number}}': orderNumber,
+                    '{{total}}': total,
+                    '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
+                });
+            }
         }
 
         // 2. Send Admin Alert
