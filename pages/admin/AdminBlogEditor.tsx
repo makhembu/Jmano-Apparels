@@ -7,7 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { BlogEditorSidebar } from '../../components/admin/blog/BlogEditorSidebar';
 import { BlogEditorPreview } from '../../components/admin/blog/BlogEditorPreview';
-import { TiptapEditor } from '../../components/admin/blog/TiptapEditor';
+import { MarkdownEditor } from '../../components/admin/blog/MarkdownEditor';
+import { RichTextEditor } from '../../components/admin/blog/RichTextEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 import { useShop } from '../../context/ShopContext';
 
@@ -18,6 +19,10 @@ export const AdminBlogEditor: React.FC = () => {
   const { user } = useAuth();
   const { products } = useShop();
   const submitActionRef = useRef<'publish' | 'schedule'>('publish');
+  
+  // Environment Detection
+  const isProd = window.location.hostname.includes('jamboapparels.com');
+  const [editorMode, setEditorMode] = useState<'markdown' | 'rich'>(isProd ? 'rich' : 'markdown');
 
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -110,6 +115,7 @@ export const AdminBlogEditor: React.FC = () => {
   };
 
   const handleEditorChange = (content: string) => {
+    // Both editors return strings (Markdown).
     const text = content.replace(/<[^>]*>?/gm, '');
     calculateReadingTime(text);
     setFormData(prev => ({ ...prev, content }));
@@ -184,12 +190,30 @@ export const AdminBlogEditor: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 animate-fade-in">
-      <div className="flex justify-between items-center mb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
          <div>
             <h1 className="text-3xl font-bold font-serif text-slate-900">{id ? 'Refine Testimony' : 'New Journal Entry'}</h1>
             <p className="text-slate-500 text-sm mt-1">Threading stories of faith into the digital sphere.</p>
          </div>
-         <div className="flex gap-3">
+         <div className="flex flex-wrap gap-3">
+             {/* Editor Toggle */}
+             {isProd && (
+                 <div className="flex bg-slate-100 p-1 rounded-xl mr-4">
+                    <button 
+                        onClick={() => setEditorMode('rich')} 
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${editorMode === 'rich' ? 'bg-white shadow-sm text-brand-green' : 'text-slate-400'}`}
+                    >
+                        Rich Text
+                    </button>
+                    <button 
+                        onClick={() => setEditorMode('markdown')} 
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${editorMode === 'markdown' ? 'bg-white shadow-sm text-brand-dark' : 'text-slate-400'}`}
+                    >
+                        Markdown
+                    </button>
+                 </div>
+             )}
+
             <button 
               type="button" 
               onClick={() => setActiveTab('write')} 
@@ -250,12 +274,20 @@ export const AdminBlogEditor: React.FC = () => {
                   
                   <div className="mb-12 flex flex-col">
                      <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                     <TiptapEditor
-                        value={formData.content || ''}
-                        onChange={handleEditorChange}
-                        placeholder="Thread your testimony here... Use #hashtags and embed products!"
-                        products={products}
-                     />
+                     {editorMode === 'rich' ? (
+                        <RichTextEditor
+                           value={formData.content || ''}
+                           onChange={handleEditorChange}
+                           placeholder="Thread your testimony here..."
+                        />
+                     ) : (
+                        <MarkdownEditor
+                            value={formData.content || ''}
+                            onChange={handleEditorChange}
+                            placeholder="Write in Markdown. Use #hashtags and @[product:ID] to embed."
+                            products={products}
+                        />
+                     )}
                   </div>
                </div>
 
