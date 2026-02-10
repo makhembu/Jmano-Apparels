@@ -21,6 +21,15 @@
       ]
     },
     {
+      "source": "/api/ssr",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=300, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
@@ -57,7 +66,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(facebookexternalhit|Twitterbot|LinkedInBot|Pinterest|WhatsApp).*"
+          "value": ".*(bot|crawler|spider|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Pinterest|WhatsApp|Slackbot|Discordbot|TelegramBot|ia_archiver|Googlebot|bingbot|Baiduspider).*"
         }
       ],
       "destination": "/api/ssr?path=/$1"
