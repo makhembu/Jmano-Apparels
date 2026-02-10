@@ -28,7 +28,7 @@ const removeDevScripts = () => {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: '/',
   define: {
     // Inject the version into the client environment
@@ -40,7 +40,14 @@ export default defineConfig({
   ],
   build: {
     target: 'esnext',
-    minify: 'esbuild', // esbuild is faster and provides good minification
+    minify: 'terser', // Use Terser for more advanced minification options
+    terserOptions: {
+      compress: {
+        // Remove console logs, warnings, and debug messages in production builds.
+        // `console.error` is preserved for critical diagnostics.
+        pure_funcs: command === 'build' ? ['console.log', 'console.info', 'console.warn', 'console.debug'] : [],
+      },
+    },
     cssCodeSplit: true,
     emptyOutDir: true, // Clean the output directory before building
     sourcemap: false,   // Disable source maps for production to reduce build size artifacts
@@ -69,4 +76,4 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 800,
   },
-});
+}));
