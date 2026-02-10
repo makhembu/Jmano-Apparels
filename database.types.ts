@@ -97,6 +97,7 @@ export type Database = {
           is_on_sale: boolean | null
           is_published: boolean | null
           is_free_shipping: boolean | null
+          shipping_class: string | null
           low_stock_threshold: number | null
           price: number
           review_count: number | null
@@ -128,6 +129,7 @@ export type Database = {
           is_on_sale?: boolean | null
           is_published?: boolean | null
           is_free_shipping?: boolean | null
+          shipping_class?: string | null
           low_stock_threshold?: number | null
           price: number
           review_count?: number | null
@@ -159,6 +161,7 @@ export type Database = {
           is_on_sale?: boolean | null
           is_published?: boolean | null
           is_free_shipping?: boolean | null
+          shipping_class?: string | null
           low_stock_threshold?: number | null
           price?: number
           review_count?: number | null
@@ -170,7 +173,7 @@ export type Database = {
           slug?: string | null
           stock_quantity?: number | null
           tags?: string[] | null
-          title: string
+          title?: string
           total_sales?: number | null
           weight?: number | null
           canonical_url?: string | null
@@ -186,6 +189,27 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["key"]
           },
+        ]
+      }
+      shipping_options: {
+        Row: {
+            id: string
+            zone_id: string
+            name: string
+            rate: number
+            description: string | null
+            created_at: string
+        }
+        Insert: { [key: string]: any }
+        Update: { [key: string]: any }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_options_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_zones"
+            referencedColumns: ["id"]
+          }
         ]
       }
       app_settings: {
