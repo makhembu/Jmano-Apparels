@@ -1,4 +1,3 @@
-
 -- ============================================================================
 -- JAMBO APPARELS - MASTER SEED (PRODUCTION v2.0)
 -- Consolidated Schema, Security, Functions, and Data
@@ -573,12 +572,12 @@ INSERT INTO public.categories (key, label, color, bg_class) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- Products (2 per category limit applied)
-INSERT INTO public.products (title, price, category_key, images, description, stock_quantity, is_published) VALUES
-('Hope Hoodie - Gold', 40.00, 'HOPEHOODIES', ARRAY['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&h=800&fit=crop'], 'Signature gold hoodie with scripture.', 50, true),
-('Hope Hoodie - Black', 40.00, 'HOPEHOODIES', ARRAY['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&h=800&fit=crop'], 'Midnight black edition.', 35, true),
-('Testament Tee - Purple', 22.00, 'TESTAMENTSHIRTS', ARRAY['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&h=800&fit=crop'], 'Organic cotton purple tee.', 100, true),
-('Testament Tee - White', 22.00, 'TESTAMENTSHIRTS', ARRAY['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=800&fit=crop'], 'Classic white tee.', 120, true)
-ON CONFLICT DO NOTHING;
+INSERT INTO public.products (title, slug, price, category_key, images, description, stock_quantity, is_published) VALUES
+('Hope Hoodie - Gold', 'hope-hoodie-gold', 40.00, 'HOPEHOODIES', ARRAY['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&h=800&fit=crop'], 'Signature gold hoodie with scripture.', 50, true),
+('Hope Hoodie - Black', 'hope-hoodie-black', 40.00, 'HOPEHOODIES', ARRAY['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&h=800&fit=crop'], 'Midnight black edition.', 35, true),
+('Testament Tee - Purple', 'testament-tee-purple', 22.00, 'TESTAMENTSHIRTS', ARRAY['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&h=800&fit=crop'], 'Organic cotton purple tee.', 100, true),
+('Testament Tee - White', 'testament-tee-white', 22.00, 'TESTAMENTSHIRTS', ARRAY['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=800&fit=crop'], 'Classic white tee.', 120, true)
+ON CONFLICT (slug) DO NOTHING;
 
 -- Blog Categories
 INSERT INTO public.blog_categories (name, slug) VALUES ('Faith & Living', 'faith-living') ON CONFLICT (slug) DO NOTHING;
