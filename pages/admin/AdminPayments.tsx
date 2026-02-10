@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -31,7 +32,12 @@ export const AdminPayments: React.FC = () => {
         setTotalPages(result.totalPages);
         
         // Calculate Derived AOV
-        const rawStats = result.stats || {};
+        const rawStats = result.stats || {
+            totalRevenue: 0,
+            pendingRevenue: 0,
+            failedCount: 0,
+            paidCount: 0
+        };
         const aov = rawStats.paidCount > 0 ? (rawStats.totalRevenue / rawStats.paidCount) : 0;
         
         setStats({

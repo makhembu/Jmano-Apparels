@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -9,7 +10,6 @@ const settingsService = new SettingsService();
 export class OrderService {
   async getUserOrders(userId: string): Promise<Order[]> {
     log('SELECT', 'orders', { userId });
-    // FIX: Ensure ordering is by 'date', not 'created_at'
     const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId).order('date', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
@@ -17,7 +17,6 @@ export class OrderService {
 
   async getAll(limit: number = 50): Promise<Order[]> {
     log('SELECT', 'orders', `ALL LIMIT ${limit}`);
-    // FIX: Ensure ordering is by 'date', not 'created_at'
     const { data, error } = await supabase.from('orders').select('*').order('date', { ascending: false }).limit(limit);
     if (error) throw error;
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
@@ -31,44 +30,94 @@ export class OrderService {
   }
 
   async getOrdersPaginated(page: number = 1, limit: number = 20, status: string = 'ALL'): Promise<{ data: Order[], total: number, page: number, totalPages: number }> {
-    log('RPC', 'orders', 'get_orders_paginated');
-    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
-      page_num: Number(page),
-      page_size: Number(limit),
-      status_filter: (status === 'ALL' || !status) ? null : status
-    });
+    log('QUERY', 'orders', { page, status });
+    
+    let query = supabase.from('orders').select('*', { count: 'exact' });
+    
+    if (status && status !== 'ALL') {
+      // Handle status filtering case-insensitively if needed, but DB usually stores Title Case or specific enums.
+      // Based on seed data, status is Title Case (e.g. 'Delivered', 'Pending').
+      query = query.eq('status', status);
+    }
+    
+    query = query.order('date', { ascending: false })
+                 .range((page - 1) * limit, page * limit - 1);
+
+    const { data, error, count } = await query;
     if (error) throw error;
     
-    const responseData = data as any;
-    // Map JSON result to Order model
-    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
+    const orders = (data || []).map((o: any) => Mappers.toOrder(o));
+    const total = count || 0;
     
     return {
-      data: orders as Order[],
-      total: responseData.total || 0,
-      page: responseData.page || 1,
-      totalPages: responseData.totalPages || 1
+      data: orders,
+      total: total,
+      page: page,
+      totalPages: Math.ceil(total / limit) || 1
     };
   }
 
   async getAdminPaymentsPaginated(page: number, limit: number, status: string, method: string) {
-    log('RPC', 'orders', 'get_admin_payments_paginated');
-    const { data, error } = await (supabase.rpc as any)('get_admin_payments_paginated', {
-      p_page: page,
-      p_page_size: limit,
-      p_status: status,
-      p_method: method
-    });
+    log('QUERY', 'orders', { page, status, method });
+
+    // 1. Fetch Paginated Orders
+    let query = supabase.from('orders').select('*', { count: 'exact' });
+
+    if (status && status !== 'ALL') {
+      // Payment status in DB is usually lowercase (paid, pending, failed, refunded) based on seed.sql checks
+      query = query.eq('payment_status', status.toLowerCase());
+    }
+
+    if (method && method !== 'ALL') {
+      if (method === 'PAYPAL') {
+        query = query.not('payment_intent_id', 'is', null);
+      } else if (method === 'MANUAL') {
+        query = query.is('payment_intent_id', null);
+      }
+    }
+
+    query = query.order('date', { ascending: false })
+                 .range((page - 1) * limit, page * limit - 1);
+
+    const { data, error, count } = await query;
     if (error) throw error;
+
+    const orders = (data || []).map((o: any) => Mappers.toOrder(o));
+
+    // 2. Fetch Stats (Separate lightweight query for aggregation)
+    // We fetch minimal data to calculate sums client-side since RPC might be unreliable/missing
+    const { data: allStatsData } = await supabase.from('orders').select('total, payment_status');
     
-    const responseData = data as any;
-    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
-    
+    let totalRevenue = 0;
+    let pendingRevenue = 0;
+    let failedCount = 0;
+    let paidCount = 0;
+
+    if (allStatsData) {
+      allStatsData.forEach((o: any) => {
+        const s = (o.payment_status || '').toLowerCase();
+        if (s === 'paid') {
+          totalRevenue += o.total || 0;
+          paidCount++;
+        } else if (s === 'pending' || s === 'pending_payment') {
+          pendingRevenue += o.total || 0;
+        } else if (s === 'failed') {
+          failedCount++;
+        }
+      });
+    }
+
     return {
-      data: orders as Order[],
-      stats: responseData.stats,
-      total: responseData.total || 0,
-      totalPages: responseData.totalPages || 1
+      data: orders,
+      stats: {
+        totalRevenue,
+        pendingRevenue,
+        failedCount,
+        paidCount,
+        ordersCount: count || 0
+      },
+      total: count || 0,
+      totalPages: Math.ceil((count || 0) / limit) || 1
     };
   }
 
