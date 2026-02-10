@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -11,6 +10,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   sortBy?: 'newest' | 'low-high' | 'high-low';
+  adminMode?: boolean; // For admin panel to fetch unpublished items
 }
 
 export interface PaginatedResult {
@@ -43,33 +43,60 @@ export class ProductService {
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }
 
-  // New Paginated Method
+  // Replaced RPC with Supabase-js query builder to ensure all fields (incl. slug) are returned
   async getPaginated(page: number = 1, pageSize: number = 12, filters: ProductFilters = {}): Promise<PaginatedResult> {
-    log('RPC', 'get_products_paginated', { page, ...filters });
-    
-    // Use public client for RPC
-    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
-    const { data, error } = await (supabasePublic.rpc as any)('get_products_paginated', {
-      p_page: page,
-      p_page_size: pageSize,
-      p_category_key: filters.categoryKey || null,
-      p_search_query: filters.search || null,
-      p_min_price: filters.minPrice || null,
-      p_max_price: filters.maxPrice || null,
-      p_sort_by: filters.sortBy || 'newest'
-    });
+    log('SELECT', 'products (paginated)', { page, ...filters });
 
+    const client = filters.adminMode ? supabase : supabasePublic;
+
+    let query = client
+      .from('products')
+      .select('*', { count: 'exact' });
+
+    // Filter by published status for public-facing shop
+    if (!filters.adminMode) {
+      query = query.eq('is_published', true);
+    }
+    
+    // Apply filters
+    if (filters.categoryKey) {
+      query = query.eq('category_key', filters.categoryKey);
+    }
+    if (filters.search) {
+      query = query.ilike('title', `%${filters.search}%`);
+    }
+    if (filters.minPrice) {
+      query = query.gte('price', filters.minPrice);
+    }
+    if (filters.maxPrice) {
+      query = query.lte('price', filters.maxPrice);
+    }
+
+    // Apply sorting
+    const sortMap = {
+      'newest': { column: 'created_at', ascending: false },
+      'low-high': { column: 'price', ascending: true },
+      'high-low': { column: 'price', ascending: false },
+    };
+    const sort = sortMap[filters.sortBy || 'newest'];
+    query = query.order(sort.column, { ascending: sort.ascending, nullsFirst: false });
+
+    // Apply pagination
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize - 1;
+    query = query.range(startIndex, endIndex);
+
+    const { data, error, count } = await query;
     if (error) throw error;
 
-    // Determine type of 'data' based on RPC return
-    const result = data as any;
-    const mappedProducts = (result.data || []).map((p: any) => Mappers.toProduct(p));
+    const mappedProducts = (data || []).map(Mappers.toProduct);
+    const total = count || 0;
 
     return {
       data: mappedProducts,
-      total: result.total || 0,
-      hasMore: result.hasMore || false,
-      page: page
+      total: total,
+      hasMore: endIndex < total - 1,
+      page: page,
     };
   }
 

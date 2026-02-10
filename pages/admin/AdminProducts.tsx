@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
@@ -30,7 +29,11 @@ export const AdminProducts: React.FC = () => {
   const fetchProducts = async (pageNum: number, searchTerm: string) => {
     setLoading(true);
     try {
-        const result = await api.getPaginatedProducts(pageNum, 20, { search: searchTerm, sortBy: 'newest' });
+        const result = await api.getPaginatedProducts(pageNum, 20, { 
+            search: searchTerm, 
+            sortBy: 'newest',
+            adminMode: true 
+        });
         setProducts(result.data);
         setTotalPages(Math.ceil(result.total / 20));
     } catch (e) {
