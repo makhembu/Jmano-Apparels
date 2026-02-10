@@ -78,6 +78,7 @@ export interface BlogPost {
   status: 'draft' | 'published' | 'archived';
   author: string;
   createdAt: string;
+  updatedAt?: string;
   readingTime?: number;
   categoryId?: string;
   seoTitle?: string;

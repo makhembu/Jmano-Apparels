@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -90,6 +89,7 @@ export class BlogService {
       is_nofollow: post.isNoFollow,
       keywords: post.keywords,
       scheduled_for: post.scheduledFor || null,
+      updated_at: new Date().toISOString(),
     };
   }
 }

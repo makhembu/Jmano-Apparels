@@ -149,6 +149,7 @@ export default async function handler(req, res) {
            const { data: product } = await supabase
              .from('products')
              .select('*')
+             .eq('is_published', true)
              .or(`id.eq.${slug},slug.eq.${slug}`)
              .maybeSingle();
            
@@ -192,6 +193,7 @@ export default async function handler(req, res) {
              .from('blog_posts')
              .select('*')
              .eq('slug', slug)
+             .eq('status', 'published')
              .maybeSingle();
            
            if (post) {
