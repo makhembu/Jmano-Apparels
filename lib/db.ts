@@ -6,7 +6,10 @@ import {
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
-import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
+import { OrderService } from './services/orderService';
+import { CartService } from './services/cartService';
+import { ShippingService } from './services/shippingService';
+import { DiscountService } from './services/discountService';
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
