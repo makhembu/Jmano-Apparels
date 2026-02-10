@@ -9,6 +9,7 @@ const settingsService = new SettingsService();
 export class OrderService {
   async getUserOrders(userId: string): Promise<Order[]> {
     log('SELECT', 'orders', { userId });
+    // FIX: Ensure ordering is by 'date', not 'created_at'
     const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId).order('date', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
@@ -16,6 +17,7 @@ export class OrderService {
 
   async getAll(limit: number = 50): Promise<Order[]> {
     log('SELECT', 'orders', `ALL LIMIT ${limit}`);
+    // FIX: Ensure ordering is by 'date', not 'created_at'
     const { data, error } = await supabase.from('orders').select('*').order('date', { ascending: false }).limit(limit);
     if (error) throw error;
     return ((data || []) as DbOrder[]).map(Mappers.toOrder);
@@ -38,6 +40,7 @@ export class OrderService {
     if (error) throw error;
     
     const responseData = data as any;
+    // Map JSON result to Order model
     const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
     
     return {

@@ -1,4 +1,3 @@
-
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -180,6 +179,7 @@ export const Mappers = {
     status: b.status || 'draft',
     author: b.author || '',
     createdAt: b.date || new Date().toISOString(),
+    updatedAt: b.updated_at || undefined,
     readingTime: b.reading_time || undefined,
     categoryId: b.category_id || undefined,
     
@@ -243,7 +243,7 @@ export const Mappers = {
       discountAmount: o.discount_amount || undefined,
       discountCode: o.discount_code || undefined,
       status: o.status || 'Pending',
-      createdAt: o.date || new Date().toISOString(),
+      createdAt: (o as any).date || (o as any).created_at || new Date().toISOString(),
       shippingAddress: shippingAddress,
       paymentStatus: o.payment_status || 'pending',
       paymentIntentId: o.payment_intent_id || undefined,
