@@ -39,7 +39,7 @@ export class AnalyticsService {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('products, total, customer_name, customer_email, order_number, date, status, id, user_id, subtotal, discount_amount, shipping_cost')
-      .contains('products', [{ productId: productId }] as any)
+      .contains('products', JSON.stringify([{ productId: productId }]))
       .in('payment_status', ['paid'])
       .not('status', 'in', '("Cancelled", "Refunded")');
 
