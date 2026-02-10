@@ -59,6 +59,12 @@ export default async function handler(req, res) {
   if (!html) {
     return res.status(500).send('Could not load application shell.');
   }
+  
+  // Defensively strip any existing title/desc tags from the shell
+  html = html
+    .replace(/<title>[\s\S]*?<\/title>/i, '')
+    .replace(/<meta name="description"[\s\S]*?>/i, '');
+
 
   try {
     if (!supabaseUrl || !supabaseKey) {
@@ -84,6 +90,7 @@ export default async function handler(req, res) {
     };
 
     let structuredData = null; // for JSON-LD
+    let extraMeta = ''; // For context-specific tags like article dates
 
     // --- 3. Route-Specific Logic to Override Meta ---
     if (cleanPath.startsWith('/product/')) {
@@ -114,13 +121,21 @@ export default async function handler(req, res) {
                 meta.type = 'article';
                 meta.isNoIndex = post.is_noindex || false;
                 meta.isNoFollow = post.is_nofollow || false;
+                
+                const publishedTime = new Date(post.date).toISOString();
+                const modifiedTime = new Date(post.updated_at || post.date).toISOString();
+                extraMeta = `
+      <meta property="article:published_time" content="${publishedTime}" />
+      <meta property="article:modified_time" content="${modifiedTime}" />
+    `;
+
                 structuredData = { 
                     "@type": "BlogPosting", 
                     headline: post.title, 
                     description: meta.description, 
                     image: meta.image, 
-                    datePublished: new Date(post.date).toISOString(),
-                    dateModified: new Date(post.updated_at || post.date).toISOString(),
+                    datePublished: publishedTime,
+                    dateModified: modifiedTime,
                     author: { "@type": "Organization", name: "Jambo Apparels" },
                     mainEntityOfPage: { "@type": "WebPage", "@id": meta.url }
                 };
@@ -138,6 +153,11 @@ export default async function handler(req, res) {
     if (meta.image && meta.image.startsWith('/')) {
         meta.image = `${baseUrl}${meta.image}`;
     }
+    // Guard against empty image and description
+    if (!meta.image || meta.image.trim() === '') {
+      meta.image = settings?.default_og_image || 'https://i.imgur.com/pkaScEv.png';
+    }
+    meta.description = meta.description.slice(0, 155);
 
     const safeTitle = esc(meta.title);
     const safeDesc = esc(meta.description);
@@ -155,17 +175,20 @@ export default async function handler(req, res) {
       <meta property="og:title" content="${safeTitle}" />
       <meta property="og:description" content="${safeDesc}" />
       <meta property="og:image" content="${safeImage}" />
+      <meta property="og:image:alt" content="${safeTitle}" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:url" content="${safeUrl}" />
       <meta property="og:type" content="${safeType}" />
       <meta property="og:site_name" content="Jambo Apparels" />
+      ${extraMeta}
       
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@jamboapparels" />
       <meta name="twitter:title" content="${safeTitle}" />
       <meta name="twitter:description" content="${safeDesc}" />
       <meta name="twitter:image" content="${safeImage}" />
+      <meta name="twitter:image:alt" content="${safeTitle}" />
     `;
 
     // Inject JSON-LD
@@ -180,9 +203,14 @@ export default async function handler(req, res) {
       /<!--SSR_META_TAGS_START-->[\s\S]*?<!--SSR_META_TAGS_END-->/,
       `<!--SSR_META_TAGS_START-->\n${headTags}\n${schemaInjection}\n<!--SSR_META_TAGS_END-->`
     );
+    
+    const isDynamic = cleanPath.startsWith('/product/') || cleanPath.startsWith('/blog/');
+    const cacheControl = isDynamic
+        ? 's-maxage=600, stale-while-revalidate=86400' // 10 minutes for dynamic
+        : 's-maxage=3600, stale-while-revalidate=86400'; // 1 hour for static
 
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', cacheControl);
     res.status(200).send(html);
 
   } catch (e) {

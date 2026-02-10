@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ShippingOption, DbOrder, OrderItem
+  UserAddress, EmailTemplate, ShippingOption
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -10,7 +10,7 @@ import { OrderService, CartService, ShippingService, DiscountService } from './s
 import { BlogService, SettingsService, SupportService } from './services/content';
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
-import { Mappers } from './mappers';
+import { AnalyticsService } from './services/analytics';
 
 // Instantiate Services
 const productService = new ProductService();
@@ -26,6 +26,7 @@ const supportService = new SupportService();
 const userService = new UserService();
 const wishlistService = new WishlistService();
 const storageService = new StorageService();
+const analyticsService = new AnalyticsService();
 
 // Helper for hybrid routing redirect
 const getRedirectUrl = () => {
@@ -41,16 +42,10 @@ export const api = {
   adminCreateProduct: (p: Partial<Product>) => productService.create(p),
   adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
   adminDeleteProduct: (id: string) => productService.delete(id),
-  adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    for (const id of ids) {
-      await productService.update(id, updates);
-    }
-  },
-  adminBulkDeleteProducts: async (ids: string[]) => {
-    for (const id of ids) {
-      await productService.delete(id);
-    }
-  },
+  adminBulkUpdateProducts: (ids: string[], updates: Partial<Product>) => productService.bulkUpdate(ids, updates),
+  adminBulkDeleteProducts: (ids: string[]) => productService.bulkDelete(ids),
+  getLowStockProducts: (limit: number = 5) => productService.getLowStockProducts(limit),
+  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
 
   getCategories: () => categoryService.getAll(),
   createCategory: (c: Category) => categoryService.create(c),
@@ -63,187 +58,18 @@ export const api = {
 
   // Commerce
   getUserOrders: (userId: string) => orderService.getUserOrders(userId),
-  getOrders: (userId: string) => orderService.getUserOrders(userId),
+  getOrders: (userId: string) => orderService.getUserOrders(userId), // Alias
   getAllOrders: (limit?: number) => orderService.getAll(limit),
-  
-  getOrdersPaginated: async (page: number = 1, limit: number = 20, status: string = 'ALL') => {
-    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
-      page_num: Number(page),
-      page_size: Number(limit),
-      status_filter: (status === 'ALL' || !status) ? null : status
-    });
-    if (error) throw error;
-    
-    const responseData = data as any;
-    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
-    
-    return {
-      data: orders as Order[],
-      total: responseData.total || 0,
-      page: responseData.page || 1,
-      totalPages: responseData.totalPages || 1
-    };
-  },
-
-  getAdminPaymentsPaginated: async (page: number, limit: number, status: string, method: string) => {
-    const { data, error } = await (supabase.rpc as any)('get_admin_payments_paginated', {
-      p_page: page,
-      p_page_size: limit,
-      p_status: status,
-      p_method: method
-    });
-    if (error) throw error;
-    
-    const responseData = data as any;
-    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
-    
-    return {
-      data: orders as Order[],
-      stats: responseData.stats,
-      total: responseData.total || 0,
-      totalPages: responseData.totalPages || 1
-    };
-  },
-
-  getLowStockProducts: async (limit: number = 5) => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('stock_quantity', { ascending: true })
-      .limit(20); 
-
-    if (error) throw error;
-
-    return (data || [])
-      .filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5))
-      .slice(0, limit)
-      .map(Mappers.toProduct);
-  },
-
-  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
-
+  getOrdersPaginated: (page?: number, limit?: number, status?: string) => orderService.getOrdersPaginated(page, limit, status),
+  getAdminPaymentsPaginated: (page: number, limit: number, status: string, method: string) => orderService.getAdminPaymentsPaginated(page, limit, status, method),
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
   adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
-  
-  cancelAndRestoreStock: async (orderId: string, userId: string) => {
-      const { data, error } = await (supabase.rpc as any)('cancel_and_restore_stock', { 
-        p_order_id: orderId, 
-        p_user_id: userId 
-      });
-      if (error) throw error;
-      if (data && (data as any).success === false) throw new Error((data as any).error || 'Restoration failed');
-      return { success: true };
-  },
-
-  requestReturn: async (orderId: string, userId: string, reason: string) => {
-    const { error } = await (supabase
-      .from('orders') as any)
-      .update({
-        status: 'Return Requested',
-        return_reason: reason,
-        return_requested_at: new Date().toISOString(),
-        return_status: 'requested'
-      })
-      .match({ id: orderId, user_id: userId });
-    
-    if (error) throw error;
-
-    try {
-      const order = await orderService.getById(orderId);
-      const settings = await settingsService.get();
-      
-      if (order && order.customerEmail) {
-         settingsService.sendTransactionalEmail('return_requested', order.customerEmail, {
-             '{{name}}': order.customerName || 'Customer',
-             '{{order_number}}': order.orderNumber,
-             '{{return_reason}}': reason
-         });
-         
-         if (settings?.contactEmail) {
-             settingsService.sendTransactionalEmail('admin_return_alert', settings.contactEmail, {
-                 '{{customer_name}}': order.customerName || 'Customer',
-                 '{{order_number}}': order.orderNumber,
-                 '{{return_reason}}': reason,
-                 '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}`
-             });
-         }
-      }
-    } catch (e) {
-      console.error("Failed to send return email", e);
-    }
-
-    return { success: true };
-  },
-
-  adminProcessReturn: async (orderId: string, returnStatus: any, notes?: string) => {
-    const statusMap: Record<string, string> = {
-      'approved': 'Return Approved',
-      'rejected': 'Return Rejected',
-      'completed': 'Returned'
-    };
-    
-    const updates: any = { return_status: returnStatus };
-    if (statusMap[returnStatus]) {
-      updates.status = statusMap[returnStatus];
-    }
-    if (notes) {
-      updates.notes = notes;
-    }
-
-    const { error } = await (supabase.from('orders') as any).update(updates).eq('id', orderId);
-    if (error) throw error;
-
-    try {
-      const order = await orderService.getById(orderId);
-      if (order && order.customerEmail) {
-          if (returnStatus === 'approved') {
-              settingsService.sendTransactionalEmail('return_approved', order.customerEmail, {
-                  '{{name}}': order.customerName || 'Customer',
-                  '{{order_number}}': order.orderNumber
-              });
-          } else if (returnStatus === 'rejected') {
-              settingsService.sendTransactionalEmail('return_rejected', order.customerEmail, {
-                  '{{name}}': order.customerName || 'Customer',
-                  '{{order_number}}': order.orderNumber,
-                  '{{rejection_reason}}': notes || 'Return criteria not met.'
-              });
-          }
-      }
-    } catch (e) {
-      console.error("Failed to send return decision email", e);
-    }
-
-    return { success: true };
-  },
-
-  issueFullRefund: async (orderId: string) => {
-    const response = await fetch('/api/paypal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'refund', orderId })
-    });
-    
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Refund failed');
-    }
-
-    try {
-      const order = await orderService.getById(orderId);
-      if (order && order.customerEmail) {
-          settingsService.sendTransactionalEmail('order_refunded', order.customerEmail, {
-              '{{name}}': order.customerName || 'Customer',
-              '{{order_number}}': order.orderNumber
-          });
-      }
-    } catch (e) {
-      console.error("Failed to send refund email", e);
-    }
-
-    return data;
-  },
+  cancelAndRestoreStock: (orderId: string, userId: string) => orderService.cancelAndRestoreStock(orderId, userId),
+  requestReturn: (orderId: string, userId: string, reason: string) => orderService.requestReturn(orderId, userId, reason),
+  adminProcessReturn: (orderId: string, returnStatus: any, notes?: string) => orderService.adminProcessReturn(orderId, returnStatus, notes),
+  issueFullRefund: (orderId: string) => orderService.issueFullRefund(orderId),
 
   fetchCart: (userId: string) => cartService.fetch(userId),
   syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
@@ -270,36 +96,12 @@ export const api = {
   adminCreateBlogPost: (p: Partial<BlogPost>) => blogService.createPost(p),
   adminUpdateBlogPost: (id: string, p: Partial<BlogPost>) => blogService.updatePost(id, p),
   adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
-  adminBulkUpdateBlogPosts: async (ids: string[], updates: Partial<BlogPost>) => {
-    for (const id of ids) await blogService.updatePost(id, updates);
-  },
-  adminBulkDeleteBlogPosts: async (ids: string[]) => {
-    for (const id of ids) await blogService.deletePost(id);
-  },
+  adminBulkUpdateBlogPosts: (ids: string[], updates: Partial<BlogPost>) => blogService.bulkUpdate(ids, updates),
+  adminBulkDeleteBlogPosts: (ids: string[]) => blogService.bulkDelete(ids),
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
-  incrementBlogPostLike: async (postId: string) => {
-    const { data, error } = await (supabase.rpc as any)('increment_blog_like', { post_id_to_inc: postId });
-    if (error) throw error;
-    return data;
-  },
-  getBlogComments: async (postId: string) => {
-    const { data, error } = await supabase
-      .from('blog_comments')
-      .select('*, user:users(name)')
-      .eq('post_id', postId)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data as any[];
-  },
-  addBlogComment: async (postId: string, userId: string, comment: string): Promise<void> => {
-    const { error } = await (supabase.from('blog_comments') as any).insert({
-      post_id: postId,
-      user_id: userId,
-      comment: comment
-    });
-    if (error) throw error;
-  },
+  incrementBlogPostLike: (postId: string) => blogService.incrementBlogPostLike(postId),
+  getBlogComments: (postId: string) => blogService.getBlogComments(postId),
+  addBlogComment: (postId: string, userId: string, comment: string) => blogService.addBlogComment(postId, userId, comment),
 
   getAppSettings: () => settingsService.get(),
   getAdminSettings: () => settingsService.getAdminSettings(),
@@ -323,70 +125,17 @@ export const api = {
   // User
   getAllUsers: () => userService.getAll(),
   getPublicUsers: () => userService.getPublicProfiles(),
-  
-  getPaginatedUsers: async (page: number = 1, limit: number = 20, search: string = '') => {
-    const { data, error } = await (supabase.rpc as any)('get_users_paginated', {
-        page_num: page,
-        page_size: limit,
-        search_term: search || null
-    });
-    if (error) throw error;
-    
-    const responseData = data as any;
-    const users = (responseData.data || []).map((u: any) => Mappers.toUser(u));
-    
-    return {
-        data: users as User[],
-        total: responseData.total || 0,
-        page: responseData.page || 1,
-        totalPages: responseData.totalPages || 1
-    };
-  },
-
+  getPaginatedUsers: (page?: number, limit?: number, search?: string) => userService.getPaginatedUsers(page, limit, search),
   getUserProfile: (id: string) => userService.getProfile(id),
   updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
   createUserProfile: (data: any) => userService.createProfile(data),
-  updateUserPassword: async (password: string) => {
-    const { error } = await (supabase.auth as any).updateUser({ password });
-    if (error) throw error;
-  },
-  requestPasswordReset: async (email: string) => {
-    const { error } = await (supabase.auth as any).resetPasswordForEmail(email, { redirectTo: getRedirectUrl() });
-    if (error) throw error;
-  },
+  updateUserPassword: (password: string) => userService.updateUserPassword(password),
+  requestPasswordReset: (email: string) => userService.requestPasswordReset(email, getRedirectUrl()),
   adminDeleteUser: (id: string) => userService.deleteUser(id),
-  adminSendPasswordReset: async (email: string) => {
-    const { error } = await (supabase.auth as any).resetPasswordForEmail(email);
-    if (error) throw error;
-  },
-  adminSendMagicLink: async (email: string) => {
-    const { error } = await (supabase.auth as any).signInWithOtp({ email });
-    if (error) throw error;
-  },
-  
-  getUserActivity: async (userId: string, limit: number = 50) => {
-    const { data, error } = await supabase
-      .from('analytics_events')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (error) throw error;
-    return (data || []).map((row: any) => ({
-      id: row.id,
-      created_at: row.created_at,
-      eventType: row.event_type,
-      path: row.path,
-      metadata: row.metadata,
-      duration: row.duration,
-      geo_country: row.geo_country,
-      geo_city: row.geo_city,
-    }));
-  },
-
-  deleteUserAccount: async (userId: string) => {
-    return await (supabase.rpc as any)('anonymize_and_delete_user', { target_user_id: userId });
-  },
+  adminSendPasswordReset: (email: string) => userService.adminSendPasswordReset(email),
+  adminSendMagicLink: (email: string) => userService.adminSendMagicLink(email),
+  getUserActivity: (userId: string, limit?: number) => userService.getUserActivity(userId, limit),
+  deleteUserAccount: (userId: string) => userService.deleteUserAccount(userId),
 
   getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
   saveUserAddress: (userId: string, address: any) => userService.saveUserAddress(userId, address),
@@ -400,170 +149,14 @@ export const api = {
   uploadImage: (file: File) => storageService.uploadImage(file),
 
   // Analytics
-  getAnalyticsOverview: async (start: Date, end: Date): Promise<AnalyticsOverview> => {
-    const { data, error } = await (supabase.rpc as any)('get_analytics_overview', {
-      time_range_start: start.toISOString(),
-      time_range_end: end.toISOString()
-    });
-    if (error) {
-        console.error("Analytics Error", error);
-        return { visitors: 0, pageviews: 0, orders: 0, revenue: 0, conversion_rate: 0 };
-    }
-    return data as unknown as AnalyticsOverview;
-  },
-
-  getAdminDashboardStats: async () => {
-    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
-    if (error) throw error;
-    return data as {
-        revenue: number;
-        orders: number;
-        users: number;
-        products: number;
-        low_stock: number;
-        pending_orders: number;
-    };
-  },
-  
-  getAdminProductStats: async (productId: string) => {
-    // Client-side implementation as RPC function 'get_product_sales_stats' is missing or failing.
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('products, total, customer_name, customer_email, order_number, date, status, id, user_id, created_at, subtotal, discount_amount, shipping_cost')
-      .contains('products', [{ productId: productId }] as any)
-      .in('payment_status', ['paid'])
-      .not('status', 'in', '("Cancelled", "Refunded")');
-
-    if (error) throw error;
-
-    let revenue = 0;
-    let unitsSold = 0;
-    
-    (orders || []).forEach(order => {
-        const itemsForThisProduct = ((order.products as any) || []).filter((p: any) => p.productId === productId);
-        const quantityInOrder = itemsForThisProduct.reduce((sum: number, item: any) => sum + item.quantity, 0);
-        const pricePerItem = itemsForThisProduct[0]?.price || 0;
-        
-        // Apportion revenue based on the product's value relative to the order's item subtotal
-        const orderItemSubtotal = ((order.products as any) || []).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-        const productValueInOrder = quantityInOrder * pricePerItem;
-        
-        const subtotalAfterDiscount = (order.subtotal || orderItemSubtotal) - (order.discount_amount || 0);
-
-        if (orderItemSubtotal > 0) {
-            const proportionOfOrder = productValueInOrder / orderItemSubtotal;
-            // Attribute proportion of subtotal after discount, plus proportion of shipping
-            const attributedRevenue = (subtotalAfterDiscount * proportionOfOrder) + ((order.shipping_cost || 0) * proportionOfOrder);
-            revenue += attributedRevenue;
-        }
-
-        unitsSold += quantityInOrder;
-    });
-
-    const stats = {
-        revenue,
-        unitsSold,
-        orderCount: (orders || []).length
-    };
-    
-    const recentOrders = (orders || [])
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5)
-        .map(o => Mappers.toOrder(o as DbOrder));
-
-    return { stats, recentOrders };
-  },
-
-  getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    // Client-side implementation due to RPC error.
-    // WARNING: This is inefficient and may be slow with large datasets.
-    console.warn("Using client-side analytics aggregation due to RPC failure. Performance may be impacted.");
-
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const { data: events, error } = await supabase
-        .from('analytics_events')
-        .select('created_at, event_type, session_id, metadata')
-        .in('event_type', ['page_view', 'purchase'])
-        .gte('created_at', startDate.toISOString());
-    
-    if (error) {
-        console.error("Analytics Error", error);
-        return [];
-    }
-    if (!events) return [];
-
-    const groupedByDate: Record<string, any[]> = events.reduce((acc, event) => {
-        const date = event.created_at.split('T')[0];
-        if (!acc[date]) acc[date] = [];
-        acc[date].push(event);
-        return acc;
-    }, {});
-    
-    const dailyStats: DailyAnalytics[] = Object.entries(groupedByDate).map(([date, dayEvents]) => {
-        const pageViews = dayEvents.filter(e => e.event_type === 'page_view');
-        const purchases = dayEvents.filter(e => e.event_type === 'purchase');
-
-        const visitors = new Set(pageViews.map(e => e.session_id)).size;
-        const revenue = purchases.reduce((sum, e) => sum + (e.metadata?.total || 0), 0);
-
-        return {
-            date,
-            visitors,
-            pageviews: pageViews.length,
-            orders: purchases.length,
-            revenue,
-        };
-    });
-
-    return dailyStats.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  },
-
-  getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_product_analytics', { limit_count: 8, days_lookback: days });
-    if (error) {
-        console.error("Analytics Error", error);
-        return [];
-    }
-    return data as unknown as ProductPerformance[];
-  },
-
-  getTrafficSources: async (days: number): Promise<TrafficSource[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_traffic_sources', { days_lookback: days });
-    if (error) {
-      console.error("Analytics Error", error);
-      return [];
-    }
-    return data as unknown as TrafficSource[];
-  },
-
-  getGeoStats: async (days: number): Promise<GeoStat[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_geo_stats', { days_lookback: days });
-    if (error) { console.error("Analytics Error", error); return []; }
-    return data as unknown as GeoStat[];
-  },
-
-  getPagePerformance: async (days: number): Promise<PageStat[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_page_analytics', { days_lookback: days });
-    if (error) { console.error("Analytics Error", error); return []; }
-    return data as unknown as PageStat[];
-  },
-
-  getLiveVisitors: async (lookback_minutes: number = 5): Promise<LiveVisitor[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_live_visitors', { lookback_minutes });
-    if (error) { console.error("Analytics Error", error); return []; }
-    return data as unknown as LiveVisitor[];
-  },
-  
-  persistSystemLogs: async (logs: any[]) => {
-    const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
-      operation: l.operation,
-      context: l.context,
-      level: l.level,
-      details: l.details,
-      timestamp: new Date(l.timestamp).toISOString()
-    })));
-    if (error) throw error;
-  }
+  getAnalyticsOverview: (start: Date, end: Date) => analyticsService.getAnalyticsOverview(start, end),
+  getAdminDashboardStats: () => analyticsService.getAdminDashboardStats(),
+  getAdminProductStats: (productId: string) => analyticsService.getAdminProductStats(productId),
+  getDailyAnalytics: (days: number) => analyticsService.getDailyAnalytics(days),
+  getProductAnalytics: (days?: number) => analyticsService.getProductAnalytics(days),
+  getTrafficSources: (days: number) => analyticsService.getTrafficSources(days),
+  getGeoStats: (days: number) => analyticsService.getGeoStats(days),
+  getPagePerformance: (days: number) => analyticsService.getPagePerformance(days),
+  getLiveVisitors: (minutes?: number) => analyticsService.getLiveVisitors(minutes),
+  persistSystemLogs: (logs: any[]) => analyticsService.persistSystemLogs(logs),
 };

@@ -4,7 +4,6 @@ import { log } from '../logger';
 import { Order, ShippingAddress, DbOrder, CartItem, ShippingZone, DiscountCode, ShippingOption } from '../../types';
 import { SettingsService } from './content';
 
-// Instantiate settings service for email logic
 const settingsService = new SettingsService();
 
 export class OrderService {
@@ -29,62 +28,83 @@ export class OrderService {
     return Mappers.toOrder(data as DbOrder);
   }
 
+  async getOrdersPaginated(page: number = 1, limit: number = 20, status: string = 'ALL'): Promise<{ data: Order[], total: number, page: number, totalPages: number }> {
+    log('RPC', 'orders', 'get_orders_paginated');
+    const { data, error } = await (supabase.rpc as any)('get_orders_paginated', {
+      page_num: Number(page),
+      page_size: Number(limit),
+      status_filter: (status === 'ALL' || !status) ? null : status
+    });
+    if (error) throw error;
+    
+    const responseData = data as any;
+    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
+    
+    return {
+      data: orders as Order[],
+      total: responseData.total || 0,
+      page: responseData.page || 1,
+      totalPages: responseData.totalPages || 1
+    };
+  }
+
+  async getAdminPaymentsPaginated(page: number, limit: number, status: string, method: string) {
+    log('RPC', 'orders', 'get_admin_payments_paginated');
+    const { data, error } = await (supabase.rpc as any)('get_admin_payments_paginated', {
+      p_page: page,
+      p_page_size: limit,
+      p_status: status,
+      p_method: method
+    });
+    if (error) throw error;
+    
+    const responseData = data as any;
+    const orders = (responseData.data || []).map((o: any) => Mappers.toOrder(o));
+    
+    return {
+      data: orders as Order[],
+      stats: responseData.stats,
+      total: responseData.total || 0,
+      totalPages: responseData.totalPages || 1
+    };
+  }
+
   async create(order: Partial<Order> & { shippingAddress: ShippingAddress }): Promise<Order> {
     log('RPC', 'create_order_secure', order);
     
-    // --- GUEST ACCOUNT AUTO-CREATION LOGIC ---
     let targetUserId = order.userId;
     let generatedPassword = null;
     let isNewAccount = false;
 
-    // If guest checkout (no userId) but has email, try to create/link account
     if (!targetUserId && order.customerEmail) {
         try {
             log('AUTH', 'Creating/Linking Guest Account', order.customerEmail);
             const authResponse = await fetch('/api/guest-auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email: order.customerEmail, 
-                    name: order.customerName || 'Guest' 
-                })
+                body: JSON.stringify({ email: order.customerEmail, name: order.customerName || 'Guest' })
             });
-            
             const authData = await authResponse.json();
-            
             if (authResponse.ok && authData.success) {
                 targetUserId = authData.userId;
                 generatedPassword = authData.password;
                 isNewAccount = authData.isNew;
-                log('AUTH_SUCCESS', `Linked to ${targetUserId}. New: ${isNewAccount}`);
             }
         } catch (e) {
             console.error("Guest auto-account creation failed:", e);
-            // Non-blocking: Proceed as standard guest order if auth fails
         }
     }
 
-    // Map products to ensure correct field names for the RPC
     const itemsPayload = (order.products || []).map((item: any) => ({
-        product_id: item.productId,
-        quantity: item.quantity,
-        size: item.size,
-        selected_color: item.selectedColor,
-        title: item.title,
-        price: item.price,
-        image: item.image
+        product_id: item.productId, quantity: item.quantity, size: item.size,
+        selected_color: item.selectedColor, title: item.title, price: item.price, image: item.image
     }));
 
-    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
     const { data, error } = await (supabase.rpc as any)('create_order_secure', {
-      p_user_id: targetUserId || null, // Use the new ID if created/found
-      p_customer_email: order.customerEmail || null,
-      p_customer_name: order.customerName || null,
-      p_items: itemsPayload as any,
-      p_shipping_address: order.shippingAddress as any,
-      p_discount_code: order.discountCode || null,
-      p_notes: order.notes || null,
-      p_payment_status: order.paymentStatus || 'paid',
+      p_user_id: targetUserId || null, p_customer_email: order.customerEmail || null,
+      p_customer_name: order.customerName || null, p_items: itemsPayload as any,
+      p_shipping_address: order.shippingAddress as any, p_discount_code: order.discountCode || null,
+      p_notes: order.notes || null, p_payment_status: order.paymentStatus || 'paid',
       p_payment_intent_id: order.paymentIntentId || null
     });
 
@@ -92,60 +112,36 @@ export class OrderService {
     
     const createdOrder = Mappers.toOrder(data as DbOrder);
 
-    // Update shipping method if provided separately (as RPC handles base logic)
     if (order.shippingCost && order.shippingCost > 0) {
-        await supabase.from('orders').update({ 
-            shipping_cost: order.shippingCost 
-        }).eq('id', createdOrder.id);
+        await supabase.from('orders').update({ shipping_cost: order.shippingCost }).eq('id', createdOrder.id);
         createdOrder.shippingCost = order.shippingCost;
     }
 
-    // --- SEND EMAILS (Client-Side Logic) ---
-    // Only send for successful orders (paid/pending).
     try {
-        const customerName = createdOrder.customerName || 'Customer';
-        const customerEmail = createdOrder.customerEmail || '';
-        const orderNumber = createdOrder.orderNumber;
-        const total = createdOrder.total.toFixed(2);
-
-        // 1. Send Customer Confirmation
+        const { customerName, customerEmail, orderNumber, total } = createdOrder;
         if (customerEmail) {
             if (isNewAccount && generatedPassword) {
-                // Send SPECIAL Guest Welcome + Order email
                 settingsService.sendTransactionalEmail('guest_order_account_created', customerEmail, {
-                    '{{name}}': customerName,
-                    '{{order_number}}': orderNumber,
-                    '{{total}}': total,
-                    '{{email}}': customerEmail,
-                    '{{generated_password}}': generatedPassword,
-                    '{{login_link}}': 'https://jamboapparels.com/login',
-                    '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
+                    '{{name}}': customerName || 'Customer', '{{order_number}}': orderNumber, '{{total}}': total.toFixed(2),
+                    '{{email}}': customerEmail, '{{generated_password}}': generatedPassword,
+                    '{{login_link}}': 'https://jamboapparels.com/login', '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
                 });
             } else {
-                // Send Standard Confirmation
                 settingsService.sendTransactionalEmail('new_order_customer', customerEmail, {
-                    '{{name}}': customerName,
-                    '{{order_number}}': orderNumber,
-                    '{{total}}': total,
+                    '{{name}}': customerName || 'Customer', '{{order_number}}': orderNumber, '{{total}}': total.toFixed(2),
                     '{{order_link}}': `https://jamboapparels.com/order/${createdOrder.id}`
                 });
             }
         }
-
-        // 2. Send Admin Alert
         const settings = await settingsService.get();
-        if (settings && settings.contactEmail) {
+        if (settings?.contactEmail) {
              settingsService.sendTransactionalEmail('admin_new_order', settings.contactEmail, {
-                '{{customer_name}}': customerName,
-                '{{order_number}}': orderNumber,
-                '{{total}}': total,
+                '{{customer_name}}': customerName || 'Customer', '{{order_number}}': orderNumber, '{{total}}': total.toFixed(2),
                 '{{admin_link}}': `https://jamboapparels.com/admin/orders/${createdOrder.id}`
              });
         }
-
     } catch (emailError) {
         console.error("Failed to trigger order emails", emailError);
-        // Do not throw error, order was created successfully
     }
 
     return createdOrder;
@@ -167,60 +163,35 @@ export class OrderService {
     const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
     if (error) throw error;
 
-    // --- SEND EMAILS (Status Updates) ---
     try {
         if (updates.status) {
-            // Re-fetch order to get customer details & settings
-            const [order, settings] = await Promise.all([
-                this.getById(id),
-                settingsService.get()
-            ]);
-
+            const [order, settings] = await Promise.all([this.getById(id), settingsService.get()]);
             if (order && settings) {
-                // 1. Admin Alert
                 if (settings.contactEmail) {
                      settingsService.sendTransactionalEmail('admin_order_status_update', settings.contactEmail, {
-                        '{{order_number}}': order.orderNumber,
-                        '{{status}}': updates.status,
-                        '{{customer_name}}': order.customerName || 'Guest',
-                        '{{admin_link}}': `https://jamboapparels.com/admin/orders/${id}`
+                        '{{order_number}}': order.orderNumber, '{{status}}': updates.status,
+                        '{{customer_name}}': order.customerName || 'Guest', '{{admin_link}}': `https://jamboapparels.com/admin/orders/${id}`
                      });
                 }
-
-                // 2. Customer Alert
                 if (order.customerEmail) {
                     let templateName = '';
                     const vars: any = {
-                        '{{name}}': order.customerName || 'Customer',
-                        '{{order_number}}': order.orderNumber,
-                        '{{status}}': updates.status,
-                        '{{order_link}}': `https://jamboapparels.com/order/${id}`
+                        '{{name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber,
+                        '{{status}}': updates.status, '{{order_link}}': `https://jamboapparels.com/order/${id}`
                     };
-
                     switch(updates.status) {
-                        case 'Processing':
-                            templateName = 'order_processing';
-                            break;
+                        case 'Processing': templateName = 'order_processing'; break;
                         case 'Shipped':
                             templateName = 'order_shipped';
-                            // Fix: Use camelCase 'trackingNumber' from updates parameter
                             vars['{{tracking_number}}'] = updates.trackingNumber || order.trackingNumber || 'N/A';
                             break;
                         case 'Delivered':
                             templateName = 'order_delivered';
-                            // Link to first product for review
-                            const firstProduct = order.products?.[0];
-                            // Handle if productId is available
-                            vars['{{product_id}}'] = firstProduct?.productId || '';
+                            vars['{{product_id}}'] = order.products?.[0]?.productId || '';
                             break;
-                        case 'Cancelled':
-                            templateName = 'order_cancelled';
-                            break;
+                        case 'Cancelled': templateName = 'order_cancelled'; break;
                     }
-
-                    if (templateName) {
-                        settingsService.sendTransactionalEmail(templateName, order.customerEmail, vars);
-                    }
+                    if (templateName) settingsService.sendTransactionalEmail(templateName, order.customerEmail, vars);
                 }
             }
         }
@@ -231,55 +202,78 @@ export class OrderService {
   
   async cancelOrder(orderId: string, userId: string): Promise<void> {
     log('UPDATE', 'orders', { orderId, status: 'Cancelled' });
-    
-    // Check if order is in a cancellable state first
-    const { data: order, error: fetchError } = await supabase.from('orders')
-      .select('*')
-      .match({ id: orderId, user_id: userId })
-      .single();
-
+    const { data: order, error: fetchError } = await supabase.from('orders').select('*').match({ id: orderId, user_id: userId }).single();
     if (fetchError || !order) throw new Error("Order not found or permission denied.");
-    
-    if (!['Pending', 'Processing', 'Pending Payment'].includes((order as any).status)) {
-      throw new Error("This order can no longer be cancelled.");
-    }
-
-    const { error } = await supabase.from('orders')
-      .update({ 
-        status: 'Cancelled', 
-        cancelled_at: new Date().toISOString(), 
-        total: (order as any).total 
-      } as any)
-      .match({ id: orderId, user_id: userId });
-
+    if (!['Pending', 'Processing', 'Pending Payment'].includes((order as any).status)) throw new Error("This order can no longer be cancelled.");
+    const { error } = await supabase.from('orders').update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), total: (order as any).total } as any).match({ id: orderId, user_id: userId });
     if (error) throw error;
 
-    // Email Notification
     try {
         const settings = await settingsService.get();
-        const orderNum = (order as any).order_number;
-        const custName = (order as any).customer_name || 'Customer';
-        const custEmail = (order as any).customer_email;
-
-        // 1. Customer
-        if (custEmail) {
-            settingsService.sendTransactionalEmail('order_cancelled', custEmail, {
-                '{{name}}': custName,
-                '{{order_number}}': orderNum
-            });
-        }
-
-        // 2. Admin
-        if (settings?.contactEmail) {
-             settingsService.sendTransactionalEmail('admin_order_status_update', settings.contactEmail, {
-                '{{order_number}}': orderNum,
-                '{{status}}': 'Cancelled',
-                '{{customer_name}}': custName,
-                '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}`
-             });
-        }
-
+        const { order_number, customer_name, customer_email } = (order as any);
+        if (customer_email) settingsService.sendTransactionalEmail('order_cancelled', customer_email, { '{{name}}': customer_name || 'Customer', '{{order_number}}': order_number });
+        if (settings?.contactEmail) settingsService.sendTransactionalEmail('admin_order_status_update', settings.contactEmail, { '{{order_number}}': order_number, '{{status}}': 'Cancelled', '{{customer_name}}': customer_name || 'Customer', '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}` });
     } catch (e) {}
+  }
+
+  async cancelAndRestoreStock(orderId: string, userId: string): Promise<{ success: boolean }> {
+      log('RPC', 'orders', 'cancel_and_restore_stock');
+      const { data, error } = await (supabase.rpc as any)('cancel_and_restore_stock', { p_order_id: orderId, p_user_id: userId });
+      if (error) throw error;
+      if (data && (data as any).success === false) throw new Error((data as any).error || 'Restoration failed');
+      return { success: true };
+  }
+
+  async requestReturn(orderId: string, userId: string, reason: string): Promise<{ success: boolean }> {
+    log('UPDATE', 'orders', `request_return for ${orderId}`);
+    const { error } = await (supabase.from('orders') as any).update({
+        status: 'Return Requested', return_reason: reason,
+        return_requested_at: new Date().toISOString(), return_status: 'requested'
+    }).match({ id: orderId, user_id: userId });
+    if (error) throw error;
+
+    try {
+      const order = await this.getById(orderId);
+      const settings = await settingsService.get();
+      if (order?.customerEmail) {
+         settingsService.sendTransactionalEmail('return_requested', order.customerEmail, { '{{name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber, '{{return_reason}}': reason });
+         if (settings?.contactEmail) settingsService.sendTransactionalEmail('admin_return_alert', settings.contactEmail, { '{{customer_name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber, '{{return_reason}}': reason, '{{admin_link}}': `https://jamboapparels.com/admin/orders/${orderId}` });
+      }
+    } catch (e) { console.error("Failed to send return email", e); }
+    return { success: true };
+  }
+
+  async adminProcessReturn(orderId: string, returnStatus: any, notes?: string): Promise<{ success: boolean }> {
+    log('UPDATE', 'orders', `process_return for ${orderId}`);
+    const statusMap: Record<string, string> = { 'approved': 'Return Approved', 'rejected': 'Return Rejected', 'completed': 'Returned' };
+    const updates: any = { return_status: returnStatus };
+    if (statusMap[returnStatus]) updates.status = statusMap[returnStatus];
+    if (notes) updates.notes = notes;
+
+    const { error } = await (supabase.from('orders') as any).update(updates).eq('id', orderId);
+    if (error) throw error;
+
+    try {
+      const order = await this.getById(orderId);
+      if (order?.customerEmail) {
+          if (returnStatus === 'approved') settingsService.sendTransactionalEmail('return_approved', order.customerEmail, { '{{name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber });
+          else if (returnStatus === 'rejected') settingsService.sendTransactionalEmail('return_rejected', order.customerEmail, { '{{name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber, '{{rejection_reason}}': notes || 'Return criteria not met.' });
+      }
+    } catch (e) { console.error("Failed to send return decision email", e); }
+    return { success: true };
+  }
+
+  async issueFullRefund(orderId: string) {
+    log('API_CALL', 'paypal', `refund for ${orderId}`);
+    const response = await fetch('/api/paypal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'refund', orderId }) });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Refund failed');
+
+    try {
+      const order = await this.getById(orderId);
+      if (order?.customerEmail) settingsService.sendTransactionalEmail('order_refunded', order.customerEmail, { '{{name}}': order.customerName || 'Customer', '{{order_number}}': order.orderNumber });
+    } catch (e) { console.error("Failed to send refund email", e); }
+    return data;
   }
 }
 
@@ -307,61 +301,36 @@ export class CartService {
     `).eq('user_id', userId);
     
     if (error) throw error;
-    // Safely map, filtering out any items where the joined product might be null (if product deleted)
-    return (data || [])
-        .filter((item: any) => item.product)
-        .map(Mappers.toCartItem);
+    return (data || []).filter((item: any) => item.product).map(Mappers.toCartItem);
   }
 }
 
 export class ShippingService {
   async getZones(): Promise<ShippingZone[]> {
     log('SELECT', 'shipping_zones & shipping_options');
-
-    const { data: zonesData, error: zonesError } = await supabase
-        .from('shipping_zones')
-        .select('*')
-        .eq('is_active', true);
+    const { data: zonesData, error: zonesError } = await supabase.from('shipping_zones').select('*').eq('is_active', true);
     if (zonesError) throw zonesError;
-
-    const { data: optionsData, error: optionsError } = await supabase
-        .from('shipping_options')
-        .select('*');
+    const { data: optionsData, error: optionsError } = await supabase.from('shipping_options').select('*');
     if (optionsError) throw optionsError;
 
     const zones = (zonesData || []).map(z => Mappers.toShippingZone(z));
-    
     const optionsByZone = (optionsData || []).reduce((acc, option) => {
         const zoneId = (option as any).zone_id;
-        if (!acc[zoneId]) {
-            acc[zoneId] = [];
-        }
-        acc[zoneId].push({
-            id: (option as any).id,
-            name: (option as any).name,
-            rate: (option as any).rate,
-            description: (option as any).description
-        });
+        if (!acc[zoneId]) acc[zoneId] = [];
+        acc[zoneId].push({ id: (option as any).id, name: (option as any).name, rate: (option as any).rate, description: (option as any).description });
         return acc;
     }, {} as Record<string, ShippingOption[]>);
 
-    zones.forEach(zone => {
-        zone.options = optionsByZone[zone.id] || [];
-    });
-
+    zones.forEach(zone => { zone.options = optionsByZone[zone.id] || []; });
     return zones;
   }
 
   async createZone(zone: Partial<ShippingZone>): Promise<ShippingZone> {
     log('INSERT', 'shipping_zones', zone);
     const { data, error } = await supabase.from('shipping_zones').insert({
-      name: zone.name,
-      countries: zone.countries,
-      base_rate: zone.baseRate,
-      free_shipping_threshold: zone.freeShippingThreshold,
-      is_active: true
+      name: zone.name, countries: zone.countries, base_rate: zone.baseRate,
+      free_shipping_threshold: zone.freeShippingThreshold, is_active: true
     } as any).select().single();
-    
     if (error) throw error;
     return Mappers.toShippingZone(data);
   }
@@ -369,11 +338,8 @@ export class ShippingService {
   async updateZone(id: string, zone: Partial<ShippingZone>): Promise<void> {
     log('UPDATE', 'shipping_zones', id);
     const { error } = await supabase.from('shipping_zones').update({
-      name: zone.name,
-      countries: zone.countries,
-      base_rate: zone.baseRate,
-      free_shipping_threshold: zone.freeShippingThreshold,
-      is_active: zone.isActive
+      name: zone.name, countries: zone.countries, base_rate: zone.baseRate,
+      free_shipping_threshold: zone.freeShippingThreshold, is_active: zone.isActive
     } as any).eq('id', id);
     if (error) throw error;
   }
@@ -384,14 +350,10 @@ export class ShippingService {
     if (error) throw error;
   }
 
-  // --- Shipping Options Management ---
   async addOption(zoneId: string, option: Partial<ShippingOption>): Promise<void> {
       log('INSERT', 'shipping_options', { zoneId, option });
       const { error } = await supabase.from('shipping_options').insert({
-          zone_id: zoneId,
-          name: option.name,
-          rate: option.rate,
-          description: option.description
+          zone_id: zoneId, name: option.name, rate: option.rate, description: option.description
       } as any);
       if (error) throw error;
   }
@@ -406,28 +368,15 @@ export class ShippingService {
 export class DiscountService {
   async validate(code: string, total: number): Promise<DiscountCode | null> {
     log('RPC', 'validate_discount_code', code);
-    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
     const { data, error } = await (supabase.rpc as any)('validate_discount_code', { code_input: code, order_total: total });
+    if (!error && data) return Mappers.toDiscountCode(data);
     
-    if (!error && data) {
-       return Mappers.toDiscountCode(data);
-    }
-    
-    // Fallback: Client-side validation
-    const { data: codeData, error: tableError } = await supabase
-      .from('discount_codes')
-      .select('*')
-      .eq('code', code)
-      .eq('is_active', true)
-      .single();
-
+    const { data: codeData, error: tableError } = await supabase.from('discount_codes').select('*').eq('code', code).eq('is_active', true).single();
     if (tableError || !codeData) return null;
-
     const now = new Date();
     if ((codeData as any).valid_from && new Date((codeData as any).valid_from) > now) return null;
     if ((codeData as any).valid_until && new Date((codeData as any).valid_until) < now) return null;
     if ((codeData as any).minimum_purchase && total < (codeData as any).minimum_purchase) return null;
-
     return Mappers.toDiscountCode(codeData);
   }
 
@@ -441,16 +390,10 @@ export class DiscountService {
   async create(code: Partial<DiscountCode>): Promise<void> {
     log('INSERT', 'discount_codes', code.code);
     const { error } = await supabase.from('discount_codes').insert({
-      code: code.code,
-      discount_type: code.discountType,
-      discount_value: code.discountValue,
-      description: code.description,
-      minimum_purchase: code.minimumPurchase,
-      // Fix: Use camelCase properties from Partial<DiscountCode> parameter
-      valid_from: code.validFrom || new Date().toISOString(),
-      valid_until: code.validUntil,
-      max_uses: code.maxUses,
-      is_active: true
+      code: code.code, discount_type: code.discountType, discount_value: code.discountValue,
+      description: code.description, minimum_purchase: code.minimumPurchase,
+      valid_from: code.validFrom || new Date().toISOString(), valid_until: code.validUntil,
+      max_uses: code.maxUses, is_active: true
     } as any);
     if (error) throw error;
   }
@@ -458,19 +401,11 @@ export class DiscountService {
   async update(id: string, code: Partial<DiscountCode>): Promise<void> {
     log('UPDATE', 'discount_codes', id);
     const payload: any = {
-      code: code.code,
-      discount_type: code.discountType,
-      discount_value: code.discountValue,
-      description: code.description,
-      minimum_purchase: code.minimumPurchase,
-      valid_until: code.validUntil,
-      max_uses: code.maxUses,
-      is_active: code.isActive
+      code: code.code, discount_type: code.discountType, discount_value: code.discountValue,
+      description: code.description, minimum_purchase: code.minimumPurchase,
+      valid_until: code.validUntil, max_uses: code.maxUses, is_active: code.isActive
     };
-    
-    // Clean payload
     Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
-
     const { error } = await supabase.from('discount_codes').update(payload as any).eq('id', id);
     if (error) throw error;
   }

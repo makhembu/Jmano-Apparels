@@ -21,16 +21,13 @@ export interface PaginatedResult {
 }
 
 export class ProductService {
-  // Legacy method kept for Admin/Home compatibility, but restricted
   async getAll(): Promise<Product[]> {
     log('SELECT', 'products', 'ALL');
-    // Use public client for reading products
     const { data, error } = await supabasePublic.from('products').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }
 
-  // New: Get Top Selling Products (Source of Truth: Products Table)
   async getTopSellers(limit: number = 5): Promise<Product[]> {
     log('SELECT', 'products', `ORDER BY total_sales DESC LIMIT ${limit}`);
     const { data, error } = await supabasePublic
@@ -43,7 +40,6 @@ export class ProductService {
     return ((data || []) as DbProduct[]).map(Mappers.toProduct);
   }
 
-  // Replaced RPC with Supabase-js query builder to ensure all fields (incl. slug) are returned
   async getPaginated(page: number = 1, pageSize: number = 12, filters: ProductFilters = {}): Promise<PaginatedResult> {
     log('SELECT', 'products (paginated)', { page, ...filters });
 
@@ -53,26 +49,17 @@ export class ProductService {
       .from('products')
       .select('*', { count: 'exact' });
 
-    // Filter by published status for public-facing shop
     if (!filters.adminMode) {
       query = query.eq('is_published', true);
     }
     
-    // Apply filters
     if (filters.categoryKey) {
       query = query.eq('category_key', filters.categoryKey);
     }
     if (filters.search) {
       query = query.ilike('title', `%${filters.search}%`);
     }
-    if (filters.minPrice) {
-      query = query.gte('price', filters.minPrice);
-    }
-    if (filters.maxPrice) {
-      query = query.lte('price', filters.maxPrice);
-    }
 
-    // Apply sorting
     const sortMap = {
       'newest': { column: 'created_at', ascending: false },
       'low-high': { column: 'price', ascending: true },
@@ -81,7 +68,6 @@ export class ProductService {
     const sort = sortMap[filters.sortBy || 'newest'];
     query = query.order(sort.column, { ascending: sort.ascending, nullsFirst: false });
 
-    // Apply pagination
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize - 1;
     query = query.range(startIndex, endIndex);
@@ -102,7 +88,6 @@ export class ProductService {
 
   async getById(id: string): Promise<Product | null> {
     log('SELECT', 'products', id);
-    // Use public client
     const { data, error } = await supabasePublic.from('products').select('*').eq('id', id).single();
     if (error) return null;
     return Mappers.toProduct(data as any);
@@ -111,7 +96,6 @@ export class ProductService {
   async create(product: Partial<Product>): Promise<void> {
     log('INSERT', 'products', product);
     const dbProduct = this.prepareDbProduct(product);
-    
     const { error } = await supabase.from('products').insert(dbProduct as any);
     if (error) throw error;
   }
@@ -119,7 +103,6 @@ export class ProductService {
   async update(id: string, product: Partial<Product>): Promise<void> {
     log('UPDATE', 'products', id);
     const dbProduct = this.prepareDbProduct(product);
-    
     const { error } = await supabase.from('products').update(dbProduct as any).eq('id', id);
     if (error) throw error;
   }
@@ -128,6 +111,35 @@ export class ProductService {
     log('DELETE', 'products', id);
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) throw error;
+  }
+
+  async bulkUpdate(ids: string[], updates: Partial<Product>): Promise<void> {
+    log('BULK_UPDATE', 'products', { count: ids.length, updates });
+    for (const id of ids) {
+      await this.update(id, updates);
+    }
+  }
+
+  async bulkDelete(ids: string[]): Promise<void> {
+    log('BULK_DELETE', 'products', { count: ids.length });
+    const { error } = await supabase.from('products').delete().in('id', ids);
+    if (error) throw error;
+  }
+  
+  async getLowStockProducts(limit: number = 5): Promise<Product[]> {
+    log('SELECT', 'products', 'low_stock');
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('stock_quantity', { ascending: true })
+      .limit(20); 
+
+    if (error) throw error;
+
+    return (data || [])
+      .filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 5))
+      .slice(0, limit)
+      .map(Mappers.toProduct);
   }
 
   private prepareDbProduct(product: Partial<Product>) {
@@ -150,8 +162,6 @@ export class ProductService {
       low_stock_threshold: product.lowStockThreshold,
       weight: product.weight,
       is_free_shipping: product.isFreeShipping,
-      
-      // SEO
       seo_title: product.seoTitle,
       seo_description: product.seoDescription,
       canonical_url: product.canonicalUrl,
@@ -165,7 +175,6 @@ export class ProductService {
 export class CategoryService {
   async getAll(): Promise<Category[]> {
     log('SELECT', 'categories');
-    // Use public client
     const { data, error } = await supabasePublic.from('categories').select('*');
     if (error) throw error;
     return ((data || []) as any[]).map(Mappers.toCategory);
@@ -178,7 +187,6 @@ export class CategoryService {
       label: category.label,
       color: category.color,
       bg_class: category.bgColorClass,
-      // SEO (Partial support in creation for now)
       seo_title: category.seoTitle,
       seo_description: category.seoDescription
     } as any);
@@ -207,7 +215,6 @@ export class CategoryService {
 export class ReviewService {
   async getByProduct(productId: string): Promise<ProductReview[]> {
     log('SELECT', 'product_reviews', productId);
-    // Use public client
     const { data, error } = await supabasePublic
       .from('product_reviews')
       .select('*')
@@ -220,7 +227,6 @@ export class ReviewService {
 
   async getRecent(limit: number = 5): Promise<ProductReview[]> {
     log('SELECT', 'product_reviews', `LIMIT ${limit}`);
-    // Use public client
     const { data, error } = await supabasePublic
       .from('product_reviews')
       .select('*')
@@ -241,7 +247,7 @@ export class ReviewService {
       title: review.title,
       comment: review.comment,
       verified_purchase: review.verifiedPurchase,
-      is_approved: true // Default to true for prototype
+      is_approved: true
     } as any);
     if (error) throw error;
   }

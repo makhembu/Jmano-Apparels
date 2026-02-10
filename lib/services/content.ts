@@ -29,9 +29,7 @@ export class BlogService {
   async createCategory(category: Partial<BlogCategory>): Promise<void> {
     log('INSERT', 'blog_categories', category);
     const { error } = await supabase.from('blog_categories').insert({
-      name: category.name,
-      slug: category.slug,
-      description: category.description
+      name: category.name, slug: category.slug, description: category.description
     } as any);
     if (error) throw error;
   }
@@ -62,6 +60,19 @@ export class BlogService {
     if (error) throw error;
   }
 
+  async bulkUpdate(ids: string[], updates: Partial<BlogPost>): Promise<void> {
+    log('BULK_UPDATE', 'blog_posts', { count: ids.length, updates });
+    for (const id of ids) {
+        await this.updatePost(id, updates);
+    }
+  }
+
+  async bulkDelete(ids: string[]): Promise<void> {
+    log('BULK_DELETE', 'blog_posts', { count: ids.length });
+    const { error } = await supabase.from('blog_posts').delete().in('id', ids);
+    if (error) throw error;
+  }
+
   async incrementViewCount(id: string): Promise<void> {
     log('RPC/UPDATE', 'blog_posts', `increment views for ${id}`);
     const { data } = await supabasePublic.from('blog_posts').select('view_count').eq('id', id).single();
@@ -70,26 +81,34 @@ export class BlogService {
     }
   }
 
+  async incrementBlogPostLike(postId: string) {
+    log('RPC', 'blog_posts', 'increment_blog_like');
+    const { data, error } = await (supabase.rpc as any)('increment_blog_like', { post_id_to_inc: postId });
+    if (error) throw error;
+    return data;
+  }
+  
+  async getBlogComments(postId: string): Promise<any[]> {
+    log('SELECT', 'blog_comments', `for post ${postId}`);
+    const { data, error } = await supabase.from('blog_comments').select('*, user:users(name)').eq('post_id', postId).eq('is_approved', true).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as any[];
+  }
+  
+  async addBlogComment(postId: string, userId: string, comment: string): Promise<void> {
+    log('INSERT', 'blog_comments', `for post ${postId}`);
+    const { error } = await (supabase.from('blog_comments') as any).insert({ post_id: postId, user_id: userId, comment: comment });
+    if (error) throw error;
+  }
+
   private prepareDbBlogPost(post: Partial<BlogPost>) {
     return {
-      title: post.title,
-      summary: post.summary,
-      content: post.content,
-      slug: post.slug,
-      status: post.status,
-      featured_image: post.featuredImage,
-      thumbnail: post.thumbnail,
-      author: post.author,
-      reading_time: post.readingTime,
-      category_id: post.categoryId,
-      seo_title: post.seoTitle,
-      seo_description: post.seoDescription,
-      canonical_url: post.canonicalUrl,
-      is_noindex: post.isNoIndex,
-      is_nofollow: post.isNoFollow,
-      keywords: post.keywords,
-      scheduled_for: post.scheduledFor || null,
-      updated_at: new Date().toISOString(),
+      title: post.title, summary: post.summary, content: post.content,
+      slug: post.slug, status: post.status, featured_image: post.featuredImage,
+      thumbnail: post.thumbnail, author: post.author, reading_time: post.readingTime,
+      category_id: post.categoryId, seo_title: post.seoTitle, seo_description: post.seoDescription,
+      canonical_url: post.canonicalUrl, is_noindex: post.isNoIndex, is_nofollow: post.isNoFollow,
+      keywords: post.keywords, scheduled_for: post.scheduledFor || null, updated_at: new Date().toISOString(),
     };
   }
 }
@@ -98,21 +117,10 @@ export class SettingsService {
   async get(): Promise<AppSettings | null> {
     log('FETCH', 'public_settings');
     try {
-      log('RPC_CALL', 'get_public_site_settings');
       const { data, error } = await supabasePublic.rpc('get_public_site_settings');
-      
-      if (error) {
-        console.error("Failed to load public settings via RPC", error);
-        throw error; // Fail loudly
-      }
-
-      if (data) {
-        log('FETCH_SUCCESS', 'get_public_site_settings', 'RPC');
-        return Mappers.toAppSettings(data as DbAppSettings);
-      }
-      
+      if (error) throw error;
+      if (data) return Mappers.toAppSettings(data as DbAppSettings);
       return null;
-
     } catch (e) {
       console.error("Fatal error in SettingsService.get()", e);
       return null;
@@ -132,88 +140,45 @@ export class SettingsService {
     if (error) return null;
     const settings = data as any;
     return {
-      paypalClientId: settings.paypal_client_id,
-      paypalMode: settings.paypal_mode,
-      paymentGatewayEnabled: settings.payment_gateway_enabled,
-      currency: settings.currency
+      paypalClientId: settings.paypal_client_id, paypalMode: settings.paypal_mode,
+      paymentGatewayEnabled: settings.payment_gateway_enabled, currency: settings.currency
     };
   }
 
   async update(id: number, settings: Partial<AppSettings>): Promise<void> {
     log('UPDATE', 'app_settings', { id });
     const dbSettings: any = {
-      slogan: settings.slogan,
-      secondary_slogan: settings.secondarySlogan,
-      logo_image: settings.logoImage,
-      mission: settings.mission,
-      vision: settings.vision,
-      core_values: settings.coreValues,
-      founder_name: settings.founderName,
-      founder_bio: settings.founderBio,
-      founder_image: settings.founderImage,
-      founder_quote: settings.founderQuote,
-      contact_email: settings.contactEmail,
-      contact_phone: settings.contactPhone,
-      contact_address: settings.contactAddress,
-      business_hours: settings.businessHours,
-      social_links: settings.socialLinks,
-      maintenance_mode: settings.maintenanceMode,
-      maintenance_message: settings.maintenanceMessage,
-      hero_banner_text: settings.heroBannerText,
-      hero_banner_image: settings.heroBannerImage,
-      announcement_text: settings.announcementText,
-      is_announcement_enabled: settings.isAnnouncementEnabled,
-      privacy_policy: settings.privacyPolicy,
-      terms_conditions: settings.termsConditions,
-      return_policy: settings.returnPolicy,
-      shipping_policy: settings.shippingPolicy,
-      tax_rate: settings.taxRate,
-      free_shipping_threshold: settings.freeShippingThreshold,
-      require_login_for_checkout: settings.requireLoginForCheckout,
-      featured_categories: settings.featuredCategories,
-      gemini_api_key: settings.geminiApiKey,
-      enable_email_notifications: settings.enableEmailNotifications,
-      enable_email_welcome: settings.enableEmailWelcome,
-      enable_email_new_order: settings.enableEmailNewOrder,
-      enable_email_order_shipped: settings.enableEmailOrderShipped,
-      enable_email_admin_new_order: settings.enableEmailAdminNewOrder,
-      enable_email_contact_admin: settings.enableEmailContactAdmin,
-      enable_newsletter_signup: settings.enableNewsletterSignup,
-      enable_contact_form: settings.enableContactForm,
-      enable_reviews: settings.enableReviews,
-      enable_featured_products: settings.enableFeaturedProducts,
-      enable_commitment_section: settings.enableCommitmentSection,
-      enable_categories_section: settings.enableCategoriesSection,
-      enable_community_section: settings.enableCommunitySection,
-      enable_journal_section: settings.enableJournalSection,
-      enable_social_section: settings.enableSocialSection,
-      seo_title: settings.seoTitle,
-      seo_description: settings.seoDescription,
-      default_og_image: settings.defaultOgImage,
-      google_analytics_id: settings.googleAnalyticsId,
-      custom_head_scripts: settings.customHeadScripts,
-      shop_seo_title: settings.shopSeoTitle,
-      shop_seo_description: settings.shopSeoDescription,
-      blog_seo_title: settings.blogSeoTitle,
-      blog_seo_description: settings.blogSeoDescription,
-      about_seo_title: settings.aboutSeoTitle,
-      about_seo_description: settings.aboutSeoDescription,
-      paypal_client_id: settings.paypalClientId,
-      paypal_secret_key: settings.paypalSecretKey,
-      paypal_mode: settings.paypalMode,
-      payment_gateway_enabled: settings.paymentGatewayEnabled,
-      // Resend Fields
-      resend_api_key: settings.resendApiKey,
-      resend_from_email: settings.resendFromEmail,
-      // Homepage SEO Content
-      seo_content_title: settings.seoContentTitle,
-      seo_content_intro: settings.seoContentIntro,
-      seo_content_col1_title: settings.seoContentCol1Title,
-      seo_content_col1_body: settings.seoContentCol1Body,
-      seo_content_col2_title: settings.seoContentCol2Title,
-      seo_content_col2_body: settings.seoContentCol2Body,
-      social_section_title: settings.socialSectionTitle,
-      social_section_body: settings.socialSectionBody
+      slogan: settings.slogan, secondary_slogan: settings.secondarySlogan, logo_image: settings.logoImage,
+      mission: settings.mission, vision: settings.vision, core_values: settings.coreValues,
+      founder_name: settings.founderName, founder_bio: settings.founderBio, founder_image: settings.founderImage, founder_quote: settings.founderQuote,
+      contact_email: settings.contactEmail, contact_phone: settings.contactPhone, contact_address: settings.contactAddress,
+      business_hours: settings.businessHours, social_links: settings.socialLinks,
+      maintenance_mode: settings.maintenanceMode, maintenance_message: settings.maintenanceMessage,
+      hero_banner_text: settings.heroBannerText, hero_banner_image: settings.heroBannerImage,
+      announcement_text: settings.announcementText, is_announcement_enabled: settings.isAnnouncementEnabled,
+      privacy_policy: settings.privacyPolicy, terms_conditions: settings.termsConditions, return_policy: settings.returnPolicy,
+      shipping_policy: settings.shippingPolicy, tax_rate: settings.taxRate, free_shipping_threshold: settings.freeShippingThreshold,
+      require_login_for_checkout: settings.requireLoginForCheckout, featured_categories: settings.featuredCategories,
+      gemini_api_key: settings.geminiApiKey, enable_email_notifications: settings.enableEmailNotifications,
+      enable_email_welcome: settings.enableEmailWelcome, enable_email_new_order: settings.enableEmailNewOrder,
+      enable_email_order_shipped: settings.enableEmailOrderShipped, enable_email_admin_new_order: settings.enableEmailAdminNewOrder,
+      enable_email_contact_admin: settings.enableEmailContactAdmin, enable_newsletter_signup: settings.enableNewsletterSignup,
+      enable_contact_form: settings.enableContactForm, enable_reviews: settings.enableReviews,
+      enable_featured_products: settings.enableFeaturedProducts, enable_commitment_section: settings.enableCommitmentSection,
+      enable_categories_section: settings.enableCategoriesSection, enable_community_section: settings.enableCommunitySection,
+      enable_journal_section: settings.enableJournalSection, enable_social_section: settings.enableSocialSection,
+      seo_title: settings.seoTitle, seo_description: settings.seoDescription, default_og_image: settings.defaultOgImage,
+      google_analytics_id: settings.googleAnalyticsId, custom_head_scripts: settings.customHeadScripts,
+      shop_seo_title: settings.shopSeoTitle, shop_seo_description: settings.shopSeoDescription,
+      blog_seo_title: settings.blogSeoTitle, blog_seo_description: settings.blogSeoDescription,
+      about_seo_title: settings.aboutSeoTitle, about_seo_description: settings.aboutSeoDescription,
+      paypal_client_id: settings.paypalClientId, paypal_secret_key: settings.paypalSecretKey,
+      paypal_mode: settings.paypalMode, payment_gateway_enabled: settings.paymentGatewayEnabled,
+      resend_api_key: settings.resendApiKey, resend_from_email: settings.resendFromEmail,
+      seo_content_title: settings.seoContentTitle, seo_content_intro: settings.seoContentIntro,
+      seo_content_col1_title: settings.seoContentCol1Title, seo_content_col1_body: settings.seoContentCol1Body,
+      seo_content_col2_title: settings.seoContentCol2Title, seo_content_col2_body: settings.seoContentCol2Body,
+      social_section_title: settings.socialSectionTitle, social_section_body: settings.socialSectionBody
     };
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
     
@@ -233,116 +198,61 @@ export class SettingsService {
     const payload: any = {};
     if (template.subject) payload.subject = template.subject;
     if (template.bodyHtml) payload.body_html = template.bodyHtml;
-    
     const { error } = await supabase.from('email_templates').update(payload as any).eq('id', id);
     if (error) throw error;
   }
   
   async checkEmailHealth(testEmail: string, candidateKey?: string, candidateFrom?: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const payload: any = {
-        to: testEmail,
-        subject: 'Jambo Apparels - Resend Integration Test',
-        htmlBody: '<p>This is a test email to verify your Resend configuration.</p>',
-        testMode: true
-      };
-
-      if (candidateKey) {
-          payload.providerConfig = {
-              apiKey: candidateKey,
-              from: candidateFrom
-          };
-      }
-
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
+      const payload: any = { to: testEmail, subject: 'Jambo Apparels - Resend Integration Test', htmlBody: '<p>This is a test email.</p>', testMode: true };
+      if (candidateKey) payload.providerConfig = { apiKey: candidateKey, from: candidateFrom };
+      const response = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await response.json();
-      
-      if (!response.ok) {
-          return { success: false, message: data.error || 'Provider rejected credentials' };
-      }
-      
+      if (!response.ok) return { success: false, message: data.error || 'Provider rejected credentials' };
       return { success: true };
     } catch (e: any) {
-      return { success: false, message: e.message || 'Unknown error during test' };
+      return { success: false, message: e.message || 'Unknown error' };
     }
   }
 
   async sendTestTemplate(to: string, subject: string, htmlBody: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: to,
-          subject: subject,
-          htmlBody: htmlBody,
-          testMode: false
-        })
-      });
-
+      const response = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject, htmlBody, testMode: false }) });
       const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Server error');
-      if (data && data.success === false) throw new Error(data.error || 'Unknown error');
+      if (!response.ok || data?.success === false) throw new Error(data.error || 'Server error');
       return { success: true };
     } catch (e: any) {
-      console.error("Test email failed", e);
-      return { success: false, message: e.message || 'Unknown error sending test email' };
+      return { success: false, message: e.message || 'Unknown error' };
     }
   }
 
   async sendTransactionalEmail(templateName: string, recipient: string, variables: Record<string, string>): Promise<void> {
     try {
         log('SEND_EMAIL', templateName, recipient);
-        
-        // 1. Fetch Template & Settings
-        const [templates, settings] = await Promise.all([
-            this.getEmailTemplates(),
-            this.get()
-        ]);
-
+        const [templates, settings] = await Promise.all([this.getEmailTemplates(), this.get()]);
         const template = templates.find(t => t.name === templateName);
         if (!template || !settings) {
             console.warn(`[Email] Template '${templateName}' or settings not found.`);
             return;
         }
 
-        // Check if notifications are globally enabled
         if (settings.enableEmailNotifications === false) return;
-
-        // Check specific toggles
         if (templateName === 'welcome_email' && !settings.enableEmailWelcome) return;
         if (templateName === 'new_order_customer' && !settings.enableEmailNewOrder) return;
         if (templateName === 'order_shipped' && !settings.enableEmailOrderShipped) return;
         if (templateName === 'admin_new_order' && !settings.enableEmailAdminNewOrder) return;
         if (templateName === 'contact_notification_admin' && !settings.enableEmailContactAdmin) return;
 
-        // 2. Prepare Variables (Merge with Globals)
-        const allVariables = {
-            ...variables,
-            '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png',
-            '{{shop_url}}': 'https://jamboapparels.com',
-            '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com'
-        };
-
-        // 3. Replace Placeholders
+        const allVariables = { ...variables, '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png', '{{shop_url}}': 'https://jamboapparels.com', '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com' };
         let subject = template.subject;
         let body = template.bodyHtml;
 
         Object.entries(allVariables).forEach(([key, value]) => {
-            const regex = new RegExp(key, 'g');
-            subject = subject.replace(regex, value);
+            subject = subject.replace(new RegExp(key, 'g'), value);
             body = body.split(key).join(value);
         });
 
-        // 4. Send via API
         await this.sendTestTemplate(recipient, subject, body);
-
     } catch (e) {
         console.error(`[Email] Failed to send ${templateName}:`, e);
     }
@@ -354,64 +264,31 @@ export class SupportService {
 
   async subscribeNewsletter(email: string, source: string = 'website'): Promise<void> {
     log('INSERT', 'newsletter_subscribers', email);
-    const { error } = await supabase.from('newsletter_subscribers').upsert({ 
-        email, 
-        source, 
-        subscribed_at: new Date().toISOString(), 
-        is_subscribed: true 
-    } as any, { onConflict: 'email' });
+    const { error } = await supabase.from('newsletter_subscribers').upsert({ email, source, subscribed_at: new Date().toISOString(), is_subscribed: true } as any, { onConflict: 'email' });
     if (error) throw error;
-
-    // Send Welcome Email
-    this.settingsService.sendTransactionalEmail('newsletter_welcome', email, {
-        '{{shop_link}}': 'https://jamboapparels.com/shop'
-    });
+    this.settingsService.sendTransactionalEmail('newsletter_welcome', email, { '{{shop_link}}': 'https://jamboapparels.com/shop' });
   }
 
   async submitContact(data: { name: string, email: string, message: string, subject?: string }): Promise<void> {
     log('INSERT', 'contact_submissions', data.email);
-    const { error } = await supabase.from('contact_submissions').insert({
-        name: data.name,
-        email: data.email,
-        message: data.message,
-        subject: data.subject
-    } as any);
+    const { error } = await supabase.from('contact_submissions').insert({ ...data } as any);
     if (error) throw error;
 
-    // 1. Send Admin Notification
     const adminSettings = await this.settingsService.get();
-    if (adminSettings?.contactEmail) {
-        this.settingsService.sendTransactionalEmail('contact_notification_admin', adminSettings.contactEmail, {
-            '{{sender_name}}': data.name,
-            '{{sender_email}}': data.email,
-            '{{subject}}': data.subject || 'New Inquiry',
-            '{{message}}': data.message
-        });
-    }
-
-    // 2. Send User Auto-reply
-    this.settingsService.sendTransactionalEmail('contact_autoreply', data.email, {
-        '{{sender_name}}': data.name,
-        '{{subject}}': data.subject || 'Inquiry'
-    });
+    if (adminSettings?.contactEmail) this.settingsService.sendTransactionalEmail('contact_notification_admin', adminSettings.contactEmail, { '{{sender_name}}': data.name, '{{sender_email}}': data.email, '{{subject}}': data.subject || 'New Inquiry', '{{message}}': data.message });
+    this.settingsService.sendTransactionalEmail('contact_autoreply', data.email, { '{{sender_name}}': data.name, '{{subject}}': data.subject || 'Inquiry' });
   }
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
     log('SELECT', 'newsletter_subscribers');
-    const { data, error } = await supabase
-        .from('newsletter_subscribers')
-        .select('*')
-        .order('subscribed_at', { ascending: false });
+    const { data, error } = await supabase.from('newsletter_subscribers').select('*').order('subscribed_at', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbNewsletterSubscriber[]).map(Mappers.toNewsletterSubscriber);
   }
 
   async getContactSubmissions(): Promise<ContactSubmission[]> {
     log('SELECT', 'contact_submissions');
-    const { data, error } = await supabase
-        .from('contact_submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('contact_submissions').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return ((data || []) as DbContactSubmission[]).map(Mappers.toContactSubmission);
   }
