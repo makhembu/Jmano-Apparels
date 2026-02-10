@@ -22,6 +22,7 @@ interface ProductSettingsTabProps {
     onArrayUpdate: (field: 'sizes' | 'colors' | 'tags' | 'keywords', value: string[]) => void;
     onImageUpload: (file: File) => void;
     onImageUrlsUpdate: (urls: string[]) => void;
+    onImageEdit: (blob: Blob, index: number) => void;
     onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -41,6 +42,7 @@ export const ProductSettingsTab: React.FC<ProductSettingsTabProps> = (props) => 
                         isUploading={props.isUploading}
                         onUpload={props.onImageUpload}
                         onUpdateUrls={props.onImageUrlsUpdate}
+                        onEditSave={props.onImageEdit}
                     />
                     <CommerceDataForm
                         formData={props.formData}

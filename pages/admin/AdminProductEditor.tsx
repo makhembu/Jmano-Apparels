@@ -21,6 +21,7 @@ export const AdminProductEditor: React.FC = () => {
         handleArrayUpdate,
         handleImageUpload,
         handleImageUrlsUpdate,
+        handleImageEdit,
         handleSubmit
     } = useProductEditor();
 
@@ -53,6 +54,7 @@ export const AdminProductEditor: React.FC = () => {
                         onArrayUpdate={handleArrayUpdate}
                         onImageUpload={handleImageUpload}
                         onImageUrlsUpdate={handleImageUrlsUpdate}
+                        onImageEdit={handleImageEdit}
                         onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
                     />
                 )}

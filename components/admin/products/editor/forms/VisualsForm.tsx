@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { ImageEditorModal } from '../ImageEditorModal';
 
 interface VisualsFormProps {
     images: string[];
     isUploading: boolean;
     onUpload: (file: File) => void;
     onUpdateUrls: (urls: string[]) => void;
+    onEditSave: (blob: Blob, index: number) => void;
 }
 
-export const VisualsForm: React.FC<VisualsFormProps> = ({ images, isUploading, onUpload, onUpdateUrls }) => {
+export const VisualsForm: React.FC<VisualsFormProps> = ({ images, isUploading, onUpload, onUpdateUrls, onEditSave }) => {
     const [newImageUrl, setNewImageUrl] = useState('');
+    const [editingImage, setEditingImage] = useState<{ src: string, index: number } | null>(null);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -27,6 +30,16 @@ export const VisualsForm: React.FC<VisualsFormProps> = ({ images, isUploading, o
 
     return (
         <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-6 md:p-8 border border-slate-200">
+            {editingImage && (
+                <ImageEditorModal
+                    src={editingImage.src}
+                    onClose={() => setEditingImage(null)}
+                    onSave={(blob) => {
+                        onEditSave(blob, editingImage.index);
+                        setEditingImage(null);
+                    }}
+                />
+            )}
             <div className="flex justify-between items-center border-b border-slate-50 pb-4 mb-6">
                 <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Visual Gallery</h2>
                 <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-1 rounded">Max 5MB per image</span>
@@ -37,9 +50,14 @@ export const VisualsForm: React.FC<VisualsFormProps> = ({ images, isUploading, o
                         {images.map((img, idx) => (
                             <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
                                 <img src={img} alt={`Product ${idx}`} className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <button type="button" onClick={() => setEditingImage({ src: img, index: idx })} className="bg-white/20 text-white p-2 rounded-full hover:bg-white/30" title="Edit Image">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    </button>
+                                    <button type="button" onClick={() => removeImage(idx)} className="bg-red-500/80 text-white p-2 rounded-full hover:bg-red-500" title="Remove Image">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
                                 {idx === 0 && <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] font-bold text-center py-1">PRIMARY</div>}
                             </div>
                         ))}

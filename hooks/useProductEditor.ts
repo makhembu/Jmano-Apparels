@@ -99,6 +99,27 @@ export const useProductEditor = () => {
         setFormData(prev => ({ ...prev, images: urls }));
     }, []);
 
+    const handleImageEdit = useCallback(async (blob: Blob, index: number) => {
+        if (!formData.images || formData.images[index] === undefined) return;
+        
+        const originalFileName = formData.images[index].split('/').pop()?.split('?')[0] || `edited-${Date.now()}.jpg`;
+        const file = new File([blob], originalFileName, { type: blob.type });
+
+        setIsUploading(true);
+        try {
+            const newUrl = await api.uploadImage(file);
+            const newImages = [...(formData.images || [])];
+            newImages[index] = newUrl;
+            setFormData(prev => ({ ...prev, images: newImages }));
+            showToast('Image updated successfully', 'success');
+            // TODO: Consider deleting old image from storage
+        } catch (error: any) {
+            showToast(error.message || 'Failed to save edited image', 'error');
+        } finally {
+            setIsUploading(false);
+        }
+    }, [formData.images, showToast]);
+
     const handleSubmit = useCallback(async () => {
         if (!formData.title || !formData.categoryKey) {
             showToast('Title and Category are required', 'error');
@@ -132,6 +153,7 @@ export const useProductEditor = () => {
         handleArrayUpdate,
         handleImageUpload,
         handleImageUrlsUpdate,
+        handleImageEdit,
         handleSubmit
     };
 };
