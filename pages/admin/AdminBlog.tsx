@@ -112,7 +112,7 @@ export const AdminBlog: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold font-serif text-brand-dark">Blog Management</h1>
         <div className="flex gap-2">
-            <Link to="/admin/blog/new">
+            <Link to="/admin/blog/new" data-copilot-id="btn-new-post">
                 <Button variant="primary" className="shadow-lg shadow-brand-green/20">+ Write New Post</Button>
             </Link>
         </div>

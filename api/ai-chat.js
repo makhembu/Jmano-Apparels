@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
 
@@ -78,7 +77,6 @@ export default async function handler(req, res) {
     // 1. Get API Key (Env or DB)
     let apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 
-    // Fallback: Fetch from DB if not in Env (for Admins)
     if (!apiKey) {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -95,17 +93,14 @@ export default async function handler(req, res) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    // Use gemini-2.0-flash as it is the most reliable model for this use case
-    const model = 'gemini-2.0-flash'; 
+    const model = 'gemini-3-flash-preview';
 
     // 2. Prepare History for SDK
-    // Convert generic history array to Gemini Content format
     const contents = (history || []).map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
         parts: [{ text: msg.content }]
     }));
     
-    // Add current message
     contents.push({ role: 'user', parts: [{ text: message }] });
 
     // 3. Generate Content (One-shot with history context)
@@ -118,8 +113,6 @@ export default async function handler(req, res) {
         }
     });
 
-    // Extract Function Calls and Text using Properties (Getters)
-    // IMPORTANT: .functionCalls and .text are getters, NOT methods in @google/genai SDK
     const functionCalls = response.functionCalls; 
     const text = response.text;
 

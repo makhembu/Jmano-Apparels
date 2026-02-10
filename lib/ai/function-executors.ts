@@ -71,14 +71,12 @@ export function createFunctionExecutors(context: ExecutionContext) {
 
     getDashboardStats: async () => {
         try {
-            const orders = await api.getAllOrders();
-            const revenue = orders
-                .filter(o => !['Cancelled', 'Refunded'].includes(o.status))
-                .reduce((acc, curr) => acc + (curr.total || 0), 0);
-            
+            const stats = await api.getAdminDashboardStats();
             return {
-                totalRevenue: `£${revenue.toFixed(2)}`,
-                orderCount: orders.length,
+                totalRevenue: `£${stats.revenue.toFixed(2)}`,
+                orderCount: stats.orders,
+                customerCount: stats.users,
+                pendingOrders: stats.pending_orders,
             };
         } catch (e: any) {
             return { error: e.message };
@@ -105,18 +103,16 @@ export function createFunctionExecutors(context: ExecutionContext) {
       const { elementId, duration = 5000 } = args;
       
       const findElement = (): HTMLElement | null => {
-          // Check standard ID first
           let el = document.getElementById(elementId);
-          // Fallback: Check if AI sent a name that matches our common button patterns
           if (!el) el = document.querySelector(`[data-copilot-id="${elementId}"]`);
           return el;
       };
       
       let element = findElement();
       
-      // Increased polling: Try up to 20 times (approx 5 seconds)
+      // Polling mechanism to wait for element after navigation
       if (!element) {
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < 20; i++) { // Try for 5 seconds
               await new Promise(r => setTimeout(r, 250));
               element = findElement();
               if (element) break;
@@ -128,12 +124,10 @@ export function createFunctionExecutors(context: ExecutionContext) {
         error: `Target "${elementId}" not found. You might need to navigate to the specific page first.` 
       };
 
-      // Ensure visibility
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       
-      // Clear previous if still running
       element.classList.remove(HIGHLIGHT_CLASS);
-      void element.offsetWidth; // Trigger reflow
+      void element.offsetWidth; 
       element.classList.add(HIGHLIGHT_CLASS);
 
       setTimeout(() => {

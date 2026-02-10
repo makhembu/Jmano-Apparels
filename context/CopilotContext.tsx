@@ -20,7 +20,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const navigate = useNavigate();
   const { settings, loading: settingsLoading } = useShop();
   
-  // Store the key retrieved from DB
   const [dbApiKey, setDbApiKey] = useState<string | undefined>(undefined);
 
   const [pageContext, setPageContext] = useState<PageContext>({
@@ -35,7 +34,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPageContext(prev => ({ ...prev, pageData: data }));
   }, []);
 
-  // Update context on route change
   useEffect(() => {
     const path = location.pathname;
     let name = 'Dashboard';
@@ -44,6 +42,11 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     else if (path.includes('/app-settings')) name = 'App Settings';
     else if (path.includes('/shop-settings')) name = 'Shop Settings';
     else if (path.includes('/analytics')) name = 'Analytics';
+    else if (path.includes('/users')) name = 'Users';
+    else if (path.includes('/blog')) name = 'Blog';
+    else if (path.includes('/newsletter')) name = 'Newsletter';
+    else if (path.includes('/contact')) name = 'Contact';
+    else if (path.includes('/profile')) name = 'My Profile';
 
     setPageContext(prev => ({
         ...prev,
@@ -53,7 +56,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
-  // Securely fetch Admin settings (with secrets) on mount
   useEffect(() => {
     const fetchSecureSettings = async () => {
       try {
@@ -62,23 +64,21 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setDbApiKey(adminSettings.geminiApiKey);
         }
       } catch (e) {
-        console.warn("Copilot: Could not fetch secure settings (User might not be admin).");
+        console.warn("Copilot: Could not fetch secure settings.");
       }
     };
     fetchSecureSettings();
   }, []);
 
-  // Helper: Convert internal messages state to Gemini SDK Content format for history preservation
   const getHistory = (): Content[] => {
     return messages
-        .filter(m => !m.isError) // Skip error messages
+        .filter(m => !m.isError)
         .map(m => ({
             role: m.role === 'model' ? 'model' : 'user',
             parts: [{ text: m.content }]
         }));
   };
 
-  // Helper: Initialize or Re-initialize Chat
   const initChat = (modelToUse: string, history: Content[] = []) => {
     const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
     if (geminiClient.isAvailable(apiKey)) {
@@ -87,7 +87,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Initial Chat Session
   useEffect(() => {
     if (settingsLoading) return;
     if (!chatSession.current) {
@@ -95,7 +94,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, dbApiKey]); 
 
-  // If model changes manually, recreate session with history
   useEffect(() => {
       if (chatSession.current) {
           const history = getHistory();
@@ -108,7 +106,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendMessage = useCallback(async (content: string) => {
     const apiKey = dbApiKey || settings.geminiApiKey || process.env.API_KEY;
     
-    // Ensure session exists
     if (!chatSession.current) {
       if (geminiClient.isAvailable(apiKey)) {
         initChat(currentModel);
@@ -126,7 +123,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     if (!chatSession.current || !content.trim()) return;
 
-    // Add user message to UI
     const userMsg: Message = { 
         id: Date.now().toString(), 
         role: 'user', 
@@ -136,13 +132,10 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Recursive helper to handle retries/fallbacks
-    const attemptSend = async (model: string, retryCount = 0): Promise<string> => {
+    const attemptSend = async (model: string): Promise<string> => {
         try {
-            // Ensure session matches model (for retry recursion)
             if (model !== currentModel) {
                 const history = getHistory();
-                // Add current user message to history manually since state update is async
                 history.push({ role: 'user', parts: [{ text: content }] }); 
                 initChat(model, history);
                 setCurrentModel(model);
@@ -171,17 +164,13 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         } catch (e: any) {
             console.error(`Attempt failed with ${model}:`, e);
-            
-            const isQuotaError = e.status === 429 || 
-                                 e.message?.includes('429') || 
-                                 e.message?.includes('RESOURCE_EXHAUSTED') ||
-                                 e.status === 'RESOURCE_EXHAUSTED';
+            const isQuotaError = e.status === 429 || e.message?.includes('429') || e.message?.includes('RESOURCE_EXHAUSTED') || e.status === 'RESOURCE_EXHAUSTED';
 
             if (isQuotaError) {
                 const fallback = geminiClient.getFallbackModel(model);
                 if (fallback) {
                     console.log(`Quota exceeded on ${model}. Switching to fallback: ${fallback}`);
-                    return attemptSend(fallback, retryCount + 1);
+                    return attemptSend(fallback);
                 } else {
                     throw new Error("All available models are currently overloaded. Please try again later.");
                 }
@@ -216,7 +205,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const clearHistory = () => {
       setMessages([]);
-      initChat(currentModel, []); // Reset with empty history
+      initChat(currentModel, []);
   };
 
   const setModel = (model: string) => {

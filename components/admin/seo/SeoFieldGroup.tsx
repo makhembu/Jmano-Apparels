@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { SeoConfig } from '../../../types';
 import { GoogleGenAI } from "@google/genai";
-import { Button } from '../../ui/Button';
 import { useToast } from '../../../context/ToastContext';
 
 interface SeoFieldGroupProps {
@@ -55,7 +53,7 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
     setGenerating(field);
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const modelName = 'gemini-2.5-flash'; // Updated from gemini-3-flash-preview to resolve quota issues
+        const modelName = 'gemini-3-flash-preview';
         
         let prompt = "";
         if (field === 'title') {

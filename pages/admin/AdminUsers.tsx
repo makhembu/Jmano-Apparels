@@ -229,8 +229,13 @@ export const AdminUsers: React.FC = () => {
                             />
                             {loading ? <LoadingSpinner /> : (
                                 <div className="space-y-2 max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
-                                    {users.map(user => (
-                                        <button key={user.id} onClick={() => setSelectedUserId(user.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${selectedUserId === user.id ? 'bg-brand-light' : 'hover:bg-slate-50'}`}>
+                                    {users.map((user, index) => (
+                                        <button 
+                                            key={user.id} 
+                                            onClick={() => setSelectedUserId(user.id)} 
+                                            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${selectedUserId === user.id ? 'bg-brand-light' : 'hover:bg-slate-50'}`}
+                                            data-copilot-id={index === 0 ? 'user-list-top-row' : undefined}
+                                        >
                                             <div className="h-9 w-9 rounded-full bg-brand-dark text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
                                                 {user.name.charAt(0).toUpperCase()}
                                             </div>
@@ -258,7 +263,7 @@ export const AdminUsers: React.FC = () => {
                         />
                     ) : (
                         <div className="text-center py-24 px-8 bg-white rounded-xl border-2 border-dashed border-slate-200 h-full flex flex-col justify-center items-center">
-                            <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             <h3 className="text-lg font-serif font-bold text-slate-700">Select a Customer</h3>
                             <p className="text-sm text-slate-400 mt-1">Choose a user from the list to view their details.</p>
                         </div>

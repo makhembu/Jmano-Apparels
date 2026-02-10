@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/db';
@@ -147,7 +146,7 @@ export const AdminProfile: React.FC = () => {
             </div>
 
             <div className="pt-2">
-               <Button type="submit" isLoading={loading} className="w-full">Update Profile</Button>
+               <Button type="submit" isLoading={loading} className="w-full" data-copilot-id="btn-update-profile">Update Profile</Button>
             </div>
           </form>
         </div>
@@ -188,7 +187,7 @@ export const AdminProfile: React.FC = () => {
               />
             </div>
             <div className="pt-2">
-               <Button type="submit" variant="secondary" isLoading={passLoading} className="w-full">Change Password</Button>
+               <Button type="submit" variant="secondary" isLoading={passLoading} className="w-full" data-copilot-id="btn-update-password">Change Password</Button>
             </div>
           </form>
         </div>

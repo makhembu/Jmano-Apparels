@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../../lib/db';
 import { AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat } from '../../types';
@@ -141,7 +140,9 @@ export const AdminAnalytics: React.FC = () => {
         </div>
       </div>
 
-      <LiveMonitor />
+      <div data-copilot-id="live-traffic-card">
+         <LiveMonitor />
+      </div>
 
       <KPIGrid overview={overview} />
 

@@ -48,7 +48,8 @@ export class ProductService {
     log('RPC', 'get_products_paginated', { page, ...filters });
     
     // Use public client for RPC
-    const { data, error } = await supabasePublic.rpc('get_products_paginated', {
+    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
+    const { data, error } = await (supabasePublic.rpc as any)('get_products_paginated', {
       p_page: page,
       p_page_size: pageSize,
       p_category_key: filters.categoryKey || null,

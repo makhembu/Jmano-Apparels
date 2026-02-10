@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -180,7 +179,7 @@ export const AdminOrderNew: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           
           {/* 1. Customer Selection */}
-          <div id="section-customer-info" className="bg-white shadow rounded-lg p-6 border border-gray-200">
+          <div data-copilot-id="section-customer-info" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4 flex justify-between items-center">
               Customer
               {!isNewUser && !selectedUser && (
@@ -264,7 +263,7 @@ export const AdminOrderNew: React.FC = () => {
           </div>
 
           {/* 2. Order Items */}
-          <div id="section-order-items" className="bg-white shadow rounded-lg p-6 border border-gray-200">
+          <div data-copilot-id="section-order-items" className="bg-white shadow rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-bold mb-4">Items</h2>
             
             {/* Add Item Form */}
@@ -399,7 +398,7 @@ export const AdminOrderNew: React.FC = () => {
                 <span>£{items.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}</span>
              </div>
              <p className="text-xs text-gray-500 mb-4">Shipping & Tax calculated upon creation.</p>
-             <div id="btn-create-order">
+             <div data-copilot-id="btn-create-order">
                 <Button fullWidth onClick={handleSubmit} isLoading={processing}>Create Order</Button>
              </div>
           </div>

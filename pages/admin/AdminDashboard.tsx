@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -65,8 +64,8 @@ export const AdminDashboard: React.FC = () => {
 
   if (loading) return <LoadingSpinner />;
 
-  const StatCard = ({ title, value, subtext, icon, colorClass }: any) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between">
+  const StatCard = ({ title, value, subtext, icon, colorClass, copilotId }: any) => (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between" data-copilot-id={copilotId}>
       <div>
         <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
         <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
@@ -86,7 +85,7 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-sm text-gray-500">Overview of your shop's performance</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-           <div id="btn-refresh-data">
+           <div data-copilot-id="btn-refresh-data">
              <Button onClick={handleRefresh} isLoading={refreshing} variant="outline" size="sm">
                 Refresh Data
              </Button>
@@ -107,7 +106,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          id="card-kpi-revenue"
+          copilotId="card-kpi-revenue"
           title="Total Revenue" 
           value={`£${(stats?.revenue || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`} 
           subtext="Lifetime sales"
@@ -115,7 +114,7 @@ export const AdminDashboard: React.FC = () => {
           icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <StatCard 
-          id="card-kpi-orders"
+          copilotId="card-kpi-orders"
           title="Orders" 
           value={stats?.orders || 0} 
           subtext={`${stats?.pending_orders || 0} pending processing`}
@@ -164,7 +163,13 @@ export const AdminDashboard: React.FC = () => {
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis tick={{fontSize: 10, fill: '#94a3b8'}} axisLine={false} tickLine={false} prefix="£" />
+                  {/* FIX: Replaced unsupported 'prefix' prop with 'tickFormatter' to correctly format Y-axis labels. */}
+                  <YAxis 
+                    tick={{fontSize: 10, fill: '#94a3b8'}} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tickFormatter={(value) => `£${value}`}
+                  />
                   <Tooltip 
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                     labelStyle={{fontSize: '12px', fontWeight: 'bold', color: '#334155'}}

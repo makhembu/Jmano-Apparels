@@ -17,10 +17,18 @@ export function generateSystemPrompt(context: PageContext): string {
 
 ## Dashboard Architecture Knowledge
 - **Global Overview**: \`/admin\`
+- **Analytics**: \`/admin/analytics\`
 - **Orders Registry**: \`/admin/orders\` (General list)
 - **Order Details**: \`/admin/orders/[ORDER_ID]\` (Has PRINT INVOICE button, Tracking, and Status controls)
+- **Create Order**: \`/admin/orders/new\`
 - **Products Catalog**: \`/admin/products\`
 - **Product Editor**: \`/admin/products/[PRODUCT_ID]\` (Has Stock management)
+- **Users**: \`/admin/users\`
+- **Blog Management**: \`/admin/blog\`
+- **Newsletter**: \`/admin/newsletter\`
+- **App Settings**: \`/admin/app-settings\` (with tabs: brand, seo, payments, emails, contact, content, system)
+- **Shop Settings**: \`/admin/shop-settings\` (with tabs: general, categories, shipping, discounts)
+- **My Profile**: \`/admin/profile\`
 
 ## Element IDs
 ${JSON.stringify(ELEMENT_ID_MAP, null, 2)}

@@ -1,9 +1,8 @@
-
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
   ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ShippingOption
+  UserAddress, EmailTemplate, AnalyticsOverview, DailyAnalytics, ProductPerformance, TrafficSource, GeoStat, PageStat, LiveVisitor, ShippingOption, DbOrder, OrderItem
 } from '../types';
 
 import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
@@ -308,7 +307,6 @@ export const api = {
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
   updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
-  // FIX: Changed settingsService.sendTestEmail to settingsService.sendTestTemplate
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
   sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
@@ -428,25 +426,98 @@ export const api = {
   },
   
   getAdminProductStats: async (productId: string) => {
-    const { data, error } = await (supabase.rpc as any)('get_product_sales_stats', { p_product_id: productId });
+    // Client-side implementation as RPC function 'get_product_sales_stats' is missing or failing.
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('products, total, customer_name, customer_email, order_number, date, status, id, user_id, created_at, subtotal, discount_amount, shipping_cost')
+      .contains('products', [{ productId: productId }] as any)
+      .in('payment_status', ['paid'])
+      .not('status', 'in', '("Cancelled", "Refunded")');
+
     if (error) throw error;
-    const rpcData = data as any;
+
+    let revenue = 0;
+    let unitsSold = 0;
+    
+    (orders || []).forEach(order => {
+        const itemsForThisProduct = ((order.products as any) || []).filter((p: any) => p.productId === productId);
+        const quantityInOrder = itemsForThisProduct.reduce((sum: number, item: any) => sum + item.quantity, 0);
+        const pricePerItem = itemsForThisProduct[0]?.price || 0;
+        
+        // Apportion revenue based on the product's value relative to the order's item subtotal
+        const orderItemSubtotal = ((order.products as any) || []).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+        const productValueInOrder = quantityInOrder * pricePerItem;
+        
+        const subtotalAfterDiscount = (order.subtotal || orderItemSubtotal) - (order.discount_amount || 0);
+
+        if (orderItemSubtotal > 0) {
+            const proportionOfOrder = productValueInOrder / orderItemSubtotal;
+            // Attribute proportion of subtotal after discount, plus proportion of shipping
+            const attributedRevenue = (subtotalAfterDiscount * proportionOfOrder) + ((order.shipping_cost || 0) * proportionOfOrder);
+            revenue += attributedRevenue;
+        }
+
+        unitsSold += quantityInOrder;
+    });
+
     const stats = {
-        revenue: rpcData.stats.revenue || 0,
-        unitsSold: rpcData.stats.unitsSold || 0,
-        orderCount: rpcData.stats.orderCount || 0
+        revenue,
+        unitsSold,
+        orderCount: (orders || []).length
     };
-    const recentOrders = (rpcData.recentOrders || []).map(Mappers.toOrder);
+    
+    const recentOrders = (orders || [])
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5)
+        .map(o => Mappers.toOrder(o as DbOrder));
+
     return { stats, recentOrders };
   },
 
   getDailyAnalytics: async (days: number): Promise<DailyAnalytics[]> => {
-    const { data, error } = await (supabase.rpc as any)('get_daily_analytics', { days_lookback: days });
+    // Client-side implementation due to RPC error.
+    // WARNING: This is inefficient and may be slow with large datasets.
+    console.warn("Using client-side analytics aggregation due to RPC failure. Performance may be impacted.");
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data: events, error } = await supabase
+        .from('analytics_events')
+        .select('created_at, event_type, session_id, metadata')
+        .in('event_type', ['page_view', 'purchase'])
+        .gte('created_at', startDate.toISOString());
+    
     if (error) {
         console.error("Analytics Error", error);
         return [];
     }
-    return data as unknown as DailyAnalytics[];
+    if (!events) return [];
+
+    const groupedByDate: Record<string, any[]> = events.reduce((acc, event) => {
+        const date = event.created_at.split('T')[0];
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(event);
+        return acc;
+    }, {});
+    
+    const dailyStats: DailyAnalytics[] = Object.entries(groupedByDate).map(([date, dayEvents]) => {
+        const pageViews = dayEvents.filter(e => e.event_type === 'page_view');
+        const purchases = dayEvents.filter(e => e.event_type === 'purchase');
+
+        const visitors = new Set(pageViews.map(e => e.session_id)).size;
+        const revenue = purchases.reduce((sum, e) => sum + (e.metadata?.total || 0), 0);
+
+        return {
+            date,
+            visitors,
+            pageviews: pageViews.length,
+            orders: purchases.length,
+            revenue,
+        };
+    });
+
+    return dailyStats.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   },
 
   getProductAnalytics: async (days: number = 30): Promise<ProductPerformance[]> => {

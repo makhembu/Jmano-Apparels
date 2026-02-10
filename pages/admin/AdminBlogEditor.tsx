@@ -242,6 +242,7 @@ export const AdminBlogEditor: React.FC = () => {
               Schedule
             </Button>
             <Button
+              data-copilot-id="btn-publish-post"
               type="submit"
               form="blog-form"
               onClick={() => submitActionRef.current = 'publish'}

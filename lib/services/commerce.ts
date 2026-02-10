@@ -1,4 +1,3 @@
-
 import { supabase } from '../supabaseClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
@@ -76,7 +75,8 @@ export class OrderService {
         image: item.image
     }));
 
-    const { data, error } = await supabase.rpc('create_order_secure', {
+    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
+    const { data, error } = await (supabase.rpc as any)('create_order_secure', {
       p_user_id: targetUserId || null, // Use the new ID if created/found
       p_customer_email: order.customerEmail || null,
       p_customer_name: order.customerName || null,
@@ -316,18 +316,40 @@ export class CartService {
 
 export class ShippingService {
   async getZones(): Promise<ShippingZone[]> {
-    log('SELECT', 'shipping_zones');
-    // We join options so the frontend gets nested data
-    const { data, error } = await supabase
+    log('SELECT', 'shipping_zones & shipping_options');
+
+    const { data: zonesData, error: zonesError } = await supabase
         .from('shipping_zones')
-        .select(`
-            *,
-            options:shipping_options(*)
-        `)
+        .select('*')
         .eq('is_active', true);
-        
-    if (error) throw error;
-    return ((data || []) as any[]).map(Mappers.toShippingZone);
+    if (zonesError) throw zonesError;
+
+    const { data: optionsData, error: optionsError } = await supabase
+        .from('shipping_options')
+        .select('*');
+    if (optionsError) throw optionsError;
+
+    const zones = (zonesData || []).map(z => Mappers.toShippingZone(z));
+    
+    const optionsByZone = (optionsData || []).reduce((acc, option) => {
+        const zoneId = (option as any).zone_id;
+        if (!acc[zoneId]) {
+            acc[zoneId] = [];
+        }
+        acc[zoneId].push({
+            id: (option as any).id,
+            name: (option as any).name,
+            rate: (option as any).rate,
+            description: (option as any).description
+        });
+        return acc;
+    }, {} as Record<string, ShippingOption[]>);
+
+    zones.forEach(zone => {
+        zone.options = optionsByZone[zone.id] || [];
+    });
+
+    return zones;
   }
 
   async createZone(zone: Partial<ShippingZone>): Promise<ShippingZone> {
@@ -384,7 +406,8 @@ export class ShippingService {
 export class DiscountService {
   async validate(code: string, total: number): Promise<DiscountCode | null> {
     log('RPC', 'validate_discount_code', code);
-    const { data, error } = await supabase.rpc('validate_discount_code', { code_input: code, order_total: total });
+    // FIX: Cast RPC call to 'any' to resolve TypeScript error with inferred 'never' type for arguments.
+    const { data, error } = await (supabase.rpc as any)('validate_discount_code', { code_input: code, order_total: total });
     
     if (!error && data) {
        return Mappers.toDiscountCode(data);

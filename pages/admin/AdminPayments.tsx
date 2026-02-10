@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -122,6 +121,7 @@ export const AdminPayments: React.FC = () => {
               {['ALL', 'PAID', 'PENDING', 'REFUNDED'].map(status => (
                  <button
                     key={status}
+                    data-copilot-id={`btn-filter-${status.toLowerCase()}`}
                     onClick={() => handleFilterChange(status)}
                     className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all whitespace-nowrap ${filterStatus === status ? 'bg-brand-dark text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
                  >

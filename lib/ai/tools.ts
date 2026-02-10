@@ -65,9 +65,13 @@ export const functionDeclarations: FunctionDeclaration[] = [
             'btn-refresh-data',
             'btn-print-invoice',
             'btn-save-settings',
+            'btn-publish-post',
+            'btn-update-profile',
+            'btn-update-password',
             'input-tracking-number',
             'select-order-status',
             'card-kpi-revenue',
+            'card-kpi-orders',
             'user-list-top-row',
             'section-change-password',
             'input-new-password',
@@ -78,7 +82,15 @@ export const functionDeclarations: FunctionDeclaration[] = [
             'tab-contact',
             'tab-content',
             'tab-system',
-            'live-traffic-card'
+            'live-traffic-card',
+            'btn-new-product',
+            'btn-new-post',
+            'btn-export-subscribers',
+            'section-customer-info',
+            'section-order-items',
+            'btn-test-config',
+            'btn-filter-paid',
+            'btn-filter-pending'
           ]
         }
       },
@@ -92,8 +104,11 @@ export const ELEMENT_ID_MAP = {
   'New Password Input': 'input-new-password',
   'Save Button': 'btn-save-settings',
   'Revenue Card': 'card-kpi-revenue',
+  'Orders Card': 'card-kpi-orders',
   'Brand Tab': 'tab-brand',
   'SEO Tab': 'tab-seo',
   'Payments Tab': 'tab-payments',
-  'Live Traffic': 'live-traffic-card'
+  'Live Traffic': 'live-traffic-card',
+  'Paid Filter': 'btn-filter-paid',
+  'Pending Filter': 'btn-filter-pending'
 } as const;

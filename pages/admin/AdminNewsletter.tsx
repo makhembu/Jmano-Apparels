@@ -63,7 +63,7 @@ export const AdminNewsletter: React.FC = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold font-serif">Newsletter Subscribers</h1>
-        <Button onClick={handleExport} variant="outline">Export CSV</Button>
+        <Button onClick={handleExport} variant="outline" data-copilot-id="btn-export-subscribers">Export CSV</Button>
       </div>
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg overflow-x-auto">

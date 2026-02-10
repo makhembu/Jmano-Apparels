@@ -176,7 +176,8 @@ export const Checkout: React.FC = () => {
     const result = checkoutSchema.safeParse(validationData);
 
     if (!result.success) {
-        const firstError = result.error.errors[0];
+        // FIX: Zod validation errors are in the 'issues' property, not 'errors'.
+        const firstError = result.error.issues[0];
         showToast(firstError.message, 'error');
         return false;
     }
