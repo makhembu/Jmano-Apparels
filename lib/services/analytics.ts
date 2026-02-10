@@ -39,7 +39,7 @@ export class AnalyticsService {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('products, total, customer_name, customer_email, order_number, date, status, id, user_id, subtotal, discount_amount, shipping_cost')
-      .contains('products', JSON.stringify([{ productId: productId }]))
+      .contains('products', JSON.stringify([{ product_id: productId }]))
       .in('payment_status', ['paid'])
       .not('status', 'in', '("Cancelled", "Refunded")');
 
@@ -49,7 +49,7 @@ export class AnalyticsService {
     let unitsSold = 0;
     
     (orders || []).forEach(order => {
-        const itemsForThisProduct = ((order.products as any) || []).filter((p: any) => p.productId === productId);
+        const itemsForThisProduct = ((order.products as any) || []).filter((p: any) => p.product_id === productId);
         const quantityInOrder = itemsForThisProduct.reduce((sum: number, item: any) => sum + item.quantity, 0);
         const pricePerItem = itemsForThisProduct[0]?.price || 0;
         
