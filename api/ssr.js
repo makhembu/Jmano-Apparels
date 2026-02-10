@@ -25,7 +25,7 @@ async function getShell(baseUrl) {
   
   const promise = (async () => {
     try {
-      const r = await fetch(`${baseUrl}/__app_shell`);
+      const r = await fetch(`${baseUrl}/index.html`);
       if (!r.ok) throw new Error('Failed to fetch app shell');
       const html = await r.text();
       shellCache.set(baseUrl, html);
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
                       process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-      return res.redirect('/__app_shell');
+      return res.redirect(302, '/index.html');
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -233,7 +233,7 @@ export default async function handler(req, res) {
     // Fetch Shell
     let html = await getShell(baseUrl);
     if (!html) {
-        return res.redirect(302, '/__app_shell');
+        return res.redirect(302, '/index.html');
     }
 
     // 8. Secure Injection
@@ -284,6 +284,6 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('SSR Error:', e);
-    res.redirect(302, '/__app_shell');
+    res.redirect(302, '/index.html');
   }
 }

@@ -52,6 +52,17 @@
   ],
   "rewrites": [
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Twitterbot|LinkedInBot|Pinterest|WhatsApp).*"
+        }
+      ],
+      "destination": "/api/ssr?path=/$1"
+    },
+    {
       "source": "/((?!api/|assets/|favicon.ico|.*\\..*).*)",
       "destination": "/index.html"
     }

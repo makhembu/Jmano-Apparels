@@ -42,7 +42,7 @@ export const generateSitemap = async () => {
   products.filter(p => p.isPublished !== false).forEach(p => {
     xml += `
   <url>
-    <loc>${BASE_URL}/product/${p.id}</loc>
+    <loc>${BASE_URL}/product/${p.slug || p.id}</loc>
     <lastmod>${new Date(p.createdAt || Date.now()).toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
