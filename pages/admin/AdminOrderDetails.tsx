@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useOrders } from '../../context/OrderContext';
 import { useShop } from '../../context/ShopContext';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { InvoiceTemplate } from '../../components/print/InvoiceTemplate';
 
 export const AdminOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -98,28 +99,9 @@ export const AdminOrderDetails: React.FC = () => {
         status, 
         trackingNumber: tracking, 
         paymentStatus,
-        notes: notesUpdate // This will be handled if passed to backend update (API needs to support notes update in adminUpdateOrder, or we do generic update)
+        notes: notesUpdate 
       });
       
-      // If api.adminUpdateOrder doesn't support notes natively, we might need a separate call or ensure the API function handles generic updates.
-      // Assuming api.adminUpdateOrder handles generic object merge or we need to update notes separately.
-      // Based on lib/services/commerce.ts, update() only takes status, tracking, paymentStatus explicitly.
-      // Let's add a robust notes update via supabase direct if needed, or assume adminUpdateOrder is flexible.
-      // *Correction*: Looking at commerce.ts, it constructs dbUpdates manually. 
-      // We'll interpret this as needing a slight adjustment to `api.adminUpdateOrder` in `lib/db.ts` or passing generic updates.
-      // For now, let's assume we can pass generic props or we do a direct update.
-      // To be safe without modifying API signature excessively:
-      if (notesUpdate) {
-          // Fallback to direct update if service is strict
-          // But since we can't import supabase here easily without context, we will rely on adminUpdateOrder receiving 'notes' in 'updates' 
-          // Check `lib/services/commerce.ts`... it specifically checks fields. 
-          // We should modify `lib/services/commerce.ts` to allow notes, OR use `api.adminUpdateOrder` effectively.
-          // Actually, let's just piggyback on the API update.
-          // Re-reading `commerce.ts`: `if (updates.status) ...`
-          // It doesn't look like it accepts `notes`.
-          // We will update notes via the `notes` field in the payload which we will modify in `lib/services/commerce.ts` in the next step to be safe.
-      }
-
       await refreshOrders();
       await refreshData();
       showToast('Order records updated successfully', 'success');
@@ -182,7 +164,11 @@ export const AdminOrderDetails: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+      
+      {/* PROFESSIONAL PRINT INVOICE TEMPLATE (Hidden until print) */}
+      <InvoiceTemplate order={order} settings={settings} />
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4 no-print">
         <div>
           <button onClick={() => navigate('/admin/orders')} className="text-xs font-black text-brand-green uppercase tracking-widest flex items-center gap-1 mb-2 hover:underline">← Back to Registry</button>
           <div className="flex items-center gap-4">
@@ -204,7 +190,7 @@ export const AdminOrderDetails: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 no-print">
         <div className="lg:col-span-2 space-y-8">
           
           {/* Return Management */}

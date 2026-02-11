@@ -1,8 +1,9 @@
+
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
 import { log } from '../logger';
-import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, EmailTemplate, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate } from '../../types';
+import { BlogPost, BlogCategory, AppSettings, NewsletterSubscriber, ContactSubmission, EmailTemplate, DbBlogPost, DbBlogCategory, DbAppSettings, DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, BlogComment } from '../../types';
 
 export class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
@@ -88,11 +89,11 @@ export class BlogService {
     return data;
   }
   
-  async getBlogComments(postId: string): Promise<any[]> {
+  async getBlogComments(postId: string): Promise<BlogComment[]> {
     log('SELECT', 'blog_comments', `for post ${postId}`);
     const { data, error } = await supabase.from('blog_comments').select('*, user:users(name)').eq('post_id', postId).eq('is_approved', true).order('created_at', { ascending: false });
     if (error) throw error;
-    return data as any[];
+    return (data || []).map(Mappers.toBlogComment);
   }
   
   async addBlogComment(postId: string, userId: string, comment: string): Promise<void> {

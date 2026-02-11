@@ -1,9 +1,11 @@
+
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
   DbBlogPost, DbOrder, ProductReview, DiscountCode, ShippingZone, CartItem,
   BlogCategory, DbBlogCategory, NewsletterSubscriber, ContactSubmission,
-  DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, EmailTemplate, ShippingOption
+  DbNewsletterSubscriber, DbContactSubmission, DbEmailTemplate, EmailTemplate, ShippingOption,
+  BlogComment
 } from '../types';
 
 export const Mappers = {
@@ -194,6 +196,16 @@ export const Mappers = {
     viewCount: b.view_count || 0,
     scheduledFor: b.scheduled_for || undefined,
     likes: b.likes || 0,
+  }),
+
+  toBlogComment: (c: any): BlogComment => ({
+    id: c.id,
+    postId: c.post_id,
+    userId: c.user_id,
+    comment: c.comment,
+    createdAt: c.created_at,
+    isApproved: c.is_approved,
+    user: c.user || { name: 'Unknown' }
   }),
 
   toOrder: (o: DbOrder): Order => {

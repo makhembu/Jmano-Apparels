@@ -16,6 +16,7 @@ import { usePayment } from '../../hooks/usePayment';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { canViewOrder } from '../../lib/authorization';
+import { InvoiceTemplate } from '../../components/print/InvoiceTemplate';
 
 export const UserOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,7 +97,6 @@ export const UserOrderDetails: React.FC = () => {
 
   const isPendingPayment = order.status === 'Pending Payment';
   const canReturn = order.status === 'Delivered' && order.returnStatus === 'none';
-  const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   // Extract Proof of Delivery from Notes
   const proofUrlMatch = order.notes?.match(/\[Proof\]: (https?:\/\/[^\s]+)/);
@@ -104,76 +104,9 @@ export const UserOrderDetails: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in relative">
-      <div id="invoice-container" className="hidden print:block bg-white text-slate-900 p-12 font-sans max-w-[210mm] mx-auto h-full relative">
-        <header className="flex justify-between items-start mb-16">
-          <div className="w-1/2">
-             <img src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"} alt="Jambo Apparels" className="h-20 w-auto object-contain mb-6" />
-             <div className="text-sm text-gray-500 leading-relaxed font-medium pl-1">
-                <p>{settings.contactAddress || '123 Scripture Lane, London, UK'}</p>
-                <p>{settings.contactEmail || 'support@jamboapparels.com'}</p>
-                <p>{settings.contactPhone}</p>
-             </div>
-          </div>
-          <div className="w-1/2 text-right">
-             <h1 className="text-4xl font-light text-gray-300 uppercase tracking-[0.2em] mb-4">Invoice</h1>
-             <div className="space-y-1">
-                <p className="text-sm font-bold text-gray-900"><span className="text-gray-400 font-normal mr-2">Order ID:</span>#{order.orderNumber}</p>
-                <p className="text-sm font-bold text-gray-900"><span className="text-gray-400 font-normal mr-2">Date:</span>{invoiceDate}</p>
-             </div>
-          </div>
-        </header>
-
-        <section className="mb-12">
-           <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">Bill To</h2>
-           <div className="text-base text-gray-800 leading-relaxed">
-              <p className="font-bold text-lg">{order.customerName}</p>
-              <p>{order.shippingAddress?.address1}</p>
-              <p>{order.shippingAddress?.address2}</p>
-              <p>{order.shippingAddress?.city}, {order.shippingAddress?.postcode}</p>
-              <p>{order.shippingAddress?.country}</p>
-           </div>
-        </section>
-
-        <section>
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Item</th>
-                <th className="p-4 text-center text-xs font-bold uppercase tracking-widest text-gray-500">Qty</th>
-                <th className="p-4 text-right text-xs font-bold uppercase tracking-widest text-gray-500">Price</th>
-                <th className="p-4 text-right text-xs font-bold uppercase tracking-widest text-gray-500">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {order.products.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="p-4">
-                    <p className="font-bold text-gray-900 text-sm">{item.title}</p>
-                    <p className="text-xs text-gray-500">{item.size} {item.selectedColor ? `/ ${item.selectedColor}` : ''}</p>
-                  </td>
-                  <td className="p-4 text-center text-gray-700">{item.quantity}</td>
-                  <td className="p-4 text-right text-gray-700 font-mono">£{item.price.toFixed(2)}</td>
-                  <td className="p-4 text-right text-gray-900 font-bold font-mono">£{(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <section className="mt-12 flex justify-end">
-          <div className="w-full max-w-sm space-y-4">
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span className="font-mono">£{order.subtotal?.toFixed(2)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Shipping</span><span className="font-mono">£{order.shippingCost?.toFixed(2)}</span></div>
-            {order.discountAmount && <div className="flex justify-between text-sm text-green-600"><span className="font-bold">Discount</span><span className="font-mono">-£{order.discountAmount.toFixed(2)}</span></div>}
-            <div className="flex justify-between text-sm text-gray-400"><span className="italic">Tax (Included)</span><span className="font-mono">£{order.taxAmount?.toFixed(2)}</span></div>
-            <div className="border-t border-gray-200 pt-4 mt-4 flex justify-between text-xl font-bold text-gray-900"><span>Total</span><span className="font-mono">£{order.total.toFixed(2)}</span></div>
-          </div>
-        </section>
-
-        <footer className="absolute bottom-12 left-12 right-12 text-center text-xs text-gray-400 border-t pt-6">
-          Thank you for your order! If you have any questions, please contact us at {settings.contactEmail}.
-        </footer>
-      </div>
+      
+      {/* PROFESSIONAL PRINT INVOICE TEMPLATE */}
+      <InvoiceTemplate order={order} settings={settings} />
 
       <BackButton to="/dashboard" className="mb-6 no-print" />
 
