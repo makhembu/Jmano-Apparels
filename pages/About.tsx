@@ -3,6 +3,7 @@ import React from 'react';
 import { useShop } from '../context/ShopContext';
 import { SEO } from '../components/SEO';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { ContactForm } from '../components/ContactForm';
 
 export const About: React.FC = () => {
   const { settings, loading } = useShop();
@@ -161,6 +162,12 @@ export const About: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {settings.enableContactForm && (
+          <section className="max-w-4xl mx-auto px-4 pb-24">
+             <ContactForm />
+          </section>
+        )}
 
       </main>
     </div>
