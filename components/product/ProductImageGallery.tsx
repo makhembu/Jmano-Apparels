@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product } from '../../types';
 import { OptimizedImage } from '../ui/OptimizedImage';
@@ -18,16 +19,26 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const images = product.images || [];
 
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveIndex((current) => (current === 0 ? images.length - 1 : current - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveIndex((current) => (current === images.length - 1 ? 0 : current + 1));
+  };
+
   return (
     <div className="flex flex-col-reverse lg:flex-row gap-4 h-full">
-      {/* Thumbnails Sidebar - Desktop Vertical / Mobile Horizontal */}
+      {/* Thumbnails Sidebar - Desktop Vertical / Mobile Horizontal (Hidden if single image) */}
       {images.length > 1 && (
-        <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar py-2 lg:py-0 lg:w-20 lg:max-h-[600px] flex-shrink-0">
+        <div className="hidden lg:flex lg:flex-col gap-3 overflow-y-auto no-scrollbar lg:w-20 lg:max-h-[600px] flex-shrink-0">
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setActiveIndex(idx)}
-              className={`relative flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+              className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                 activeIndex === idx 
                   ? 'border-gray-900 opacity-100 ring-1 ring-gray-900/10' 
                   : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300'
@@ -47,9 +58,10 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
       )}
 
       {/* Main Display Container */}
-      <div className="flex-1 relative group">
+      <div className="flex-1 relative group select-none">
+        {/* Mobile: Constrain height to 45vh to fit content. Desktop: Max height constraint. */}
         <div 
-          className="relative aspect-[4/5] lg:aspect-square w-full rounded-2xl lg:rounded-3xl overflow-hidden bg-gray-50 cursor-zoom-in shadow-sm"
+          className="relative h-[45vh] lg:h-auto lg:aspect-[4/5] w-full rounded-2xl lg:rounded-3xl overflow-hidden bg-gray-50 cursor-zoom-in shadow-sm lg:max-h-[70vh] flex items-center justify-center"
           onClick={() => onImageExpand(activeIndex)}
         >
           <OptimizedImage 
@@ -63,17 +75,40 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             fit="cover"
           />
           
-          {/* Hover Overlay Icon */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-black/5">
-             <div className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg">
-                <svg className="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-             </div>
-          </div>
+          {/* Image Navigation Overlay Buttons (Visible on Mobile & Hover Desktop) */}
+          {images.length > 1 && (
+            <>
+              <button 
+                onClick={handlePrev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg text-slate-800 hover:bg-white transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 z-10"
+                aria-label="Previous image"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button 
+                onClick={handleNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg text-slate-800 hover:bg-white transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 z-10"
+                aria-label="Next image"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              
+              {/* Pagination Dots for Mobile */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 lg:hidden z-10">
+                {images.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${idx === activeIndex ? 'bg-white w-3' : 'bg-white/50'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Wishlist Button (Floating) */}
           <button 
             onClick={(e) => { e.stopPropagation(); onWishlistToggle(); }} 
-            className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all z-20 group/heart"
+            className="absolute top-3 right-3 bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all z-20 group/heart"
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
              {isWishlisted ? (
@@ -84,7 +119,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
           </button>
 
           {/* Badges */}
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
             {product.isOnSale && (
               <span className="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md uppercase tracking-wider">
                 Sale

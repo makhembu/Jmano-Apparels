@@ -75,7 +75,7 @@ export const Shop: React.FC = () => {
 
   const activeCategory = categories.find(c => c.key === filters.categoryKey);
   const seoTitle = activeCategory?.seoTitle || settings.shopSeoTitle || `Shop Our Collection | Jambo Apparels`;
-  const heroTitle = activeCategory?.label || "Ethically Threaded";
+  const heroTitle = activeCategory?.label || "The Collection";
   const heroSubtitle = filters.search 
     ? `Searching for "${filters.search}"`
     : (activeCategory?.seoDescription || `"${settings.secondarySlogan}"`);
@@ -93,16 +93,13 @@ export const Shop: React.FC = () => {
         noindex={activeCategory?.isNoIndex}
       />
 
-      {/* --- DESKTOP HERO (Hidden on Mobile) --- */}
-      <header className="hidden md:block relative bg-brand-dark pt-20 pb-28 overflow-hidden text-center border-b border-brand-green/20">
+      {/* --- DESKTOP HERO (Compressed height to push products up) --- */}
+      <header className="hidden md:block relative bg-brand-dark pt-16 pb-20 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
-            The Collection
-          </span>
-          <h1 className="text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
+          <h1 className="text-4xl lg:text-6xl font-serif font-bold text-white mb-2 tracking-tighter leading-none">
             {heroTitle}
           </h1>
-          <p className="text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
+          <p className="text-lg text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
             {heroSubtitle}
           </p>
         </div>
@@ -166,10 +163,11 @@ export const Shop: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:-mt-12 relative z-20 pt-6 md:pt-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:-mt-16 relative z-20 pt-6 md:pt-0">
         
-        {/* --- DESKTOP TOOLBAR (Hidden on Mobile) --- */}
-        <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-10 sticky top-24 z-30 bg-white/90 backdrop-blur-xl py-4 px-6 rounded-3xl border border-slate-200 shadow-xl shadow-brand-green/5">
+        {/* --- DESKTOP TOOLBAR (Compressed) --- */}
+        {/* Adjusted top offset to top-32 to clear the navbar + announcement bar */}
+        <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8 sticky top-32 z-30 bg-white/95 backdrop-blur-xl py-3 px-5 rounded-2xl border border-slate-200 shadow-xl shadow-brand-green/5 transition-all">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <Button 
               variant={showFilters ? "primary" : "outline"}
@@ -196,7 +194,7 @@ export const Shop: React.FC = () => {
                 onChange={handleSearchChange}
                 placeholder="Search treasures..."
                 fullWidth
-                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white"
+                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white h-9 py-0"
               />
             </div>
             
@@ -209,7 +207,7 @@ export const Shop: React.FC = () => {
                   { value: 'low-high', label: '£ Low-High' },
                   { value: 'high-low', label: '£ High-Low' }
                 ]}
-                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white"
+                className="shadow-none border-slate-200 bg-slate-50 focus:bg-white h-9 py-0"
               />
             </div>
           </div>
@@ -218,13 +216,14 @@ export const Shop: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-0 md:gap-12 items-start relative pb-24">
           
           {/* --- DESKTOP SIDEBAR --- */}
-          <div className={`hidden md:block flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-72 opacity-100' : 'w-0 opacity-0'}`}>
-            <aside className="w-72">
-              <div className="sticky top-40 space-y-10 bg-white p-8 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
+          <div className={`hidden md:block flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
+            <aside className="w-64">
+              {/* Increased sticky top to top-52 to sit below the new toolbar position */}
+              <div className="sticky top-52 space-y-6 bg-white p-6 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
                 <div>
                   <button 
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
-                    className="w-full flex items-center justify-between mb-6 text-left"
+                    className="w-full flex items-center justify-between mb-4 text-left"
                   >
                     <h2 className="text-xs font-black text-brand-dark uppercase tracking-[0.2em]">Our Collections</h2>
                     <svg className={`w-4 h-4 text-brand-green transition-transform duration-300 ${isCategoriesExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -261,7 +260,7 @@ export const Shop: React.FC = () => {
 
           <div className="flex-grow min-w-0 relative">
             {/* PRODUCT GRID: 2 Columns on Mobile, 3 on Desktop */}
-            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10`}>
+            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8`}>
               {showSkeletons ? (
                   // SKELETON LOADERS
                   Array.from({ length: 6 }).map((_, idx) => (

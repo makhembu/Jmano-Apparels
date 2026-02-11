@@ -23,11 +23,11 @@ const ProductDetailsSkeleton = () => (
   <div className="bg-white min-h-screen animate-pulse">
       <div className="hidden lg:block border-b border-gray-100 bg-white h-12 w-full mb-8"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-          <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
-             <div className="lg:col-span-7">
-                <div className="aspect-[4/5] bg-gray-200 rounded-3xl w-full"></div>
+          <div className="lg:grid lg:grid-cols-2 lg:gap-x-16 items-start">
+             <div>
+                <div className="aspect-square bg-gray-200 rounded-3xl w-full"></div>
              </div>
-             <div className="lg:col-span-5 mt-12 lg:mt-0 space-y-8">
+             <div className="mt-12 lg:mt-0 space-y-8">
                 <div className="space-y-4">
                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
                    <div className="h-10 w-3/4 bg-gray-200 rounded"></div>
@@ -68,6 +68,7 @@ export const ProductDetails: React.FC = () => {
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedImageIndex, setExpandedImageIndex] = useState(0);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   
   const buySectionRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -146,8 +147,7 @@ export const ProductDetails: React.FC = () => {
   }, [products, product]);
 
   const hasAnnouncement = settings.isAnnouncementEnabled && settings.announcementText;
-  // Increased top spacing for desktop sticky behavior
-  const galleryTopClass = hasAnnouncement ? 'lg:top-[10rem]' : 'lg:top-32';
+  const galleryTopClass = hasAnnouncement ? 'lg:top-[8rem]' : 'lg:top-24';
 
   if (loading) return <ProductDetailsSkeleton />;
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
@@ -200,16 +200,18 @@ export const ProductDetails: React.FC = () => {
         </div>
       </div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16 relative z-20 animate-fade-in">
-        {/* Mobile Back Button */}
-        <div className="lg:hidden mb-6">
-           <BackButton to="/shop" />
+      {/* Reduced vertical padding here (py-8) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-12 relative z-20 animate-fade-in">
+        {/* Mobile Back Button - Compact */}
+        <div className="lg:hidden mb-4">
+           <BackButton to="/shop" className="py-2 px-4 text-[9px]" />
         </div>
 
-        <div className="lg:grid lg:grid-cols-12 lg:gap-x-16 items-start">
+        {/* Reduced column gap here (gap-x-12) */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 items-start">
           
           {/* Left Column: Gallery (Sticky on Desktop) */}
-          <div className={`lg:col-span-7 lg:sticky ${galleryTopClass} self-start transition-all duration-300`}>
+          <div className={`lg:sticky ${galleryTopClass} self-start transition-all duration-300 mb-8 lg:mb-0`}>
             <ProductImageGallery 
               product={product}
               isWishlisted={isWishlisted}
@@ -218,31 +220,52 @@ export const ProductDetails: React.FC = () => {
             />
           </div>
           
-          {/* Right Column: Details */}
-          <div className="lg:col-span-5 mt-12 lg:mt-0">
+          {/* Right Column: Details & Buy Box */}
+          <div className="mt-2 lg:mt-0">
             <div className="relative">
-              <ProductInfo product={product} category={category} />
+              {/* 1. Header Info (Title, Price, Ratings) */}
+              <ProductInfo product={product} category={category} enableReviews={settings.enableReviews} />
               
-              <div className="my-10 h-px bg-gray-100"></div>
+              {/* 2. Purchase Form (Selectors + Buttons) */}
+              <div className="mt-6">
+                <ProductPurchaseForm 
+                  product={product}
+                  category={category}
+                  buySectionRef={buySectionRef}
+                  optionsRef={optionsRef}
+                  selectedSize={selectedSize}
+                  setSelectedSize={setSelectedSize}
+                  selectedColor={selectedColor}
+                  setSelectedColor={setSelectedColor}
+                  quantity={quantity}
+                  setQuantity={setQuantity}
+                  handleAddToCart={handleAddToCart}
+                  isAdding={isAdding}
+                  isOrderingNow={isOrderingNow}
+                />
+              </div>
 
-              <ProductPurchaseForm 
-                product={product}
-                category={category}
-                buySectionRef={buySectionRef}
-                optionsRef={optionsRef}
-                selectedSize={selectedSize}
-                setSelectedSize={setSelectedSize}
-                selectedColor={selectedColor}
-                setSelectedColor={setSelectedColor}
-                quantity={quantity}
-                setQuantity={setQuantity}
-                handleAddToCart={handleAddToCart}
-                isAdding={isAdding}
-                isOrderingNow={isOrderingNow}
-              />
+              {/* 3. Description (Collapsible on Mobile to save space) */}
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-brand-dark uppercase tracking-widest mb-3">Product Details</h3>
+                <div className={`prose prose-slate prose-sm max-w-none text-gray-600 font-light leading-relaxed relative ${!isDescriptionExpanded ? 'max-h-24 overflow-hidden' : ''}`}>
+                   <p>{product.description}</p>
+                   {!isDescriptionExpanded && (
+                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent"></div>
+                   )}
+                </div>
+                <button 
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="text-brand-green text-xs font-bold uppercase tracking-widest mt-2 hover:underline"
+                >
+                  {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+                </button>
+              </div>
               
+              {/* 4. Trust/Icons */}
               <ProductDetailsSection />
               
+              {/* 5. Share */}
               <ProductShare product={product} />
             </div>
           </div>
