@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/db';
@@ -6,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../context/ToastContext';
 import { BlogCategoriesSection } from '../../components/admin/settings/BlogCategoriesSection';
+import { Input } from '../../components/ui/Input';
 
 type Tab = 'posts' | 'categories';
 
@@ -18,6 +20,7 @@ export const AdminBlog: React.FC = () => {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const activeTab = (searchParams.get('tab') as Tab) || 'posts';
 
@@ -104,6 +107,12 @@ export const AdminBlog: React.FC = () => {
       }
   };
 
+  // Filter posts based on search term
+  const filteredPosts = posts.filter(post => 
+    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.slug?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading && activeTab === 'posts') return <LoadingSpinner />;
 
@@ -136,6 +145,15 @@ export const AdminBlog: React.FC = () => {
 
       {activeTab === 'posts' && (
         <>
+        <div className="mb-6 max-w-md">
+            <Input 
+                placeholder="Search posts..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white"
+            />
+        </div>
+
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (
             <div className="mb-4 p-3 bg-brand-dark text-white rounded-xl flex justify-between items-center shadow-lg animate-fade-in">
@@ -154,10 +172,10 @@ export const AdminBlog: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left">
+                <th className="px-6 py-3 text-left w-10">
                   <input
                     type="checkbox"
-                    checked={posts.length > 0 && selectedIds.length === posts.length}
+                    checked={filteredPosts.length > 0 && selectedIds.length === filteredPosts.length}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 text-brand-green rounded border-gray-300 focus:ring-brand-green"
                   />
@@ -172,9 +190,9 @@ export const AdminBlog: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {posts.length === 0 ? (
+              {filteredPosts.length === 0 ? (
                  <tr><td colSpan={8} className="text-center py-10 text-gray-500 text-sm">No journal entries found.</td></tr>
-              ) : posts.map(post => {
+              ) : filteredPosts.map(post => {
                 const category = categories.find(c => c.id === post.categoryId);
                 const isSelected = selectedIds.includes(post.id);
                 return (

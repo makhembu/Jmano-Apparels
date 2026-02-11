@@ -10,6 +10,7 @@ import { SEO } from '../components/SEO';
 export const Blog: React.FC = () => {
   const { blogPosts, settings, loading } = useShop();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const blogCategories = [
     { key: 'ALL', label: 'All Entries' },
@@ -20,15 +21,29 @@ export const Blog: React.FC = () => {
   ];
 
   const filteredPosts = useMemo(() => {
-    const published = blogPosts.filter(post => post.status === 'published');
-    if (activeCategory === 'ALL') return published;
-    return published.filter(post => {
-      const lowerCategory = activeCategory.toLowerCase();
-      const lowerTitle = post.title.toLowerCase();
-      // Simple approximation since we don't have tags linked yet in frontend types fully
-      return lowerTitle.includes(lowerCategory);
-    });
-  }, [blogPosts, activeCategory]);
+    let posts = blogPosts.filter(post => post.status === 'published');
+    
+    // 1. Filter by Category
+    if (activeCategory !== 'ALL') {
+      posts = posts.filter(post => {
+        const lowerCategory = activeCategory.toLowerCase();
+        // Simple approximation based on title if no explicit category logic matches yet
+        // In a full implementation, check post.categoryId against category lookup
+        return post.title.toLowerCase().includes(lowerCategory) || (post.keywords && post.keywords.some(k => k.toLowerCase() === lowerCategory));
+      });
+    }
+
+    // 2. Filter by Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      posts = posts.filter(post => 
+        post.title.toLowerCase().includes(q) || 
+        post.summary?.toLowerCase().includes(q)
+      );
+    }
+
+    return posts;
+  }, [blogPosts, activeCategory, searchQuery]);
 
   const getCardColorStyles = (index: number) => {
     // Most text set to text-brand-dark per user request
@@ -68,29 +83,54 @@ export const Blog: React.FC = () => {
       </header>
 
       {/* Mobile Sticky Filter Bar (Matches Shop) */}
-      <div className="md:hidden sticky top-16 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm">
-         <div className="px-4 py-3 flex overflow-x-auto gap-2 no-scrollbar">
-            {blogCategories.map(cat => (
-              <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
-                  activeCategory === cat.key
-                    ? 'bg-brand-green text-white border-brand-green'
-                    : 'bg-white text-slate-500 border-slate-200'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+      <div className="md:hidden sticky top-16 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm transition-all">
+         <div className="px-4 py-3 space-y-3">
+             <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search articles..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-100 border-none rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+             </div>
+             <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+                {blogCategories.map(cat => (
+                  <button
+                    key={cat.key}
+                    onClick={() => setActiveCategory(cat.key)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
+                      activeCategory === cat.key
+                        ? 'bg-brand-green text-white border-brand-green'
+                        : 'bg-white text-slate-500 border-slate-200'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+             </div>
          </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:-mt-12 relative z-20 pt-6 md:pt-0 pb-32">
         
         {/* Desktop Category Bar (Matches Shop Card Style) */}
-        <div className="hidden md:block bg-white p-2 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 mb-12">
-          <div className="flex gap-2 justify-center px-4 py-2 w-full">
+        <div className="hidden md:flex bg-white p-4 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 mb-12 flex-col gap-4">
+           {/* Search Row */}
+           <div className="w-full max-w-md mx-auto relative">
+              <input 
+                  type="text" 
+                  placeholder="Search journal entries..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none transition-all"
+              />
+              <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+           </div>
+           
+           {/* Categories Row */}
+           <div className="flex gap-2 justify-center px-4 w-full flex-wrap">
             {blogCategories.map(cat => (
               <button
                 key={cat.key}
@@ -158,8 +198,10 @@ export const Blog: React.FC = () => {
           </div>
         ) : (
           <div className="py-32 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-            <p className="text-slate-400 font-serif italic text-2xl mb-6">This chapter is currently being threaded.</p>
-            <Button onClick={() => setActiveCategory('ALL')} variant="primary" size="sm">View All Entries</Button>
+            <p className="text-slate-400 font-serif italic text-2xl mb-6">
+                {searchQuery ? `No entries matching "${searchQuery}"` : "This chapter is currently being threaded."}
+            </p>
+            <Button onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); }} variant="primary" size="sm">Reset Filters</Button>
           </div>
         )}
       </div>
