@@ -11,6 +11,17 @@ function esc(str = '') {
     .replace(/'/g, '&#39;');
 }
 
+// Helper to strip HTML tags for meta descriptions (prevents broken tags in description)
+function stripTags(str) {
+  if (!str) return '';
+  return str.replace(/<[^>]*>?/gm, ' ');
+}
+
+// Helper to collapse whitespace (newlines, tabs, etc.)
+function normalizeWhitespace(str) {
+  return (str || '').replace(/\s+/g, ' ').trim();
+}
+
 // 2. In-memory cache for App Shell
 const shellCache = new Map();
 const shellCachePending = new Map();
@@ -63,10 +74,6 @@ export default async function handler(req, res) {
   if (!html) {
     return res.status(500).send('Could not load application shell.');
   }
-  
-  // NOTE: We do NOT strip tags manually here anymore. 
-  // We rely on replacing the entire <!--SSR_META_TAGS_START--> block.
-  // This ensures that if something goes wrong with the replacement, the default tags remain.
 
   try {
     if (!supabaseUrl || !supabaseKey) {
@@ -124,7 +131,15 @@ export default async function handler(req, res) {
 
             if (product) {
                 meta.title = product.seo_title || `${product.title} | Jambo Apparels`;
-                meta.description = product.seo_description || product.description?.substring(0, 160) || meta.description;
+                
+                // Clean description logic: Strip HTML, normalize whitespace, truncate, fallback
+                const rawDesc = product.seo_description || product.description || '';
+                const cleanDesc = normalizeWhitespace(stripTags(rawDesc));
+                // Only override default if we have a valid product description
+                if (cleanDesc && cleanDesc.length > 5) {
+                    meta.description = cleanDesc.substring(0, 160);
+                }
+
                 meta.image = product.images?.[0] || meta.image;
                 meta.type = 'product';
                 meta.isNoIndex = product.is_noindex || false;
@@ -166,7 +181,14 @@ export default async function handler(req, res) {
             const { data: post } = await supabase.from('blog_posts').select('*, updated_at').eq('slug', slug).eq('status', 'published').maybeSingle();
             if (post) {
                 meta.title = post.seo_title || post.title;
-                meta.description = post.seo_description || post.summary || meta.description;
+                
+                // Clean description logic
+                const rawDesc = post.seo_description || post.summary || post.content || '';
+                const cleanDesc = normalizeWhitespace(stripTags(rawDesc));
+                if (cleanDesc && cleanDesc.length > 5) {
+                    meta.description = cleanDesc.substring(0, 160);
+                }
+
                 meta.image = post.featured_image || post.thumbnail || meta.image;
                 meta.type = 'article';
                 meta.isNoIndex = post.is_noindex || false;
@@ -208,7 +230,9 @@ export default async function handler(req, res) {
     if (!meta.image || meta.image.trim() === '') {
       meta.image = settings?.default_og_image || 'https://i.imgur.com/pkaScEv.png';
     }
-    meta.description = (meta.description || '').slice(0, 155);
+    
+    // Final truncation to ensure we don't break meta limits even if content came from DB cleanly
+    meta.description = (meta.description || '').slice(0, 160);
 
     const safeTitle = esc(meta.title);
     const safeDesc = esc(meta.description);
@@ -251,7 +275,6 @@ export default async function handler(req, res) {
     }
     
     // Replace placeholder with generated tags
-    // Crucial: This replaces the defaults defined in index.html with the dynamic content
     if (html.includes('<!--SSR_META_TAGS_START-->')) {
         html = html.replace(
             /<!--SSR_META_TAGS_START-->[\s\S]*?<!--SSR_META_TAGS_END-->/,
