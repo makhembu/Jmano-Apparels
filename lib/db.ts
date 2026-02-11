@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
@@ -14,6 +15,7 @@ import { BlogService, SettingsService, SupportService } from './services/content
 import { UserService, WishlistService } from './services/user';
 import { StorageService } from './services/storage';
 import { AnalyticsService } from './services/analytics';
+import { log } from './logger';
 
 // Instantiate Services
 const productService = new ProductService();
@@ -37,16 +39,51 @@ const getRedirectUrl = () => {
   return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
 };
 
+// Internal Helper to log admin actions
+const logAudit = async (action: string, table: string, recordId?: string, details?: any) => {
+  try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action,
+          table_name: table,
+          record_id: recordId,
+          new_values: details
+      } as any);
+  } catch (e) {
+      console.error("Failed to write audit log", e);
+  }
+};
+
 export const api = {
   // Catalog
   getProducts: () => productService.getAll(),
   getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
-  adminCreateProduct: (p: Partial<Product>) => productService.create(p),
-  adminUpdateProduct: (id: string, p: Partial<Product>) => productService.update(id, p),
-  adminDeleteProduct: (id: string) => productService.delete(id),
-  adminBulkUpdateProducts: (ids: string[], updates: Partial<Product>) => productService.bulkUpdate(ids, updates),
-  adminBulkDeleteProducts: (ids: string[]) => productService.bulkDelete(ids),
+  
+  adminCreateProduct: async (p: Partial<Product>) => {
+    await productService.create(p);
+    logAudit('CREATE', 'products', undefined, { title: p.title });
+  },
+  adminUpdateProduct: async (id: string, p: Partial<Product>) => {
+    await productService.update(id, p);
+    logAudit('UPDATE', 'products', id, p);
+  },
+  adminDeleteProduct: async (id: string) => {
+    await productService.delete(id);
+    logAudit('DELETE', 'products', id);
+  },
+  adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
+    await productService.bulkUpdate(ids, updates);
+    logAudit('BULK_UPDATE', 'products', undefined, { ids, updates });
+  },
+  adminBulkDeleteProducts: async (ids: string[]) => {
+    await productService.bulkDelete(ids);
+    logAudit('BULK_DELETE', 'products', undefined, { ids });
+  },
+
   getLowStockProducts: (limit: number = 5) => productService.getLowStockProducts(limit),
   getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
 
@@ -67,12 +104,27 @@ export const api = {
   getAdminPaymentsPaginated: (page: number, limit: number, status: string, method: string) => orderService.getAdminPaymentsPaginated(page, limit, status, method),
   getOrderById: (id: string) => orderService.getById(id),
   createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
-  adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
+  
+  adminUpdateOrder: async (id: string, updates: any) => {
+    await orderService.update(id, updates);
+    logAudit('UPDATE', 'orders', id, updates);
+  },
+  
   cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
   cancelAndRestoreStock: (orderId: string, userId: string) => orderService.cancelAndRestoreStock(orderId, userId),
   requestReturn: (orderId: string, userId: string, reason: string) => orderService.requestReturn(orderId, userId, reason),
-  adminProcessReturn: (orderId: string, returnStatus: any, notes?: string) => orderService.adminProcessReturn(orderId, returnStatus, notes),
-  issueFullRefund: (orderId: string) => orderService.issueFullRefund(orderId),
+  
+  adminProcessReturn: async (orderId: string, returnStatus: any, notes?: string) => {
+    const res = await orderService.adminProcessReturn(orderId, returnStatus, notes);
+    logAudit('RETURN_PROCESS', 'orders', orderId, { status: returnStatus, notes });
+    return res;
+  },
+  
+  issueFullRefund: async (orderId: string) => {
+    const res = await orderService.issueFullRefund(orderId);
+    logAudit('REFUND', 'orders', orderId);
+    return res;
+  },
 
   fetchCart: (userId: string) => cartService.fetch(userId),
   syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
@@ -96,11 +148,28 @@ export const api = {
   getBlogCategories: () => blogService.getCategories(),
   createBlogCategory: (c: Partial<BlogCategory>) => blogService.createCategory(c),
   deleteBlogCategory: (id: string) => blogService.deleteCategory(id),
-  adminCreateBlogPost: (p: Partial<BlogPost>) => blogService.createPost(p),
-  adminUpdateBlogPost: (id: string, p: Partial<BlogPost>) => blogService.updatePost(id, p),
-  adminDeleteBlogPost: (id: string) => blogService.deletePost(id),
-  adminBulkUpdateBlogPosts: (ids: string[], updates: Partial<BlogPost>) => blogService.bulkUpdate(ids, updates),
-  adminBulkDeleteBlogPosts: (ids: string[]) => blogService.bulkDelete(ids),
+  
+  adminCreateBlogPost: async (p: Partial<BlogPost>) => {
+    await blogService.createPost(p);
+    logAudit('CREATE', 'blog_posts', undefined, { title: p.title });
+  },
+  adminUpdateBlogPost: async (id: string, p: Partial<BlogPost>) => {
+    await blogService.updatePost(id, p);
+    logAudit('UPDATE', 'blog_posts', id, p);
+  },
+  adminDeleteBlogPost: async (id: string) => {
+    await blogService.deletePost(id);
+    logAudit('DELETE', 'blog_posts', id);
+  },
+  adminBulkUpdateBlogPosts: async (ids: string[], updates: Partial<BlogPost>) => {
+    await blogService.bulkUpdate(ids, updates);
+    logAudit('BULK_UPDATE', 'blog_posts', undefined, { ids, updates });
+  },
+  adminBulkDeleteBlogPosts: async (ids: string[]) => {
+    await blogService.bulkDelete(ids);
+    logAudit('BULK_DELETE', 'blog_posts', undefined, { ids });
+  },
+  
   incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
   incrementBlogPostLike: (postId: string) => blogService.incrementBlogPostLike(postId),
   getBlogComments: (postId: string) => blogService.getBlogComments(postId),
@@ -108,10 +177,20 @@ export const api = {
 
   getAppSettings: () => settingsService.get(),
   getAdminSettings: () => settingsService.getAdminSettings(),
-  updateAppSettings: (id: number, s: Partial<AppSettings>) => settingsService.update(id, s),
+  
+  updateAppSettings: async (id: number, s: Partial<AppSettings>) => {
+    await settingsService.update(id, s);
+    logAudit('UPDATE', 'app_settings', String(id), s);
+  },
+  
   getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
   getEmailTemplates: () => settingsService.getEmailTemplates(),
-  updateEmailTemplate: (id: string, t: Partial<EmailTemplate>) => settingsService.updateEmailTemplate(id, t),
+  
+  updateEmailTemplate: async (id: string, t: Partial<EmailTemplate>) => {
+    await settingsService.updateEmailTemplate(id, t);
+    logAudit('UPDATE', 'email_templates', id, t);
+  },
+  
   sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
   checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
   sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
@@ -134,9 +213,20 @@ export const api = {
   createUserProfile: (data: any) => userService.createProfile(data),
   updateUserPassword: (password: string) => userService.updateUserPassword(password),
   requestPasswordReset: (email: string) => userService.requestPasswordReset(email, getRedirectUrl()),
-  adminDeleteUser: (id: string) => userService.deleteUser(id),
-  adminSendPasswordReset: (email: string) => userService.adminSendPasswordReset(email),
-  adminSendMagicLink: (email: string) => userService.adminSendMagicLink(email),
+  
+  adminDeleteUser: async (id: string) => {
+    await userService.deleteUser(id);
+    logAudit('DELETE', 'users', id);
+  },
+  adminSendPasswordReset: async (email: string) => {
+    await userService.adminSendPasswordReset(email);
+    logAudit('RESET_PASSWORD', 'users', undefined, { email });
+  },
+  adminSendMagicLink: async (email: string) => {
+    await userService.adminSendMagicLink(email);
+    logAudit('MAGIC_LINK', 'users', undefined, { email });
+  },
+  
   getUserActivity: (userId: string, limit?: number) => userService.getUserActivity(userId, limit),
   deleteUserAccount: (userId: string) => userService.deleteUserAccount(userId),
 

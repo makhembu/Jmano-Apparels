@@ -16,6 +16,16 @@ export interface User {
   bio?: string;
 }
 
+export interface AuditLog {
+  id: string;
+  user_id: string;
+  action: string;
+  table_name: string;
+  record_id?: string;
+  details?: any;
+  created_at: string;
+}
+
 export interface Product {
   id: string;
   title: string;
