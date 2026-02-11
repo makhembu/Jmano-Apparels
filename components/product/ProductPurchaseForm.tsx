@@ -2,6 +2,7 @@
 import React from 'react';
 import { Product, Category } from '../../types';
 import { Button } from '../ui/Button';
+import { getColorHex } from '../../lib/utils';
 
 interface ProductPurchaseFormProps {
   product: Product;
@@ -47,12 +48,7 @@ export const ProductPurchaseForm: React.FC<ProductPurchaseFormProps> = ({
             </div>
             <div className="flex flex-wrap gap-3">
               {product.colors.map(color => {
-                // Determine a background color for the circle
-                let bgStyle = color.toLowerCase();
-                // Basic mapping for common colors to ensure visibility
-                if (bgStyle === 'white') bgStyle = '#ffffff';
-                if (bgStyle === 'black') bgStyle = '#000000';
-                if (bgStyle === 'navy') bgStyle = '#000080';
+                const bgStyle = getColorHex(color);
                 
                 return (
                 <button 

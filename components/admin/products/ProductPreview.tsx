@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Product, Category } from '../../../types';
+import { getColorHex } from '../../../lib/utils';
 
 interface ProductPreviewProps {
   product: Partial<Product>;
@@ -93,7 +95,7 @@ export const ProductPreview: React.FC<ProductPreviewProps> = ({ product, categor
                  <div 
                     key={c} 
                     className="w-6 h-6 rounded-full border border-gray-200 shadow-sm" 
-                    style={{backgroundColor: c.toLowerCase().includes('/') ? c.split('/')[0].toLowerCase() : c.toLowerCase().replace(' ', '')}} 
+                    style={{backgroundColor: getColorHex(c)}} 
                     title={c}
                  ></div>
               ))}

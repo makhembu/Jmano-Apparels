@@ -86,3 +86,59 @@ export const searchProducts = (products: Product[], query: string): Product[] =>
     p.tags?.some(t => t.toLowerCase().includes(lowercasedQuery))
   );
 };
+
+/**
+ * Maps a color name to a Hex code or valid CSS color.
+ * Handles common clothing color names like "Navy Blue", "Forest Green".
+ */
+export const getColorHex = (colorName: string): string => {
+  if (!colorName) return 'transparent';
+  // Remove spaces and hyphens for matching
+  const normalized = colorName.toLowerCase().replace(/[^a-z]/g, '');
+  
+  const map: Record<string, string> = {
+      white: '#FFFFFF',
+      black: '#000000',
+      navy: '#000080',
+      navyblue: '#000080',
+      royal: '#4169E1',
+      royalblue: '#4169E1',
+      sky: '#87CEEB',
+      skyblue: '#87CEEB',
+      lightblue: '#ADD8E6',
+      blue: '#0000FF',
+      forest: '#228B22',
+      forestgreen: '#228B22',
+      kelly: '#4CBB17',
+      kellygreen: '#4CBB17',
+      green: '#008000',
+      red: '#FF0000',
+      maroon: '#800000',
+      burgundy: '#800020',
+      crimson: '#DC143C',
+      orange: '#FFA500',
+      yellow: '#FFFF00',
+      gold: '#FFD700',
+      mustard: '#FFDB58',
+      purple: '#800080',
+      lavender: '#E6E6FA',
+      pink: '#FFC0CB',
+      hotpink: '#FF69B4',
+      grey: '#808080',
+      gray: '#808080',
+      charcoal: '#36454F',
+      brown: '#A52A2A',
+      tan: '#D2B48C',
+      beige: '#F5F5DC',
+      cream: '#FFFDD0',
+      khaki: '#F0E68C',
+      olive: '#808000',
+      teal: '#008080',
+      turquoise: '#40E0D0',
+      mint: '#98FF98',
+      coral: '#FF7F50',
+      peach: '#FFDAB9'
+  };
+  
+  return map[normalized] || colorName;
+};
