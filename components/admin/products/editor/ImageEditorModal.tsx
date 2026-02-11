@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../../../ui/Button';
 
@@ -147,6 +148,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ src, onSave,
 
   const CropButton: React.FC<{ mode: CropMode, children: React.ReactNode }> = ({ mode, children }) => (
     <button
+        type="button"
         onClick={() => setCropMode(mode)}
         className={`px-3 py-1.5 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all ${cropMode === mode ? 'bg-brand-dark text-white shadow-md' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
     >{children}</button>
@@ -157,7 +159,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ src, onSave,
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-slate-200 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 font-serif text-lg">Edit Image</h3>
-                <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-400">&times;</button>
+                <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-400">&times;</button>
             </div>
             
             <div className="flex-1 flex flex-col md:flex-row min-h-0">
@@ -169,8 +171,8 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ src, onSave,
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Rotate</h4>
                         <div className="flex gap-2">
-                           <Button variant="outline" onClick={() => setRotation(r => (r - 90 + 360) % 360)} className="flex-1">Left</Button>
-                           <Button variant="outline" onClick={() => setRotation(r => (r + 90) % 360)} className="flex-1">Right</Button>
+                           <Button type="button" variant="outline" onClick={() => setRotation(r => (r - 90 + 360) % 360)} className="flex-1">Left</Button>
+                           <Button type="button" variant="outline" onClick={() => setRotation(r => (r + 90) % 360)} className="flex-1">Right</Button>
                         </div>
                     </div>
                     <div>
@@ -186,8 +188,8 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ src, onSave,
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-                <Button variant="outline" onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave} isLoading={isSaving} className="shadow-lg shadow-brand-green/20">Apply & Save</Button>
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="button" onClick={handleSave} isLoading={isSaving} className="shadow-lg shadow-brand-green/20">Apply & Save</Button>
             </div>
         </div>
     </div>
