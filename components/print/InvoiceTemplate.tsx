@@ -11,7 +11,7 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ order, setting
   const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
-    <div id="invoice-container" className="hidden print:block bg-white text-slate-900 p-12 font-sans max-w-[210mm] mx-auto h-full relative">
+    <div id="invoice-container" className="hidden print:flex flex-col bg-white text-slate-900 p-12 font-sans max-w-[210mm] mx-auto min-h-screen relative">
       <header className="flex justify-between items-start mb-16">
         <div className="w-1/2">
            {settings.logoImage ? (
@@ -83,7 +83,7 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ order, setting
         </table>
       </section>
 
-      <section className="flex justify-end">
+      <section className="flex justify-end mb-8">
         <div className="w-full max-w-sm space-y-3">
           <div className="flex justify-between text-sm py-2 border-b border-gray-100">
             <span className="text-gray-500 font-medium">Subtotal</span>
@@ -110,7 +110,9 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ order, setting
         </div>
       </section>
 
-      <footer className="absolute bottom-0 left-0 right-0 text-center text-xs text-gray-400 border-t border-gray-100 pt-8 pb-12">
+      <div className="flex-grow"></div>
+
+      <footer className="text-center text-xs text-gray-400 border-t border-gray-100 pt-8 pb-12 mt-auto w-full">
         <p className="font-medium text-gray-500 mb-2">Thank you for your support!</p>
         <p>If you have any questions about this invoice, please contact {settings.contactEmail}.</p>
         {settings.slogan && <p className="mt-2 font-serif italic text-gray-300">"{settings.slogan}"</p>}
