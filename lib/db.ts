@@ -1,23 +1,13 @@
 
-import { supabase } from './supabaseClient';
-import { 
-  Product, Category, AppSettings, BlogPost, User, Order, ProductReview, 
-  ShippingAddress, CartItem, BlogCategory, ShippingZone, DiscountCode, 
-  UserAddress, EmailTemplate, ShippingOption
-} from '../types';
-
-import { ProductService, CategoryService, ReviewService, ProductFilters } from './services/catalog';
-import { OrderService } from './services/orderService';
-import { CartService } from './services/cartService';
-import { ShippingService } from './services/shippingService';
-import { DiscountService } from './services/discountService';
-import { BlogService, SettingsService, SupportService } from './services/content';
+import { ProductService, CategoryService, ReviewService } from './services/catalog';
+import { OrderService, CartService, ShippingService, DiscountService } from './services/commerce';
 import { UserService, WishlistService } from './services/user';
+import { SettingsService, BlogService } from './services/content';
 import { StorageService } from './services/storage';
 import { AnalyticsService } from './services/analytics';
 import { log } from './logger';
 
-// Instantiate Services
+// Instantiate services
 const productService = new ProductService();
 const categoryService = new CategoryService();
 const reviewService = new ReviewService();
@@ -25,231 +15,177 @@ const orderService = new OrderService();
 const cartService = new CartService();
 const shippingService = new ShippingService();
 const discountService = new DiscountService();
-const blogService = new BlogService();
-const settingsService = new SettingsService();
-const supportService = new SupportService();
 const userService = new UserService();
 const wishlistService = new WishlistService();
+const settingsService = new SettingsService();
+const blogService = new BlogService();
 const storageService = new StorageService();
 const analyticsService = new AnalyticsService();
 
-// Helper for hybrid routing redirect
-const getRedirectUrl = () => {
-  const isProd = window.location.hostname === 'jamboapparels.com' || window.location.hostname === 'www.jamboapparels.com';
-  return `${window.location.origin}${isProd ? '' : '/#'}/update-password`;
-};
-
-// Internal Helper to log admin actions
-const logAudit = async (action: string, table: string, recordId?: string, details?: any) => {
-  try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) return;
-      
-      await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action,
-          table_name: table,
-          record_id: recordId,
-          new_values: details
-      } as any);
-  } catch (e) {
-      console.error("Failed to write audit log", e);
-  }
-};
-
+// Export aggregated API
 export const api = {
-  // Catalog
+  // --- CATALOG ---
   getProducts: () => productService.getAll(),
-  getPaginatedProducts: (page: number, size: number, filters: ProductFilters) => productService.getPaginated(page, size, filters),
+  getTopSellingProducts: (limit?: number) => productService.getTopSellers(limit),
+  getPaginatedProducts: (page: number, size: number, filters: any) => productService.getPaginated(page, size, filters),
   getProductById: (id: string) => productService.getById(id),
-  
-  adminCreateProduct: async (p: Partial<Product>) => {
-    await productService.create(p);
-    logAudit('CREATE', 'products', undefined, { title: p.title });
-  },
-  adminUpdateProduct: async (id: string, p: Partial<Product>) => {
-    await productService.update(id, p);
-    logAudit('UPDATE', 'products', id, p);
-  },
-  adminDeleteProduct: async (id: string) => {
-    await productService.delete(id);
-    logAudit('DELETE', 'products', id);
-  },
-  adminBulkUpdateProducts: async (ids: string[], updates: Partial<Product>) => {
-    await productService.bulkUpdate(ids, updates);
-    logAudit('BULK_UPDATE', 'products', undefined, { ids, updates });
-  },
-  adminBulkDeleteProducts: async (ids: string[]) => {
-    await productService.bulkDelete(ids);
-    logAudit('BULK_DELETE', 'products', undefined, { ids });
-  },
-
-  getLowStockProducts: (limit: number = 5) => productService.getLowStockProducts(limit),
-  getTopSellingProducts: (limit: number = 5) => productService.getTopSellers(limit),
+  adminCreateProduct: (p: any) => productService.create(p),
+  adminUpdateProduct: (id: string, p: any) => productService.update(id, p),
+  adminDeleteProduct: (id: string) => productService.delete(id),
+  adminBulkUpdateProducts: (ids: string[], updates: any) => productService.bulkUpdate(ids, updates),
+  adminBulkDeleteProducts: (ids: string[]) => productService.bulkDelete(ids),
+  getLowStockProducts: (limit?: number) => productService.getLowStockProducts(limit),
 
   getCategories: () => categoryService.getAll(),
-  createCategory: (c: Category) => categoryService.create(c),
-  updateCategory: (key: string, c: Partial<Category>) => categoryService.update(key, c),
+  createCategory: (c: any) => categoryService.create(c),
+  updateCategory: (key: string, c: any) => categoryService.update(key, c),
   deleteCategory: (key: string) => categoryService.delete(key),
 
-  getProductReviews: (productId: string) => reviewService.getByProduct(productId),
-  getRecentReviews: (limit: number) => reviewService.getRecent(limit),
-  addProductReview: (review: Partial<ProductReview>) => reviewService.add(review),
+  getProductReviews: (pid: string) => reviewService.getByProduct(pid),
+  getRecentReviews: (limit?: number) => reviewService.getRecent(limit),
+  addProductReview: (r: any) => reviewService.add(r),
 
-  // Commerce
-  getUserOrders: (userId: string) => orderService.getUserOrders(userId),
-  getOrders: (userId: string) => orderService.getUserOrders(userId), // Alias
+  // --- COMMERCE ---
+  getUserOrders: (uid: string) => orderService.getUserOrders(uid),
   getAllOrders: (limit?: number) => orderService.getAll(limit),
-  getOrdersPaginated: (page?: number, limit?: number, status?: string) => orderService.getOrdersPaginated(page, limit, status),
-  getAdminPaymentsPaginated: (page: number, limit: number, status: string, method: string) => orderService.getAdminPaymentsPaginated(page, limit, status, method),
   getOrderById: (id: string) => orderService.getById(id),
-  createOrder: (order: Partial<Order> & { shippingAddress: ShippingAddress }) => orderService.create(order),
-  
-  adminUpdateOrder: async (id: string, updates: any) => {
-    await orderService.update(id, updates);
-    logAudit('UPDATE', 'orders', id, updates);
-  },
-  
-  cancelOrder: (orderId: string, userId: string) => orderService.cancelOrder(orderId, userId),
-  cancelAndRestoreStock: (orderId: string, userId: string) => orderService.cancelAndRestoreStock(orderId, userId),
-  requestReturn: (orderId: string, userId: string, reason: string) => orderService.requestReturn(orderId, userId, reason),
-  
-  adminProcessReturn: async (orderId: string, returnStatus: any, notes?: string) => {
-    const res = await orderService.adminProcessReturn(orderId, returnStatus, notes);
-    logAudit('RETURN_PROCESS', 'orders', orderId, { status: returnStatus, notes });
-    return res;
-  },
-  
-  issueFullRefund: async (orderId: string) => {
-    const res = await orderService.issueFullRefund(orderId);
-    logAudit('REFUND', 'orders', orderId);
-    return res;
-  },
+  getOrders: (uid: string) => orderService.getUserOrders(uid), // Alias for backward compatibility
+  getOrdersPaginated: (page: number, size: number, status?: string) => orderService.getOrdersPaginated(page, size, status),
+  getAdminPaymentsPaginated: (page: number, size: number, status: string, method: string) => orderService.getAdminPaymentsPaginated(page, size, status, method),
+  createOrder: (o: any) => orderService.create(o),
+  adminUpdateOrder: (id: string, updates: any) => orderService.update(id, updates),
+  cancelOrder: (oid: string, uid: string) => orderService.cancelOrder(oid, uid),
+  cancelAndRestoreStock: (oid: string, uid: string) => orderService.cancelAndRestoreStock(oid, uid),
+  requestReturn: (oid: string, uid: string, reason: string) => orderService.requestReturn(oid, uid, reason),
+  adminProcessReturn: (oid: string, status: any, notes?: string) => orderService.adminProcessReturn(oid, status, notes),
+  issueFullRefund: (oid: string) => orderService.issueFullRefund(oid),
 
-  fetchCart: (userId: string) => cartService.fetch(userId),
-  syncCart: (userId: string, items: CartItem[]) => cartService.sync(userId, items),
+  syncCart: (uid: string, items: any[]) => cartService.sync(uid, items),
+  fetchCart: (uid: string) => cartService.fetch(uid),
 
   getShippingZones: () => shippingService.getZones(),
-  createShippingZone: (z: Partial<ShippingZone>) => shippingService.createZone(z),
-  updateShippingZone: (id: string, z: Partial<ShippingZone>) => shippingService.updateZone(id, z),
+  createShippingZone: (z: any) => shippingService.createZone(z),
+  updateShippingZone: (id: string, z: any) => shippingService.updateZone(id, z),
   deleteShippingZone: (id: string) => shippingService.deleteZone(id),
-  addShippingOption: (zoneId: string, option: Partial<ShippingOption>) => shippingService.addOption(zoneId, option),
-  deleteShippingOption: (id: string) => shippingService.deleteOption(id),
+  addShippingOption: (zid: string, opt: any) => shippingService.addOption(zid, opt),
+  deleteShippingOption: (oid: string) => shippingService.deleteOption(oid),
 
-  getDiscountCodes: () => discountService.getAll(),
   validateDiscountCode: (code: string, total: number) => discountService.validate(code, total),
-  createDiscountCode: (d: Partial<DiscountCode>) => discountService.create(d),
-  updateDiscountCode: (id: string, d: Partial<DiscountCode>) => discountService.update(id, d),
+  getDiscountCodes: () => discountService.getAll(),
+  createDiscountCode: (d: any) => discountService.create(d),
+  updateDiscountCode: (id: string, d: any) => discountService.update(id, d),
   deleteDiscountCode: (id: string) => discountService.delete(id),
+  getPublicPaymentSettings: async () => {
+      const s = await settingsService.get();
+      return {
+          paypalClientId: s?.paypalClientId,
+          paypalMode: s?.paypalMode,
+          paymentGatewayEnabled: s?.paymentGatewayEnabled
+      };
+  },
 
-  // Content
-  getBlogPosts: () => blogService.getAllPosts(),
-  getBlogPostBySlug: (slug: string) => blogService.getPostBySlug(slug),
-  getBlogCategories: () => blogService.getCategories(),
-  createBlogCategory: (c: Partial<BlogCategory>) => blogService.createCategory(c),
-  deleteBlogCategory: (id: string) => blogService.deleteCategory(id),
-  
-  adminCreateBlogPost: async (p: Partial<BlogPost>) => {
-    await blogService.createPost(p);
-    logAudit('CREATE', 'blog_posts', undefined, { title: p.title });
-  },
-  adminUpdateBlogPost: async (id: string, p: Partial<BlogPost>) => {
-    await blogService.updatePost(id, p);
-    logAudit('UPDATE', 'blog_posts', id, p);
-  },
-  adminDeleteBlogPost: async (id: string) => {
-    await blogService.deletePost(id);
-    logAudit('DELETE', 'blog_posts', id);
-  },
-  adminBulkUpdateBlogPosts: async (ids: string[], updates: Partial<BlogPost>) => {
-    await blogService.bulkUpdate(ids, updates);
-    logAudit('BULK_UPDATE', 'blog_posts', undefined, { ids, updates });
-  },
-  adminBulkDeleteBlogPosts: async (ids: string[]) => {
-    await blogService.bulkDelete(ids);
-    logAudit('BULK_DELETE', 'blog_posts', undefined, { ids });
-  },
-  
-  incrementBlogPostView: (id: string) => blogService.incrementViewCount(id),
-  incrementBlogPostLike: (postId: string) => blogService.incrementBlogPostLike(postId),
-  getBlogComments: (postId: string) => blogService.getBlogComments(postId),
-  addBlogComment: (postId: string, userId: string, comment: string) => blogService.addBlogComment(postId, userId, comment),
-
-  getAppSettings: () => settingsService.get(),
-  getAdminSettings: () => settingsService.getAdminSettings(),
-  
-  updateAppSettings: async (id: number, s: Partial<AppSettings>) => {
-    await settingsService.update(id, s);
-    logAudit('UPDATE', 'app_settings', String(id), s);
-  },
-  
-  getPublicPaymentSettings: () => settingsService.getPublicPaymentSettings(),
-  getEmailTemplates: () => settingsService.getEmailTemplates(),
-  
-  updateEmailTemplate: async (id: string, t: Partial<EmailTemplate>) => {
-    await settingsService.updateEmailTemplate(id, t);
-    logAudit('UPDATE', 'email_templates', id, t);
-  },
-  
-  sendTestEmail: (to: string, subject: string, body: string) => settingsService.sendTestTemplate(to, subject, body),
-  checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
-  sendTransactionalEmail: (templateName: string, recipient: string, vars: Record<string, string>) => settingsService.sendTransactionalEmail(templateName, recipient, vars),
-
-  // Support / Marketing
-  subscribeToNewsletter: (email: string) => supportService.subscribeNewsletter(email),
-  submitContact: (data: any) => supportService.submitContact(data),
-  getNewsletterSubscribers: () => supportService.getNewsletterSubscribers(),
-  deleteNewsletterSubscriber: (id: string) => supportService.deleteNewsletterSubscriber(id),
-  getContactSubmissions: () => supportService.getContactSubmissions(),
-  markContactAsRead: (id: string) => supportService.markContactSubmissionAsRead(id),
-  deleteContactSubmission: (id: string) => supportService.deleteContactSubmission(id),
-
-  // User
-  getAllUsers: () => userService.getAll(),
+  // --- USERS ---
+  getUsers: () => userService.getAll(),
   getPublicUsers: () => userService.getPublicProfiles(),
-  getPaginatedUsers: (page?: number, limit?: number, search?: string) => userService.getPaginatedUsers(page, limit, search),
-  getUserProfile: (id: string) => userService.getProfile(id),
-  updateUserProfile: (id: string, data: any) => userService.updateProfile(id, data),
-  createUserProfile: (data: any) => userService.createProfile(data),
-  updateUserPassword: (password: string) => userService.updateUserPassword(password),
-  requestPasswordReset: (email: string) => userService.requestPasswordReset(email, getRedirectUrl()),
+  getUserProfile: (uid: string) => userService.getProfile(uid),
+  updateUserProfile: (uid: string, updates: any) => userService.updateProfile(uid, updates),
+  createUserProfile: (u: any) => userService.createProfile(u),
+  adminDeleteUser: (uid: string) => userService.deleteUser(uid),
+  updateUserPassword: (pass: string) => userService.updateUserPassword(pass),
+  requestPasswordReset: (email: string, url?: string) => userService.requestPasswordReset(email, url || window.location.origin + '/update-password'),
+  adminSendPasswordReset: (email: string) => userService.adminSendPasswordReset(email),
+  adminSendMagicLink: (email: string) => userService.adminSendMagicLink(email),
+  getPaginatedUsers: (page: number, size: number, search: string) => userService.getPaginatedUsers(page, size, search),
+  getUserActivity: (uid: string, limit?: number) => userService.getUserActivity(uid, limit),
+  deleteUserAccount: (uid: string) => userService.deleteUserAccount(uid),
   
-  adminDeleteUser: async (id: string) => {
-    await userService.deleteUser(id);
-    logAudit('DELETE', 'users', id);
-  },
-  adminSendPasswordReset: async (email: string) => {
-    await userService.adminSendPasswordReset(email);
-    logAudit('RESET_PASSWORD', 'users', undefined, { email });
-  },
-  adminSendMagicLink: async (email: string) => {
-    await userService.adminSendMagicLink(email);
-    logAudit('MAGIC_LINK', 'users', undefined, { email });
-  },
-  
-  getUserActivity: (userId: string, limit?: number) => userService.getUserActivity(userId, limit),
-  deleteUserAccount: (userId: string) => userService.deleteUserAccount(userId),
-
-  getUserAddresses: (userId: string) => userService.getUserAddresses(userId),
-  saveUserAddress: (userId: string, address: any) => userService.saveUserAddress(userId, address),
+  getUserAddresses: (uid: string) => userService.getUserAddresses(uid),
+  saveUserAddress: (uid: string, addr: any) => userService.saveUserAddress(uid, addr),
   deleteUserAddress: (id: string) => userService.deleteUserAddress(id),
 
-  getWishlist: (userId: string) => wishlistService.getIds(userId),
-  getWishlistProducts: (userId: string) => wishlistService.getProducts(userId),
-  toggleWishlist: (userId: string, productId: string) => wishlistService.toggle(userId, productId),
+  getWishlist: (uid: string) => wishlistService.getIds(uid),
+  getWishlistProducts: (uid: string) => wishlistService.getProducts(uid),
+  toggleWishlist: (uid: string, pid: string) => wishlistService.toggle(uid, pid),
 
-  // Storage
+  // --- CONTENT ---
+  // App Settings
+  getAppSettings: () => settingsService.get(), // Public
+  updateAppSettings: (id: number, s: any) => settingsService.updateSettings(s),
+  
+  // Emails & Notifications
+  getEmailTemplates: () => settingsService.getEmailTemplates(),
+  updateEmailTemplate: (id: string, t: any) => settingsService.updateEmailTemplate(id, t),
+  sendTestEmail: (to: string, subj: string, body: string) => settingsService.sendTestTemplate(to, subj, body),
+  checkEmailHealth: (email: string, key?: string, from?: string) => settingsService.checkEmailHealth(email, key, from),
+  sendWhatsAppMessage: (to: string, text: string) => settingsService.sendWhatsAppMessage(to, text),
+  sendTransactionalEmail: (template: string, recipient: string, vars: any) => settingsService.sendTransactionalEmail(template, recipient, vars),
+
+  // Blog
+  getBlogPosts: () => blogService.getAll(),
+  getBlogPostBySlug: (slug: string) => blogService.getBySlug(slug),
+  adminCreateBlogPost: (post: any) => blogService.create(post),
+  adminUpdateBlogPost: (id: string, post: any) => blogService.update(id, post),
+  adminDeleteBlogPost: (id: string) => blogService.delete(id),
+  adminBulkUpdateBlogPosts: (ids: string[], updates: any) => blogService.bulkUpdate(ids, updates),
+  adminBulkDeleteBlogPosts: (ids: string[]) => blogService.bulkDelete(ids),
+  incrementBlogPostView: (id: string) => blogService.incrementView(id),
+  incrementBlogPostLike: (id: string) => blogService.incrementLike(id),
+  getBlogCategories: () => blogService.getCategories(),
+  createBlogCategory: (c: any) => blogService.createCategory(c),
+  deleteBlogCategory: (id: string) => blogService.deleteCategory(id),
+  getBlogComments: (pid: string) => blogService.getComments(pid),
+  addBlogComment: (pid: string, uid: string, comment: string) => blogService.addComment(pid, uid, comment),
+
+  // Contact
+  submitContact: async (data: any) => {
+      // Direct supabase insert for public contact form
+      const { error } = await (settingsService as any).supabasePublic.from('contact_submissions').insert(data); // Casting to access private if needed or just use import
+      if (error) throw error;
+      // Trigger notification logic in backend via edge function or direct call if allowed
+      // Here we trust the UI to call sendTransactionalEmail if needed, or DB trigger
+  },
+  getContactSubmissions: async () => {
+      // Only admin
+      const { data, error } = await (settingsService as any).supabase.from('contact_submissions').select('*').order('created_at', {ascending:false});
+      if(error) throw error;
+      return (data || []).map(Mappers.toContactSubmission);
+  },
+  deleteContactSubmission: async (id: string) => {
+      const { error } = await (settingsService as any).supabase.from('contact_submissions').delete().eq('id', id);
+      if(error) throw error;
+  },
+  markContactAsRead: async (id: string) => {
+      const { error } = await (settingsService as any).supabase.from('contact_submissions').update({ is_read: true }).eq('id', id);
+      if(error) throw error;
+  },
+
+  // Newsletter
+  subscribeToNewsletter: async (email: string) => {
+      const { error } = await (settingsService as any).supabasePublic.from('newsletter_subscribers').upsert({ email, is_subscribed: true });
+      if (error) throw error;
+  },
+  getNewsletterSubscribers: async () => {
+      const { data, error } = await (settingsService as any).supabase.from('newsletter_subscribers').select('*').order('subscribed_at', {ascending:false});
+      if(error) throw error;
+      return (data || []).map(Mappers.toNewsletterSubscriber);
+  },
+  deleteNewsletterSubscriber: async (id: string) => {
+      const { error } = await (settingsService as any).supabase.from('newsletter_subscribers').delete().eq('id', id);
+      if(error) throw error;
+  },
+
+  // --- STORAGE ---
   uploadImage: (file: File) => storageService.uploadImage(file),
 
-  // Analytics
+  // --- ANALYTICS ---
   getAnalyticsOverview: (start: Date, end: Date) => analyticsService.getAnalyticsOverview(start, end),
   getAdminDashboardStats: () => analyticsService.getAdminDashboardStats(),
-  getAdminProductStats: (productId: string) => analyticsService.getAdminProductStats(productId),
+  getAdminProductStats: (pid: string) => analyticsService.getAdminProductStats(pid),
   getDailyAnalytics: (days: number) => analyticsService.getDailyAnalytics(days),
   getProductAnalytics: (days?: number) => analyticsService.getProductAnalytics(days),
-  getTrafficSources: (days: number) => analyticsService.getTrafficSources(days),
-  getGeoStats: (days: number) => analyticsService.getGeoStats(days),
-  getPagePerformance: (days: number) => analyticsService.getPagePerformance(days),
-  getLiveVisitors: (minutes?: number) => analyticsService.getLiveVisitors(minutes),
+  getTrafficSources: (days?: number) => analyticsService.getTrafficSources(days),
+  getGeoStats: (days?: number) => analyticsService.getGeoStats(days),
+  getPagePerformance: (days?: number) => analyticsService.getPagePerformance(days),
+  getLiveVisitors: (min?: number) => analyticsService.getLiveVisitors(min),
   persistSystemLogs: (logs: any[]) => analyticsService.persistSystemLogs(logs),
 };
