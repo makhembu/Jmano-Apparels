@@ -169,7 +169,8 @@ export class AnalyticsService {
   
   async persistSystemLogs(logs: any[]): Promise<void> {
     log('INSERT', 'system_logs');
-    const { error } = await (supabase.from('system_logs') as any).insert(logs.map(l => ({
+    // Cast supabase to any to allow using 'system_logs' table which might be missing from types
+    const { error } = await (supabase as any).from('system_logs').insert(logs.map(l => ({
       operation: l.operation,
       context: l.context,
       level: l.level,

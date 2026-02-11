@@ -1,10 +1,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { checkRateLimit } from './_lib/rate-limit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate Limit: 5 requests per minute per IP to prevent spamming accounts
+  const rateLimitResult = await checkRateLimit(req, 5, "60 s");
+  if (!rateLimitResult.success) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
   const { email, name } = req.body;
@@ -26,12 +33,7 @@ export default async function handler(req, res) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
     // 1. Check if user exists
-    const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    // Efficient lookup - in production with many users, getting by ID/Email specific API is better 
-    // but listUsers doesn't support filter by email directly in older versions, 
-    // newer versions allow supabaseAdmin.auth.admin.getUserByEmail(email)
-    
+    // Newer Supabase versions support getUserByEmail, falling back to list if needed
     let existingUser = null;
     try {
         const { data, error } = await supabaseAdmin.auth.admin.getUserByEmail(email);
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
             existingUser = data.user;
         }
     } catch (e) {
-        // Fallback or ignore if not supported
+        // Fallback logic could go here if getUserByEmail isn't available
     }
 
     if (existingUser) {
@@ -65,7 +67,7 @@ export default async function handler(req, res) {
         throw createError;
     }
 
-    // 3. Ensure profile exists in public table (Trigger usually handles this, but robust to do here)
+    // 3. Ensure profile exists in public table
     const { error: profileError } = await supabaseAdmin
         .from('users')
         .upsert({
