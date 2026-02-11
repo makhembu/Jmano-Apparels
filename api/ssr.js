@@ -41,9 +41,13 @@ async function getShell(baseUrl) {
   return promise;
 }
 
-// 3. Sanitize slug helper
+// 3. Helpers
 function sanitizeSlug(slug) {
   return (slug || '').split('/')[0].split('?')[0].trim();
+}
+
+function isUUID(str) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
 export default async function handler(req, res) {
@@ -94,9 +98,33 @@ export default async function handler(req, res) {
 
     // --- 3. Route-Specific Logic to Override Meta ---
     if (cleanPath.startsWith('/product/')) {
-        const slug = sanitizeSlug(cleanPath.split('/product/')[1]);
-        if (slug) {
-            const { data: product } = await supabase.from('products').select('*').eq('is_published', true).or(`slug.eq.${slug},id.eq.${slug}`).maybeSingle();
+        const identifier = sanitizeSlug(cleanPath.split('/product/')[1]);
+        if (identifier) {
+            let product = null;
+
+            // Strategy: 
+            // 1. Try finding by slug (most common for SEO URLs and safe for all inputs)
+            const { data: bySlug } = await supabase
+                .from('products')
+                .select('*')
+                .eq('is_published', true)
+                .eq('slug', identifier)
+                .maybeSingle();
+
+            if (bySlug) {
+                product = bySlug;
+            } else if (isUUID(identifier)) {
+                // 2. If slug didn't match AND it's a valid UUID, try ID.
+                // This prevents Postgres errors when comparing a text slug against the UUID 'id' column.
+                const { data: byId } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('is_published', true)
+                    .eq('id', identifier)
+                    .maybeSingle();
+                product = byId;
+            }
+
             if (product) {
                 meta.title = product.seo_title || `${product.title} | Jambo Apparels`;
                 meta.description = product.seo_description || product.description?.substring(0, 160) || meta.description;
@@ -104,7 +132,27 @@ export default async function handler(req, res) {
                 meta.type = 'product';
                 meta.isNoIndex = product.is_noindex || false;
                 meta.isNoFollow = product.is_nofollow || false;
-                structuredData = { "@type": "Product", name: product.title, description: meta.description, image: meta.image, sku: product.sku || product.id, brand: { "@type": "Brand", name: "Jambo Apparels" }, offers: { "@type": "Offer", url: meta.url, priceCurrency: settings?.currency || "GBP", price: String(product.sale_price || product.price), availability: (product.stock_quantity > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", itemCondition: "https://schema.org/NewCondition" } };
+                
+                // Ensure currency defaults to GBP if not set
+                const currency = settings?.currency || "GBP";
+                const price = product.sale_price || product.price || 0;
+                
+                structuredData = { 
+                    "@type": "Product", 
+                    name: product.title, 
+                    description: meta.description, 
+                    image: meta.image, 
+                    sku: product.sku || product.id, 
+                    brand: { "@type": "Brand", name: "Jambo Apparels" }, 
+                    offers: { 
+                        "@type": "Offer", 
+                        url: meta.url, 
+                        priceCurrency: currency, 
+                        price: String(price), 
+                        availability: (product.stock_quantity > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", 
+                        itemCondition: "https://schema.org/NewCondition" 
+                    } 
+                };
             }
         }
     } else if (cleanPath.startsWith('/blog/')) {
@@ -127,6 +175,7 @@ export default async function handler(req, res) {
                 extraMeta = `
       <meta property="article:published_time" content="${publishedTime}" />
       <meta property="article:modified_time" content="${modifiedTime}" />
+      <meta property="article:author" content="${post.author || 'Jambo Apparels'}" />
     `;
 
                 structuredData = { 
@@ -157,7 +206,7 @@ export default async function handler(req, res) {
     if (!meta.image || meta.image.trim() === '') {
       meta.image = settings?.default_og_image || 'https://i.imgur.com/pkaScEv.png';
     }
-    meta.description = meta.description.slice(0, 155);
+    meta.description = (meta.description || '').slice(0, 155);
 
     const safeTitle = esc(meta.title);
     const safeDesc = esc(meta.description);
