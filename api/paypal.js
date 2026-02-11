@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from './_lib/rate-limit.js';
+import { verifyAuth } from './_lib/auth.js';
 
 // Helper to retry fetches
 async function retryFetch(url, options, retries = 3, delay = 1000) {
@@ -48,6 +49,15 @@ export default async function handler(req, res) {
 
     const supabase = createClient(sbUrl, sbKey);
 
+    // SECURITY: Only Admins can trigger refunds via API
+    if (type === 'refund') {
+        try {
+            await verifyAuth(req, true);
+        } catch (e) {
+            return res.status(403).json({ error: "Forbidden: Only admins can issue refunds." });
+        }
+    }
+
     const { data: settings, error: settingsError } = await supabase.from('app_settings').select('*').eq('id', 1).single();
     if (settingsError || !settings?.paypal_client_id || !settings?.paypal_secret_key) {
       console.error("DB Error fetching PayPal keys:", settingsError?.message);
@@ -91,6 +101,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, refundId: refundData.id });
     }
     
+    // CAPTURE (Publicly accessible for guest checkout flow)
     const captureRes = await fetchWithTimeout(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },

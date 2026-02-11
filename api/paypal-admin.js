@@ -1,4 +1,6 @@
+
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from './_lib/auth.js';
 
 const fetchWithTimeout = (url, options, timeout = 15000) => {
   return Promise.race([
@@ -17,6 +19,9 @@ export default async function handler(req, res) {
   const { action, webhookId, url: webhookUrl } = req.body;
 
   try {
+    // SECURITY: Verify Request is from an Admin
+    await verifyAuth(req, true);
+
     // 1. Setup Supabase Admin
     const sbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -144,6 +149,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("[PayPal Admin API] Error:", error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    const status = error.message.includes('Forbidden') ? 403 : 500;
+    return res.status(status).json({ success: false, error: error.message });
   }
 }
