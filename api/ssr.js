@@ -64,11 +64,9 @@ export default async function handler(req, res) {
     return res.status(500).send('Could not load application shell.');
   }
   
-  // Defensively strip any existing title/desc tags from the shell
-  html = html
-    .replace(/<title>[\s\S]*?<\/title>/i, '')
-    .replace(/<meta name="description"[\s\S]*?>/i, '');
-
+  // NOTE: We do NOT strip tags manually here anymore. 
+  // We rely on replacing the entire <!--SSR_META_TAGS_START--> block.
+  // This ensures that if something goes wrong with the replacement, the default tags remain.
 
   try {
     if (!supabaseUrl || !supabaseKey) {
@@ -115,7 +113,6 @@ export default async function handler(req, res) {
                 product = bySlug;
             } else if (isUUID(identifier)) {
                 // 2. If slug didn't match AND it's a valid UUID, try ID.
-                // This prevents Postgres errors when comparing a text slug against the UUID 'id' column.
                 const { data: byId } = await supabase
                     .from('products')
                     .select('*')
@@ -133,7 +130,6 @@ export default async function handler(req, res) {
                 meta.isNoIndex = product.is_noindex || false;
                 meta.isNoFollow = product.is_nofollow || false;
                 
-                // Ensure currency defaults to GBP if not set
                 const currency = settings?.currency || "GBP";
                 const price = product.sale_price || product.price || 0;
                 
@@ -153,6 +149,12 @@ export default async function handler(req, res) {
                         itemCondition: "https://schema.org/NewCondition" 
                     } 
                 };
+                
+                // Add specific product meta tags for Twitter/OG that might help display
+                extraMeta = `
+                  <meta property="product:price:amount" content="${price}" />
+                  <meta property="product:price:currency" content="${currency}" />
+                `;
             }
         }
     } else if (cleanPath.startsWith('/blog/')) {
@@ -217,23 +219,24 @@ export default async function handler(req, res) {
 
     const headTags = `
       <title>${safeTitle}</title>
-      <link rel="canonical" href="${safeUrl}" />
       <meta name="description" content="${safeDesc}" />
+      <link rel="canonical" href="${safeUrl}" />
       <meta name="robots" content="${robotsContent}" />
       
+      <!-- Open Graph / Facebook -->
+      <meta property="og:type" content="${safeType}" />
+      <meta property="og:url" content="${safeUrl}" />
       <meta property="og:title" content="${safeTitle}" />
       <meta property="og:description" content="${safeDesc}" />
       <meta property="og:image" content="${safeImage}" />
       <meta property="og:image:alt" content="${safeTitle}" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:url" content="${safeUrl}" />
-      <meta property="og:type" content="${safeType}" />
       <meta property="og:site_name" content="Jambo Apparels" />
       ${extraMeta}
       
+      <!-- Twitter -->
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@jamboapparels" />
+      <meta name="twitter:url" content="${safeUrl}" />
       <meta name="twitter:title" content="${safeTitle}" />
       <meta name="twitter:description" content="${safeDesc}" />
       <meta name="twitter:image" content="${safeImage}" />
@@ -248,10 +251,16 @@ export default async function handler(req, res) {
     }
     
     // Replace placeholder with generated tags
-    html = html.replace(
-      /<!--SSR_META_TAGS_START-->[\s\S]*?<!--SSR_META_TAGS_END-->/,
-      `<!--SSR_META_TAGS_START-->\n${headTags}\n${schemaInjection}\n<!--SSR_META_TAGS_END-->`
-    );
+    // Crucial: This replaces the defaults defined in index.html with the dynamic content
+    if (html.includes('<!--SSR_META_TAGS_START-->')) {
+        html = html.replace(
+            /<!--SSR_META_TAGS_START-->[\s\S]*?<!--SSR_META_TAGS_END-->/,
+            `<!--SSR_META_TAGS_START-->\n${headTags}\n${schemaInjection}\n<!--SSR_META_TAGS_END-->`
+        );
+    } else {
+        // Fallback if markers are missing
+        html = html.replace('</head>', `${headTags}\n${schemaInjection}\n</head>`);
+    }
     
     const isDynamic = cleanPath.startsWith('/product/') || cleanPath.startsWith('/blog/');
     const cacheControl = isDynamic
@@ -264,8 +273,7 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error(`SSR Error for path ${path}:`, e);
-    // On error, serve the original shell without modification instead of redirecting.
-    // This provides a graceful fallback for crawlers with default tags.
+    // On error, serve the original shell without modification.
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
   }
