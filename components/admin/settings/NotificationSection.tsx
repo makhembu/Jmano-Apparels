@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
+import { SettingsService } from '../../../lib/services/content';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { Switch } from '../../ui/Switch';
@@ -25,14 +26,9 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
   const [errorMsg, setErrorMsg] = useState('');
   const [showKey, setShowKey] = useState(false);
 
-  // Modal States
-  const [showTestModal, setShowTestModal] = useState(false); // Email Modal
+  // Modal State
+  const [showTestModal, setShowTestModal] = useState(false);
   const [testEmailInput, setTestEmailInput] = useState('');
-
-  // WhatsApp Test State
-  const [showWhatsAppTestModal, setShowWhatsAppTestModal] = useState(false);
-  const [testWhatsAppPhone, setTestWhatsAppPhone] = useState('');
-  const [whatsAppChecking, setWhatsAppChecking] = useState(false);
 
   useEffect(() => {
     if (settings.resendApiKey) setResendApiKey(settings.resendApiKey);
@@ -49,9 +45,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
     setHealthStatus('idle');
   };
 
-  const openHealthCheckModal = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openHealthCheckModal = () => {
     setTestEmailInput(settings.contactEmail || '');
     setShowTestModal(true);
     setErrorMsg('');
@@ -90,35 +84,6 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
       showToast('Health check encountered an error.', 'error');
     } finally {
       setChecking(false);
-    }
-  };
-
-  const openWhatsAppTestModal = (e: React.MouseEvent) => {
-    e.preventDefault(); // CRITICAL: Stop form submission
-    e.stopPropagation();
-    // Default to admin number or empty
-    setTestWhatsAppPhone(settings.adminPhoneNumber || '');
-    setShowWhatsAppTestModal(true);
-  };
-
-  const executeWhatsAppTest = async () => {
-    if (!testWhatsAppPhone) {
-        showToast('Phone number required', 'error');
-        return;
-    }
-    setWhatsAppChecking(true);
-    try {
-        const result = await api.sendWhatsAppMessage(testWhatsAppPhone, "Hello! Your Jambo Apparels WhatsApp integration is connected and working correctly. 🌿");
-        if (result.success) {
-            showToast('Test message sent successfully!', 'success');
-            setShowWhatsAppTestModal(false);
-        } else {
-            showToast('Failed to send: ' + (result.message || 'Unknown error'), 'error');
-        }
-    } catch (e: any) {
-        showToast('Test failed: ' + e.message, 'error');
-    } finally {
-        setWhatsAppChecking(false);
     }
   };
 
@@ -246,15 +211,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
                     <Input label="Phone Number ID" name="whatsappPhoneNumberId" value={settings.whatsappPhoneNumberId || ''} onChange={onChange} placeholder="1234567890" />
-                    <p className="text-[9px] text-gray-400 mt-1 leading-tight">
-                        <strong>Required.</strong> The specific "Sender" ID from Meta. A business account can have multiple numbers; this tells the API which one to use.
-                    </p>
+                    <p className="text-[9px] text-gray-400 mt-1">Found in Meta Business Settings. Needed to identify *which* phone line to send from.</p>
                  </div>
                  <div>
                     <Input label="Business Account ID" name="whatsappBusinessAccountId" value={settings.whatsappBusinessAccountId || ''} onChange={onChange} placeholder="10987654321" />
-                    <p className="text-[9px] text-gray-400 mt-1 leading-tight">
-                        <strong>Required.</strong> Your overarching Meta Business ID. Used for analytics and billing verification.
-                    </p>
+                    <p className="text-[9px] text-gray-400 mt-1">Required for analytics and billing identification.</p>
                  </div>
              </div>
              <div>
@@ -263,24 +224,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                     <strong>Your Personal Number</strong>. The app uses this to send "New Order" alerts to you. Must include country code.
                  </p>
              </div>
-             
-             <div className="pt-2">
-                <Button 
-                   type="button" 
-                   variant="secondary" 
-                   onClick={openWhatsAppTestModal}
-                   className="w-full sm:w-auto text-xs font-bold uppercase tracking-wide"
-                >
-                   Test Configuration
-                </Button>
-                <p className="text-[10px] text-slate-400 mt-2 italic">Note: Save your settings first before testing.</p>
-             </div>
         </div>
       </div>
 
       {/* 3. Automated Rules */}
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
-        {/* ... (Automated Rules Section remains the same) ... */}
         <div className="border-b pb-4">
           <h3 className="text-lg font-medium text-brand-green">Automated Rules</h3>
           <p className="text-sm text-gray-500 mt-1">Manage exactly when emails are triggered.</p>
@@ -335,7 +283,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
         <Switch label="Show Newsletter Signup in Footer" description="Display the email subscription form in the website footer." checked={!!settings.enableNewsletterSignup} onChange={(val) => handleSwitchChange('enableNewsletterSignup', val)} />
       </div>
 
-      {/* Health Check Modal (Email) */}
+      {/* Health Check Modal */}
       {showTestModal && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
@@ -343,6 +291,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
               <h3 className="text-lg font-bold text-brand-dark">Test Email Configuration</h3>
               <p className="text-sm text-slate-500 mt-1">Verify that your Resend settings are working correctly.</p>
             </div>
+            {/* Replaced form with div to prevent nesting in parent form */}
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient Email</label>
@@ -368,45 +317,9 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 <Button type="button" variant="outline" onClick={() => setShowTestModal(false)} disabled={checking}>
                   Cancel
                 </Button>
+                {/* Changed to type='button' with onClick handler */}
                 <Button type="button" onClick={executeHealthCheck} isLoading={checking}>
                   Send Test Email
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* WhatsApp Test Modal */}
-      {showWhatsAppTestModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in border-t-4 border-green-500">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-brand-dark flex items-center gap-2">
-                 <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.894-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.017-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-                 Test WhatsApp
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">Send a verification message to confirm setup.</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient Phone</label>
-                <input
-                  type="text"
-                  required
-                  value={testWhatsAppPhone}
-                  onChange={(e) => setTestWhatsAppPhone(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500/20 outline-none"
-                  placeholder="e.g. 447938065718"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">Must include country code without + sign.</p>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowWhatsAppTestModal(false)} disabled={whatsAppChecking}>
-                  Cancel
-                </Button>
-                <Button type="button" onClick={executeWhatsAppTest} isLoading={whatsAppChecking} className="bg-green-600 hover:bg-green-700 border-transparent">
-                  Send Message
                 </Button>
               </div>
             </div>
