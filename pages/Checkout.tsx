@@ -160,7 +160,13 @@ export const Checkout: React.FC = () => {
     ? (activeDiscount.discountType === 'percentage' ? cartTotal * (activeDiscount.discountValue / 100) : activeDiscount.discountValue)
     : 0;
   
-  const taxRate = settings.taxRate || 0.20;
+  // Tax Logic with Safety Normalization
+  let taxRate = settings.taxRate || 0.20;
+  // If user entered 20 instead of 0.20, normalize it
+  if (taxRate >= 1) {
+    taxRate = taxRate / 100;
+  }
+  
   const taxableTotal = Math.max(0, cartTotal - discountAmount);
   const taxAmount = (taxableTotal / (1 + taxRate)) * taxRate;
   const finalTotal = Math.max(0, cartTotal + shippingCost - discountAmount);

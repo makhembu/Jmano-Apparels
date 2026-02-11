@@ -259,6 +259,12 @@ export interface AppSettings {
   socialSectionBody?: string;
   // Sitelinks Management
   priorityPages?: PriorityPage[];
+  // Business Info
+  companyName?: string;
+  registrationNumber?: string;
+  vatNumber?: string;
+  paymentInstructions?: string;
+  paymentTerms?: string;
 }
 
 export interface ShippingOption {

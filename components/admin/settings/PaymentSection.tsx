@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Switch } from '../../ui/Switch';
 import { PayPalWebhookManager } from './PayPalWebhookManager';
+import { Input } from '../../ui/Input';
+import { Textarea } from '../../ui/Textarea';
 
 interface PaymentSectionProps {
   settings: AppSettings;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
 }
 
 export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChange }) => {
@@ -42,6 +45,56 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ settings, onChan
 
   return (
     <div className="space-y-8">
+      
+      {/* Business Info Section */}
+      <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-slate-50 px-6 py-4 border-b border-gray-200">
+           <h3 className="text-lg font-bold text-slate-800 font-serif">Legal & Business Entity</h3>
+           <p className="text-xs text-slate-500 mt-1">These details appear on customer invoices.</p>
+        </div>
+        <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input 
+                    label="Legal Company Name" 
+                    name="companyName" 
+                    value={settings.companyName || ''} 
+                    onChange={onChange} 
+                    placeholder="Jambo Apparels Ltd" 
+                />
+                <Input 
+                    label="Registration Number" 
+                    name="registrationNumber" 
+                    value={settings.registrationNumber || ''} 
+                    onChange={onChange} 
+                    placeholder="12345678" 
+                />
+                <Input 
+                    label="VAT / Tax ID" 
+                    name="vatNumber" 
+                    value={settings.vatNumber || ''} 
+                    onChange={onChange} 
+                    placeholder="GB 123 4567 89" 
+                />
+                <Input 
+                    label="Payment Terms" 
+                    name="paymentTerms" 
+                    value={settings.paymentTerms || ''} 
+                    onChange={onChange} 
+                    placeholder="e.g. Due on Receipt, Net 30" 
+                />
+            </div>
+            <Textarea 
+                label="Bank Transfer / Payment Instructions" 
+                name="paymentInstructions"
+                value={settings.paymentInstructions || ''}
+                onChange={onChange}
+                rows={3}
+                placeholder="Bank: Monzo Business &#10;Sort Code: 00-00-00 &#10;Account: 12345678"
+            />
+            <p className="text-xs text-gray-500 italic">Formatting tip: Use new lines for readability on the invoice.</p>
+        </div>
+      </div>
+
       <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
            <h3 className="text-lg font-bold text-slate-800 font-serif">PayPal Configuration</h3>

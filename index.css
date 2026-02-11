@@ -97,8 +97,8 @@ body {
   /* Hide all elements specifically marked as non-printable */
   .no-print,
   nav,
-  header:not(#invoice-container header),
-  footer:not(#invoice-container footer),
+  header:not(.invoice-container header),
+  footer:not(.invoice-container footer),
   aside,
   .copilot-widget,
   #copilot-drawer {
@@ -115,9 +115,9 @@ body {
     background: none !important;
   }
 
-  /* This ensures the invoice, which is `hidden print:block`, becomes visible
+  /* This ensures the invoice, which is `hidden print:flex`, becomes visible
      and is positioned to take over the entire page for printing. */
-  #invoice-container {
+  .invoice-container {
     display: flex !important;
     flex-direction: column !important;
     position: absolute !important;

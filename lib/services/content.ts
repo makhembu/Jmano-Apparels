@@ -179,7 +179,14 @@ export class SettingsService {
       seo_content_title: settings.seoContentTitle, seo_content_intro: settings.seoContentIntro,
       seo_content_col1_title: settings.seoContentCol1Title, seo_content_col1_body: settings.seoContentCol1Body,
       seo_content_col2_title: settings.seoContentCol2Title, seo_content_col2_body: settings.seoContentCol2Body,
-      social_section_title: settings.socialSectionTitle, social_section_body: settings.socialSectionBody
+      social_section_title: settings.socialSectionTitle, social_section_body: settings.socialSectionBody,
+      
+      // Business Info
+      company_name: settings.companyName,
+      registration_number: settings.registrationNumber,
+      vat_number: settings.vatNumber,
+      payment_instructions: settings.paymentInstructions,
+      payment_terms: settings.paymentTerms
     };
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
     

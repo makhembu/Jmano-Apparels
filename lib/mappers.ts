@@ -160,6 +160,13 @@ export const Mappers = {
 
     // Sitelinks
     priorityPages: (s.priority_pages as any[]) || undefined,
+
+    // Business Info (New)
+    companyName: s.company_name || undefined,
+    registrationNumber: s.registration_number || undefined,
+    vatNumber: s.vat_number || undefined,
+    paymentInstructions: s.payment_instructions || undefined,
+    paymentTerms: s.payment_terms || undefined
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
