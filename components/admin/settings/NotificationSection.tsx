@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
@@ -211,12 +209,20 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
                 />
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <Input label="Phone Number ID" name="whatsappPhoneNumberId" value={settings.whatsappPhoneNumberId || ''} onChange={onChange} placeholder="1234567890" />
-                 <Input label="Business Account ID" name="whatsappBusinessAccountId" value={settings.whatsappBusinessAccountId || ''} onChange={onChange} placeholder="10987654321" />
+                 <div>
+                    <Input label="Phone Number ID" name="whatsappPhoneNumberId" value={settings.whatsappPhoneNumberId || ''} onChange={onChange} placeholder="1234567890" />
+                    <p className="text-[9px] text-gray-400 mt-1">Found in Meta Business Settings. Needed to identify *which* phone line to send from.</p>
+                 </div>
+                 <div>
+                    <Input label="Business Account ID" name="whatsappBusinessAccountId" value={settings.whatsappBusinessAccountId || ''} onChange={onChange} placeholder="10987654321" />
+                    <p className="text-[9px] text-gray-400 mt-1">Required for analytics and billing identification.</p>
+                 </div>
              </div>
              <div>
                  <Input label="Admin Phone Number" name="adminPhoneNumber" value={settings.adminPhoneNumber || ''} onChange={onChange} placeholder="447938065718" />
-                 <p className="text-[10px] text-gray-400 mt-1">Number to receive admin alerts (Must include country code, e.g., 44...)</p>
+                 <p className="text-[10px] text-gray-400 mt-1">
+                    <strong>Your Personal Number</strong>. The app uses this to send "New Order" alerts to you. Must include country code.
+                 </p>
              </div>
         </div>
       </div>
