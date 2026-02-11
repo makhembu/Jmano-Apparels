@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from './_lib/auth.js';
 
 // Define tools server-side (must match client-side expectations)
 const functionDeclarations = [
@@ -71,6 +72,13 @@ Route: ${context?.route || '/'}
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // SECURITY: Ensure only authenticated Admins can access this endpoint
+  try {
+    await verifyAuth(req, true);
+  } catch (e) {
+    return res.status(403).json({ error: "Unauthorized: Admin access required for Copilot." });
+  }
+
   const { history, message, pageContext } = req.body;
 
   try {
@@ -79,34 +87,34 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+        // Use service role to fetch settings securely
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
         if (supabaseUrl && supabaseKey) {
             const supabase = createClient(supabaseUrl, supabaseKey);
-            const { data } = await supabase.from('app_settings').select('gemini_api_key').single();
+            const { data } = await supabase.from('app_settings').select('gemini_api_key').eq('id', 1).single();
             if (data?.gemini_api_key) apiKey = data.gemini_api_key;
         }
     }
 
     if (!apiKey) {
-        return res.status(400).json({ error: "Gemini API Key not configured." });
+        return res.status(400).json({ error: "Gemini API Key not configured on server." });
     }
 
     const ai = new GoogleGenAI({ apiKey });
     const model = 'gemini-3-flash-preview';
 
     // 2. Prepare History for SDK
-    const contents = (history || []).map(msg => ({
+    // The SDK expects history without the very last user message, which is passed in generateContent
+    const validHistory = (history || []).map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
         parts: [{ text: msg.content }]
     }));
-    
-    contents.push({ role: 'user', parts: [{ text: message }] });
 
-    // 3. Generate Content (One-shot with history context)
+    // 3. Generate Content
     const response = await ai.models.generateContent({
         model: model,
-        contents: contents,
+        contents: [...validHistory, { role: 'user', parts: [{ text: message }] }],
         config: {
             systemInstruction: generateSystemPrompt(pageContext),
             tools: [{ functionDeclarations }],

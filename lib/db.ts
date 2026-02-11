@@ -42,7 +42,7 @@ const getRedirectUrl = () => {
 // Internal Helper to log admin actions
 const logAudit = async (action: string, table: string, recordId?: string, details?: any) => {
   try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) return;
       
       await supabase.from('audit_logs').insert({
