@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../../types';
 import { Button } from '../../ui/Button';
@@ -101,6 +102,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
 
   return (
     <div className="space-y-6 relative">
+      {/* 1. Resend Config */}
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
         <div className="border-b pb-4 flex justify-between items-center">
           <div>
@@ -177,23 +179,52 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({ settin
         </div>
       </div>
 
+      {/* 2. Automated Rules */}
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
         <div className="border-b pb-4">
           <h3 className="text-lg font-medium text-brand-green">Automated Rules</h3>
-          <p className="text-sm text-gray-500 mt-1">Manage when emails are sent.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage exactly when emails are triggered.</p>
         </div>
 
-        <Switch label="Master Switch" description="Turn all automated customer emails on or off." checked={!!settings.enableEmailNotifications} onChange={(val) => handleSwitchChange('enableEmailNotifications', val)} />
+        <Switch 
+          label="Master Switch" 
+          description="Turn ALL automated emails on or off instantly." 
+          checked={!!settings.enableEmailNotifications} 
+          onChange={(val) => handleSwitchChange('enableEmailNotifications', val)} 
+        />
         
-        <div className={`space-y-3 pl-4 border-l-2 border-gray-100 transition-opacity ${!masterSwitchEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4 mb-2">Customer Emails</h4>
-          <Switch label="Welcome Email" description="Send to new users upon successful sign-up." checked={!!settings.enableEmailWelcome} onChange={(val) => handleSwitchChange('enableEmailWelcome', val)} />
-          <Switch label="New Order Confirmation" description="Send to customers after they complete a purchase." checked={!!settings.enableEmailNewOrder} onChange={(val) => handleSwitchChange('enableEmailNewOrder', val)} />
-          <Switch label="Order Shipped Notification" description="Send when an order's status is updated to 'Shipped'." checked={!!settings.enableEmailOrderShipped} onChange={(val) => handleSwitchChange('enableEmailOrderShipped', val)} />
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100 transition-opacity ${!masterSwitchEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
           
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-6 mb-2">Admin Alerts</h4>
-          <Switch label="New Sale Alert" description="Notify admin via email when a new order is placed." checked={!!settings.enableEmailAdminNewOrder} onChange={(val) => handleSwitchChange('enableEmailAdminNewOrder', val)} />
-          <Switch label="Contact Form Alert" description="Notify admin when a new contact form message is received." checked={!!settings.enableEmailContactAdmin} onChange={(val) => handleSwitchChange('enableEmailContactAdmin', val)} />
+          {/* Customer Emails */}
+          <div className="space-y-4">
+              <h4 className="text-xs font-black text-brand-dark uppercase tracking-widest mt-2 mb-4 border-b border-gray-100 pb-2">Customer Order Updates</h4>
+              <Switch label="Welcome Email" description="New user sign up." checked={!!settings.enableEmailWelcome} onChange={(val) => handleSwitchChange('enableEmailWelcome', val)} />
+              <Switch label="Order Confirmation" description="Purchase successful." checked={!!settings.enableEmailNewOrder} onChange={(val) => handleSwitchChange('enableEmailNewOrder', val)} />
+              <Switch label="Processing Update" description="Status changed to 'Processing'." checked={!!settings.enableEmailOrderProcessing} onChange={(val) => handleSwitchChange('enableEmailOrderProcessing', val)} />
+              <Switch label="Shipped Notification" description="Status changed to 'Shipped'." checked={!!settings.enableEmailOrderShipped} onChange={(val) => handleSwitchChange('enableEmailOrderShipped', val)} />
+              <Switch label="Order Cancelled" description="Order cancelled." checked={!!settings.enableEmailOrderCancelled} onChange={(val) => handleSwitchChange('enableEmailOrderCancelled', val)} />
+              <Switch label="Refund Issued" description="Refund processed." checked={!!settings.enableEmailOrderRefunded} onChange={(val) => handleSwitchChange('enableEmailOrderRefunded', val)} />
+          </div>
+
+          <div className="space-y-4">
+              <h4 className="text-xs font-black text-brand-dark uppercase tracking-widest mt-2 mb-4 border-b border-gray-100 pb-2">Returns & Support</h4>
+              <Switch label="Return Requested" description="Confirm receipt of return request." checked={!!settings.enableEmailReturnRequested} onChange={(val) => handleSwitchChange('enableEmailReturnRequested', val)} />
+              <Switch label="Return Approved" description="Instructions sent to customer." checked={!!settings.enableEmailReturnApproved} onChange={(val) => handleSwitchChange('enableEmailReturnApproved', val)} />
+              <Switch label="Return Rejected" description="Return denied notification." checked={!!settings.enableEmailReturnRejected} onChange={(val) => handleSwitchChange('enableEmailReturnRejected', val)} />
+              <div className="h-px bg-gray-100 my-2"></div>
+              <Switch label="Contact Auto-Reply" description="Confirm receipt of contact form." checked={!!settings.enableEmailContactAutoreply} onChange={(val) => handleSwitchChange('enableEmailContactAutoreply', val)} />
+              <Switch label="Newsletter Welcome" description="Sent after subscription." checked={!!settings.enableEmailNewsletterWelcome} onChange={(val) => handleSwitchChange('enableEmailNewsletterWelcome', val)} />
+          </div>
+
+          {/* Admin Alerts */}
+          <div className="md:col-span-2 space-y-4 mt-2">
+              <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2 bg-gray-50 p-2 rounded">Internal Admin Alerts</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Switch label="New Sale Alert" description="Notify admin of new orders." checked={!!settings.enableEmailAdminNewOrder} onChange={(val) => handleSwitchChange('enableEmailAdminNewOrder', val)} />
+                  <Switch label="Contact Form Alert" description="New contact message received." checked={!!settings.enableEmailContactAdmin} onChange={(val) => handleSwitchChange('enableEmailContactAdmin', val)} />
+                  <Switch label="Return Alert" description="New return request submitted." checked={!!settings.enableEmailAdminReturnAlert} onChange={(val) => handleSwitchChange('enableEmailAdminReturnAlert', val)} />
+              </div>
+          </div>
         </div>
       </div>
 

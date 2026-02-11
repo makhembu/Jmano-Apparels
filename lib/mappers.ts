@@ -1,4 +1,5 @@
 
+
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -118,13 +119,28 @@ export const Mappers = {
     // AI Configuration
     geminiApiKey: s.gemini_api_key || undefined,
     
-    // Notifications
+    // Notifications - Customer Orders
     enableEmailNotifications: s.enable_email_notifications ?? false,
     enableEmailWelcome: s.enable_email_welcome ?? false,
     enableEmailNewOrder: s.enable_email_new_order ?? false,
+    enableEmailOrderProcessing: s.enable_email_order_processing ?? false,
     enableEmailOrderShipped: s.enable_email_order_shipped ?? false,
+    enableEmailOrderCancelled: s.enable_email_order_cancelled ?? false,
+    enableEmailOrderRefunded: s.enable_email_order_refunded ?? false,
+    
+    // Notifications - Customer Returns
+    enableEmailReturnRequested: s.enable_email_return_requested ?? false,
+    enableEmailReturnApproved: s.enable_email_return_approved ?? false,
+    enableEmailReturnRejected: s.enable_email_return_rejected ?? false,
+
+    // Notifications - General
+    enableEmailContactAutoreply: s.enable_email_contact_autoreply ?? false,
+    enableEmailNewsletterWelcome: s.enable_email_newsletter_welcome ?? false,
+
+    // Notifications - Admin
     enableEmailAdminNewOrder: s.enable_email_admin_new_order ?? false,
     enableEmailContactAdmin: s.enable_email_contact_admin ?? false,
+    enableEmailAdminReturnAlert: s.enable_email_admin_return_alert ?? false,
     
     // Features
     enableNewsletterSignup: s.enable_newsletter_signup ?? false,

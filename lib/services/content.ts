@@ -1,4 +1,5 @@
 
+
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -160,10 +161,26 @@ export class SettingsService {
       privacy_policy: settings.privacyPolicy, terms_conditions: settings.termsConditions, return_policy: settings.returnPolicy,
       shipping_policy: settings.shippingPolicy, tax_rate: settings.taxRate, free_shipping_threshold: settings.freeShippingThreshold,
       require_login_for_checkout: settings.requireLoginForCheckout, featured_categories: settings.featuredCategories,
-      gemini_api_key: settings.geminiApiKey, enable_email_notifications: settings.enableEmailNotifications,
-      enable_email_welcome: settings.enableEmailWelcome, enable_email_new_order: settings.enableEmailNewOrder,
-      enable_email_order_shipped: settings.enableEmailOrderShipped, enable_email_admin_new_order: settings.enableEmailAdminNewOrder,
-      enable_email_contact_admin: settings.enableEmailContactAdmin, enable_newsletter_signup: settings.enableNewsletterSignup,
+      gemini_api_key: settings.geminiApiKey,
+      
+      // Email Notifications
+      enable_email_notifications: settings.enableEmailNotifications,
+      enable_email_welcome: settings.enableEmailWelcome,
+      enable_email_new_order: settings.enableEmailNewOrder,
+      enable_email_order_processing: settings.enableEmailOrderProcessing,
+      enable_email_order_shipped: settings.enableEmailOrderShipped,
+      enable_email_order_cancelled: settings.enableEmailOrderCancelled,
+      enable_email_order_refunded: settings.enableEmailOrderRefunded,
+      enable_email_return_requested: settings.enableEmailReturnRequested,
+      enable_email_return_approved: settings.enableEmailReturnApproved,
+      enable_email_return_rejected: settings.enableEmailReturnRejected,
+      enable_email_contact_autoreply: settings.enableEmailContactAutoreply,
+      enable_email_newsletter_welcome: settings.enableEmailNewsletterWelcome,
+      enable_email_admin_new_order: settings.enableEmailAdminNewOrder,
+      enable_email_contact_admin: settings.enableEmailContactAdmin,
+      enable_email_admin_return_alert: settings.enableEmailAdminReturnAlert,
+
+      enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm, enable_reviews: settings.enableReviews,
       enable_featured_products: settings.enableFeaturedProducts, enable_commitment_section: settings.enableCommitmentSection,
       enable_categories_section: settings.enableCategoriesSection, enable_community_section: settings.enableCommunitySection,
@@ -244,12 +261,32 @@ export class SettingsService {
             return;
         }
 
+        // Master Switch
         if (settings.enableEmailNotifications === false) return;
-        if (templateName === 'welcome_email' && !settings.enableEmailWelcome) return;
-        if (templateName === 'new_order_customer' && !settings.enableEmailNewOrder) return;
-        if (templateName === 'order_shipped' && !settings.enableEmailOrderShipped) return;
-        if (templateName === 'admin_new_order' && !settings.enableEmailAdminNewOrder) return;
-        if (templateName === 'contact_notification_admin' && !settings.enableEmailContactAdmin) return;
+
+        // Granular Checks
+        switch (templateName) {
+            case 'welcome_email': if (!settings.enableEmailWelcome) return; break;
+            case 'new_order_customer': if (!settings.enableEmailNewOrder) return; break;
+            case 'order_processing': if (!settings.enableEmailOrderProcessing) return; break;
+            case 'order_shipped': if (!settings.enableEmailOrderShipped) return; break;
+            case 'order_cancelled': if (!settings.enableEmailOrderCancelled) return; break;
+            case 'order_refunded': if (!settings.enableEmailOrderRefunded) return; break;
+            
+            case 'return_requested': if (!settings.enableEmailReturnRequested) return; break;
+            case 'return_approved': if (!settings.enableEmailReturnApproved) return; break;
+            case 'return_rejected': if (!settings.enableEmailReturnRejected) return; break;
+
+            case 'newsletter_welcome': if (!settings.enableEmailNewsletterWelcome) return; break;
+            case 'contact_autoreply': if (!settings.enableEmailContactAutoreply) return; break;
+            
+            case 'admin_new_order': if (!settings.enableEmailAdminNewOrder) return; break;
+            case 'contact_notification_admin': if (!settings.enableEmailContactAdmin) return; break;
+            case 'admin_return_alert': if (!settings.enableEmailAdminReturnAlert) return; break;
+            
+            // guest_order_account_created is tied to new order logic typically
+            case 'guest_order_account_created': if (!settings.enableEmailNewOrder) return; break;
+        }
 
         const allVariables = { ...variables, '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png', '{{shop_url}}': 'https://jamboapparels.com', '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com' };
         let subject = template.subject;

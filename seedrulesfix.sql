@@ -1,0 +1,133 @@
+-- ============================================================================
+-- NOTIFICATION RULES EXPANSION
+-- Adds granular control for all available email templates
+-- ============================================================================
+
+-- 1. Add new toggle columns to app_settings
+ALTER TABLE public.app_settings
+ADD COLUMN IF NOT EXISTS enable_email_order_processing BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_order_cancelled BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_order_refunded BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_return_requested BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_return_approved BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_return_rejected BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_contact_autoreply BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_admin_return_alert BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS enable_email_newsletter_welcome BOOLEAN DEFAULT true;
+
+-- 2. Update the public view to expose these new columns
+DROP VIEW IF EXISTS public.public_app_settings;
+
+CREATE VIEW public.public_app_settings AS
+SELECT
+  id,
+  slogan,
+  secondary_slogan,
+  logo_image,
+  mission,
+  vision,
+  core_values,
+  founder_name,
+  founder_bio,
+  founder_image,
+  founder_quote,
+  contact_email,
+  contact_phone,
+  contact_address,
+  business_hours,
+  social_links,
+  support_email,
+  currency,
+  tax_rate,
+  free_shipping_threshold,
+  require_login_for_checkout,
+  shipping_policy,
+  return_policy,
+  privacy_policy,
+  terms_conditions,
+  hero_banner_image,
+  hero_banner_text,
+  announcement_text,
+  is_announcement_enabled,
+  maintenance_mode,
+  maintenance_message,
+  featured_categories,
+  enable_newsletter_signup,
+  enable_contact_form,
+  enable_reviews,
+  enable_featured_products,
+  enable_commitment_section,
+  enable_categories_section,
+  enable_community_section,
+  enable_journal_section,
+  enable_social_section,
+  social_section_title,
+  social_section_body,
+  
+  -- Existing Email Settings
+  enable_email_notifications,
+  enable_email_welcome,
+  enable_email_new_order,
+  enable_email_order_shipped,
+  enable_email_admin_new_order,
+  enable_email_contact_admin,
+
+  -- New Email Settings
+  enable_email_order_processing,
+  enable_email_order_cancelled,
+  enable_email_order_refunded,
+  enable_email_return_requested,
+  enable_email_return_approved,
+  enable_email_return_rejected,
+  enable_email_contact_autoreply,
+  enable_email_admin_return_alert,
+  enable_email_newsletter_welcome,
+
+  seo_title,
+  seo_description,
+  default_og_image,
+  google_analytics_id,
+  custom_head_scripts,
+  shop_seo_title,
+  shop_seo_description,
+  blog_seo_title,
+  blog_seo_description,
+  about_seo_title,
+  about_seo_description,
+  seo_content_title,
+  seo_content_intro,
+  seo_content_col1_title,
+  seo_content_col1_body,
+  seo_content_col2_title,
+  seo_content_col2_body,
+  paypal_client_id,
+  paypal_mode,
+  payment_gateway_enabled,
+  gemini_api_key,
+  resend_from_email,
+  company_name,
+  registration_number,
+  vat_number,
+  payment_instructions,
+  payment_terms,
+  about_hero_tag,
+  about_hero_title,
+  about_founder_tag,
+  about_mission_title,
+  about_mission_body,
+  about_vision_title,
+  about_vision_body,
+  about_values_tag,
+  about_values_title,
+  about_values_intro,
+  about_value_1_title,
+  about_value_1_body,
+  about_value_2_title,
+  about_value_2_body,
+  about_value_3_title,
+  about_value_3_body
+FROM
+  app_settings;
+
+-- Grant access
+GRANT SELECT ON public.public_app_settings TO anon, authenticated;

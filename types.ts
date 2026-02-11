@@ -226,12 +226,32 @@ export interface AppSettings {
   resendApiKey?: string;
   resendFromEmail?: string;
   geminiApiKey?: string;
+  
+  // NOTIFICATIONS
   enableEmailNotifications?: boolean;
+  
+  // Customer Order Flow
   enableEmailWelcome?: boolean;
   enableEmailNewOrder?: boolean;
+  enableEmailOrderProcessing?: boolean; // New
   enableEmailOrderShipped?: boolean;
+  enableEmailOrderCancelled?: boolean; // New
+  enableEmailOrderRefunded?: boolean; // New
+  
+  // Customer Returns
+  enableEmailReturnRequested?: boolean; // New
+  enableEmailReturnApproved?: boolean; // New
+  enableEmailReturnRejected?: boolean; // New
+
+  // Other Customer
+  enableEmailContactAutoreply?: boolean; // New
+  enableEmailNewsletterWelcome?: boolean; // New
+
+  // Admin Alerts
   enableEmailAdminNewOrder?: boolean;
   enableEmailContactAdmin?: boolean;
+  enableEmailAdminReturnAlert?: boolean; // New
+
   enableNewsletterSignup?: boolean;
   enableContactForm?: boolean;
   enableReviews?: boolean;
