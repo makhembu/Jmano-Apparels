@@ -1,5 +1,3 @@
-
-
 import { supabase } from '../supabaseClient';
 import { supabasePublic } from '../supabasePublicClient';
 import { Mappers } from '../mappers';
@@ -180,6 +178,13 @@ export class SettingsService {
       enable_email_contact_admin: settings.enableEmailContactAdmin,
       enable_email_admin_return_alert: settings.enableEmailAdminReturnAlert,
 
+      // WhatsApp
+      whatsapp_access_token: settings.whatsappAccessToken,
+      whatsapp_phone_number_id: settings.whatsappPhoneNumberId,
+      whatsapp_business_account_id: settings.whatsappBusinessAccountId,
+      admin_phone_number: settings.adminPhoneNumber,
+      enable_whatsapp_notifications: settings.enableWhatsappNotifications,
+
       enable_newsletter_signup: settings.enableNewsletterSignup,
       enable_contact_form: settings.enableContactForm, enable_reviews: settings.enableReviews,
       enable_featured_products: settings.enableFeaturedProducts, enable_commitment_section: settings.enableCommitmentSection,
@@ -223,6 +228,8 @@ export class SettingsService {
     const payload: any = {};
     if (template.subject) payload.subject = template.subject;
     if (template.bodyHtml) payload.body_html = template.bodyHtml;
+    if (template.whatsappBodyText !== undefined) payload.whatsapp_body_text = template.whatsappBodyText;
+    
     const { error } = await supabase.from('email_templates').update(payload as any).eq('id', id);
     if (error) throw error;
   }
@@ -251,55 +258,131 @@ export class SettingsService {
     }
   }
 
-  async sendTransactionalEmail(templateName: string, recipient: string, variables: Record<string, string>): Promise<void> {
+  async sendWhatsAppMessage(to: string, text: string): Promise<void> {
     try {
-        log('SEND_EMAIL', templateName, recipient);
+        const response = await fetch('/api/send-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to, text })
+        });
+        const data = await response.json();
+        if (!response.ok) console.warn('[WhatsApp] Send failed', data.error);
+        else log('SEND_WHATSAPP', 'success', { to });
+    } catch (e) {
+        console.error('[WhatsApp] Transport error', e);
+    }
+  }
+
+  async sendTransactionalEmail(templateName: string, recipientEmail: string, variables: Record<string, string>): Promise<void> {
+    try {
+        log('SEND_NOTIFICATION', templateName, recipientEmail);
         const [templates, settings] = await Promise.all([this.getEmailTemplates(), this.get()]);
         const template = templates.find(t => t.name === templateName);
         if (!template || !settings) {
-            console.warn(`[Email] Template '${templateName}' or settings not found.`);
+            console.warn(`[Notification] Template '${templateName}' or settings not found.`);
             return;
         }
 
-        // Master Switch
-        if (settings.enableEmailNotifications === false) return;
-
-        // Granular Checks
+        // Master Switch for Emails
+        const emailAllowed = settings.enableEmailNotifications !== false;
+        
+        // Granular Check Logic (Determine if this specific event type is enabled)
+        let eventEnabled = true;
+        let isAdminAlert = false;
+        
         switch (templateName) {
-            case 'welcome_email': if (!settings.enableEmailWelcome) return; break;
-            case 'new_order_customer': if (!settings.enableEmailNewOrder) return; break;
-            case 'order_processing': if (!settings.enableEmailOrderProcessing) return; break;
-            case 'order_shipped': if (!settings.enableEmailOrderShipped) return; break;
-            case 'order_cancelled': if (!settings.enableEmailOrderCancelled) return; break;
-            case 'order_refunded': if (!settings.enableEmailOrderRefunded) return; break;
+            case 'welcome_email': eventEnabled = !!settings.enableEmailWelcome; break;
+            case 'new_order_customer': eventEnabled = !!settings.enableEmailNewOrder; break;
+            case 'order_processing': eventEnabled = !!settings.enableEmailOrderProcessing; break;
+            case 'order_shipped': eventEnabled = !!settings.enableEmailOrderShipped; break;
+            case 'order_cancelled': eventEnabled = !!settings.enableEmailOrderCancelled; break;
+            case 'order_refunded': eventEnabled = !!settings.enableEmailOrderRefunded; break;
             
-            case 'return_requested': if (!settings.enableEmailReturnRequested) return; break;
-            case 'return_approved': if (!settings.enableEmailReturnApproved) return; break;
-            case 'return_rejected': if (!settings.enableEmailReturnRejected) return; break;
+            case 'return_requested': eventEnabled = !!settings.enableEmailReturnRequested; break;
+            case 'return_approved': eventEnabled = !!settings.enableEmailReturnApproved; break;
+            case 'return_rejected': eventEnabled = !!settings.enableEmailReturnRejected; break;
 
-            case 'newsletter_welcome': if (!settings.enableEmailNewsletterWelcome) return; break;
-            case 'contact_autoreply': if (!settings.enableEmailContactAutoreply) return; break;
+            case 'newsletter_welcome': eventEnabled = !!settings.enableEmailNewsletterWelcome; break;
+            case 'contact_autoreply': eventEnabled = !!settings.enableEmailContactAutoreply; break;
             
-            case 'admin_new_order': if (!settings.enableEmailAdminNewOrder) return; break;
-            case 'contact_notification_admin': if (!settings.enableEmailContactAdmin) return; break;
-            case 'admin_return_alert': if (!settings.enableEmailAdminReturnAlert) return; break;
+            case 'admin_new_order': 
+                eventEnabled = !!settings.enableEmailAdminNewOrder; 
+                isAdminAlert = true; 
+                break;
+            case 'contact_notification_admin': 
+                eventEnabled = !!settings.enableEmailContactAdmin; 
+                isAdminAlert = true; 
+                break;
+            case 'admin_return_alert': 
+                eventEnabled = !!settings.enableEmailAdminReturnAlert; 
+                isAdminAlert = true; 
+                break;
             
-            // guest_order_account_created is tied to new order logic typically
-            case 'guest_order_account_created': if (!settings.enableEmailNewOrder) return; break;
+            case 'guest_order_account_created': eventEnabled = !!settings.enableEmailNewOrder; break;
         }
 
-        const allVariables = { ...variables, '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png', '{{shop_url}}': 'https://jamboapparels.com', '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com' };
-        let subject = template.subject;
-        let body = template.bodyHtml;
+        if (!eventEnabled) return;
 
-        Object.entries(allVariables).forEach(([key, value]) => {
-            subject = subject.replace(new RegExp(key, 'g'), value);
-            body = body.split(key).join(value);
-        });
+        // 1. Send Email
+        if (emailAllowed) {
+            const allVariables = { ...variables, '{{logo_url}}': settings.logoImage || 'https://i.imgur.com/pkaScEv.png', '{{shop_url}}': 'https://jamboapparels.com', '{{contact_email}}': settings.contactEmail || 'support@jamboapparels.com' };
+            let subject = template.subject;
+            let body = template.bodyHtml;
 
-        await this.sendTestTemplate(recipient, subject, body);
+            Object.entries(allVariables).forEach(([key, value]) => {
+                subject = subject.replace(new RegExp(key, 'g'), value);
+                body = body.split(key).join(value);
+            });
+
+            await this.sendTestTemplate(recipientEmail, subject, body);
+        }
+
+        // 2. Send WhatsApp (if enabled globally and template has text)
+        if (settings.enableWhatsappNotifications && template.whatsappBodyText) {
+            // Determine recipient phone
+            // For admin alerts, use adminPhoneNumber from settings.
+            // For customers, we usually don't have phone passed in 'recipientEmail' (which is just email string).
+            // However, the calling code in OrderService creates variables. 
+            // We assume for now customer phone is not readily available in this signature unless passed in vars or context.
+            
+            // NOTE: This implementation relies on the fact that for admin alerts, we use settings.adminPhoneNumber.
+            // For customer alerts, we would need the customer's phone number. 
+            // Since `sendTransactionalEmail` signature takes `recipientEmail` (string), we can't easily get the phone without a DB lookup or changing signature.
+            // WORKAROUND: If it's an admin alert, send to admin phone.
+            // If it's a customer alert, we skip unless we fetch the user's phone.
+            
+            let whatsappRecipient = '';
+            
+            if (isAdminAlert) {
+                whatsappRecipient = settings.adminPhoneNumber || '';
+            } else {
+                // Try to find a user with this email to get their phone
+                // Ideally this should be passed in, but for backward compatibility:
+                if (recipientEmail) {
+                    const { data: user } = await supabase.from('users').select('id').eq('email', recipientEmail).single();
+                    if (user) {
+                         const { data: address } = await supabase.from('user_addresses').select('phone').eq('user_id', user.id).eq('is_default', true).single();
+                         if (address?.phone) whatsappRecipient = address.phone;
+                    }
+                     // Fallback: If order data was passed in variables, maybe we can extract? No standard way here.
+                }
+            }
+
+            if (whatsappRecipient && template.whatsappBodyText) {
+                let msg = template.whatsappBodyText;
+                // Reuse variables
+                Object.entries(variables).forEach(([key, value]) => {
+                    msg = msg.split(key).join(value);
+                });
+                // Common replacements
+                msg = msg.replace('{{shop_url}}', 'https://jamboapparels.com');
+                
+                await this.sendWhatsAppMessage(whatsappRecipient, msg);
+            }
+        }
+
     } catch (e) {
-        console.error(`[Email] Failed to send ${templateName}:`, e);
+        console.error(`[Notification] Failed to send ${templateName}:`, e);
     }
   }
 }

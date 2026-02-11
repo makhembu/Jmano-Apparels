@@ -1,5 +1,4 @@
 
-
 import { 
   Product, Category, AppSettings, BlogPost, User, Order, 
   DbProduct, DbCategory, DbAppSettings, ShippingAddress, OrderItem,
@@ -116,30 +115,33 @@ export const Mappers = {
     resendApiKey: s.resend_api_key || undefined,
     resendFromEmail: s.resend_from_email || undefined,
 
+    // WhatsApp Settings
+    whatsappAccessToken: s.whatsapp_access_token || undefined,
+    whatsappPhoneNumberId: s.whatsapp_phone_number_id || undefined,
+    whatsappBusinessAccountId: s.whatsapp_business_account_id || undefined,
+    adminPhoneNumber: s.admin_phone_number || undefined,
+    enableWhatsappNotifications: s.enable_whatsapp_notifications ?? false,
+
     // AI Configuration
     geminiApiKey: s.gemini_api_key || undefined,
     
-    // Notifications - Customer Orders
+    // Notifications
     enableEmailNotifications: s.enable_email_notifications ?? false,
     enableEmailWelcome: s.enable_email_welcome ?? false,
     enableEmailNewOrder: s.enable_email_new_order ?? false,
-    enableEmailOrderProcessing: s.enable_email_order_processing ?? false,
     enableEmailOrderShipped: s.enable_email_order_shipped ?? false,
+    enableEmailAdminNewOrder: s.enable_email_admin_new_order ?? false,
+    enableEmailContactAdmin: s.enable_email_contact_admin ?? false,
+    
+    // Extended Notifications
+    enableEmailOrderProcessing: s.enable_email_order_processing ?? false,
     enableEmailOrderCancelled: s.enable_email_order_cancelled ?? false,
     enableEmailOrderRefunded: s.enable_email_order_refunded ?? false,
-    
-    // Notifications - Customer Returns
     enableEmailReturnRequested: s.enable_email_return_requested ?? false,
     enableEmailReturnApproved: s.enable_email_return_approved ?? false,
     enableEmailReturnRejected: s.enable_email_return_rejected ?? false,
-
-    // Notifications - General
     enableEmailContactAutoreply: s.enable_email_contact_autoreply ?? false,
     enableEmailNewsletterWelcome: s.enable_email_newsletter_welcome ?? false,
-
-    // Notifications - Admin
-    enableEmailAdminNewOrder: s.enable_email_admin_new_order ?? false,
-    enableEmailContactAdmin: s.enable_email_contact_admin ?? false,
     enableEmailAdminReturnAlert: s.enable_email_admin_return_alert ?? false,
     
     // Features
@@ -164,15 +166,15 @@ export const Mappers = {
 
     // Homepage SEO Content
     seoContentTitle: s.seo_content_title || 'Faith & Fashion: The Jambo Difference',
-    seoContentIntro: s.seo_content_intro || 'At Jambo Apparels, we believe that clothing is more than just fabric—it\'s a statement. As a premier Christian streetwear brand, we bridge the gap between modern style and timeless truth. Our collection of scripture-inspired hoodies, t-shirts, and accessories are designed for the believer who isn\'t afraid to stand out.',
+    seoContentIntro: s.seo_content_intro || 'At Jambo Apparels, we believe that clothing is more than just fabric—it\'s a statement.',
     seoContentCol1Title: s.seo_content_col1_title || 'Why Choose Christian Streetwear?',
-    seoContentCol1Body: s.seo_content_col1_body || 'Fashion is a language. What you wear speaks before you do. Faith-based fashion allows you to carry a message of hope, humility, and boldness into every room you enter. Whether it\'s the gym, the campus, or the coffee shop, our apparel is designed to be a conversation starter for the Gospel.',
+    seoContentCol1Body: s.seo_content_col1_body || 'Fashion is a language. What you wear speaks before you do.',
     seoContentCol2Title: s.seo_content_col2_title || 'Ethical, Sustainable, Faithful',
-    seoContentCol2Body: s.seo_content_col2_body || 'We don\'t compromise on quality or integrity. Our commitment to ethical manufacturing reflects our stewardship of God\'s creation. Every stitch in our Christian clothing collection is placed with care, ensuring that your apparel lasts as long as your testimony.',
+    seoContentCol2Body: s.seo_content_col2_body || 'We don\'t compromise on quality or integrity.',
     
     // Social Section Text
     socialSectionTitle: s.social_section_title || 'Follow Our Journey',
-    socialSectionBody: s.social_section_body || 'Join our community on social media for behind-the-scenes content, new drops, and daily inspiration.',
+    socialSectionBody: s.social_section_body || 'Join our community on social media.',
 
     // Sitelinks
     priorityPages: (s.priority_pages as any[]) || undefined,
@@ -204,11 +206,12 @@ export const Mappers = {
     aboutValue3Body: s.about_value_3_body || undefined
   }),
 
-  toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({
+  toEmailTemplate: (t: any): EmailTemplate => ({
     id: t.id,
     name: t.name,
     subject: t.subject,
     bodyHtml: t.body_html,
+    whatsappBodyText: t.whatsapp_body_text || undefined,
     description: t.description || undefined
   }),
 

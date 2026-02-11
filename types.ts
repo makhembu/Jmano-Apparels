@@ -237,6 +237,13 @@ export interface AppSettings {
   resendFromEmail?: string;
   geminiApiKey?: string;
   
+  // WhatsApp Configuration
+  whatsappAccessToken?: string;
+  whatsappPhoneNumberId?: string;
+  whatsappBusinessAccountId?: string;
+  adminPhoneNumber?: string;
+  enableWhatsappNotifications?: boolean;
+
   // NOTIFICATIONS
   enableEmailNotifications?: boolean;
   
@@ -365,6 +372,7 @@ export interface EmailTemplate {
   name: string;
   subject: string;
   bodyHtml: string;
+  whatsappBodyText?: string;
   description?: string;
 }
 
