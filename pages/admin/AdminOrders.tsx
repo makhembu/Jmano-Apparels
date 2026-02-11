@@ -6,10 +6,6 @@ import { Order } from '../../types';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Button } from '../../components/ui/Button';
-import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from '../../components/ui/Table';
-import { Badge } from '../../components/ui/Badge';
-import { Card } from '../../components/ui/Card';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { Pagination } from '../../components/ui/Pagination';
 
 export const AdminOrders: React.FC = () => {
@@ -18,7 +14,6 @@ export const AdminOrders: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState('ALL');
-  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     fetchOrders(page, filter);
@@ -27,7 +22,7 @@ export const AdminOrders: React.FC = () => {
   const fetchOrders = async (pageNum: number, status: string) => {
     setLoading(true);
     try {
-        const result = await api.getOrdersPaginated(pageNum, 20, status);
+        const result = await api.getOrdersPaginated(pageNum, 15, status);
         setOrders(result.data);
         setTotalPages(result.totalPages);
     } catch (e) {
@@ -37,122 +32,115 @@ export const AdminOrders: React.FC = () => {
     }
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'success';
-      case 'Cancelled': return 'error';
-      case 'Processing': return 'info';
-      default: return 'warning';
+      case 'Delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'Shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-amber-100 text-amber-800 border-amber-200';
     }
   };
 
-  const MobileOrderCard: React.FC<{ order: Order }> = ({ order }) => (
-    <Link to={`/admin/orders/${order.id}`} className="block bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-3">
-        <div className="flex justify-between items-start mb-2">
-            <div>
-                <span className="font-bold text-slate-900 text-sm">#{order.orderNumber || order.id?.slice(0, 8)}</span>
-                <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
-            </div>
-            <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
-        </div>
-        <div className="flex justify-between items-end border-t border-slate-50 pt-2 mt-2">
-            <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Customer</p>
-                <p className="text-sm font-medium text-slate-700 truncate max-w-[150px]">{order.customerName || order.userId?.slice(0, 8) || 'Guest'}</p>
-            </div>
-            <div className="text-right">
-                <p className="text-lg font-bold text-slate-900">{formatCurrency(order.total || 0)}</p>
-            </div>
-        </div>
-    </Link>
-  );
-
   return (
-    <div className="space-y-6 pb-24">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold font-serif text-slate-900">Orders Registry</h1>
+    <div className="space-y-8 pb-24 animate-fade-in max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-serif text-slate-900">Orders Registry</h1>
+          <p className="text-base text-slate-500 mt-1">Manage and fulfill customer orders.</p>
+        </div>
         <Link to="/admin/orders/new">
-            <Button variant="primary" size="sm" icon={<span>+</span>}>{isMobile ? 'New' : 'New Order'}</Button>
+            <Button variant="primary" size="lg" className="shadow-lg shadow-brand-green/20">+ Create New Order</Button>
         </Link>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+      {/* Large Filter Tabs */}
+      <div className="flex flex-wrap gap-3 pb-2">
          {['ALL', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(status => (
              <button
                 key={status}
                 onClick={() => { setFilter(status); setPage(1); }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-colors ${filter === status ? 'bg-brand-dark text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                className={`px-6 py-3 text-sm font-bold rounded-xl transition-all shadow-sm border ${
+                  filter === status 
+                    ? 'bg-brand-dark text-white border-brand-dark transform scale-105' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`}
              >
                 {status}
              </button>
          ))}
       </div>
       
-      {loading ? <LoadingSpinner /> : (
-        <>
-            {isMobile ? (
-                <div className="space-y-1">
-                    {orders.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500 bg-white rounded-xl border border-dashed">No orders found.</div>
-                    ) : (
-                        orders.map(order => <MobileOrderCard key={order.id} order={order} />)
-                    )}
-                </div>
-            ) : (
-                <Card className="overflow-hidden">
-                    <Table>
-                    <TableHead>
-                        <TableRow>
-                        <TableHeader>Order #</TableHeader>
-                        <TableHeader>Date</TableHeader>
-                        <TableHeader>Customer</TableHeader>
-                        <TableHeader>Status</TableHeader>
-                        <TableHeader align="right">Total</TableHeader>
-                        <TableHeader align="right">Action</TableHeader>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {orders.map(order => (
-                        <TableRow key={order.id}>
-                            <TableCell className="font-medium text-brand-dark">
-                            <Link to={`/admin/orders/${order.id}`}>
-                                #{order.orderNumber || order.id?.slice(0, 8)}
-                            </Link>
-                            </TableCell>
-                            <TableCell className="text-slate-500">
-                            {formatDate(order.createdAt)}
-                            </TableCell>
-                            <TableCell className="text-slate-500 max-w-[200px] truncate">
-                            {order.customerName || order.userId?.slice(0, 8) || 'Guest'}
-                            </TableCell>
-                            <TableCell>
-                            <Badge variant={getStatusVariant(order.status)}>
-                                {order.status}
-                            </Badge>
-                            </TableCell>
-                            <TableCell align="right" className="font-bold text-slate-900">
-                            {formatCurrency(order.total || 0)}
-                            </TableCell>
-                            <TableCell align="right">
-                            <Link to={`/admin/orders/${order.id}`} className="text-brand-green hover:underline font-bold text-xs">
-                                View
-                            </Link>
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                        {orders.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={6} align="center" className="py-12 text-slate-400 italic">
-                            No orders found.
-                            </TableCell>
-                        </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
-                </Card>
-            )}
-            <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} isLoading={loading} />
-        </>
+      {loading ? (
+        <div className="py-20"><LoadingSpinner /></div> 
+      ) : (
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-500 uppercase tracking-wider">Order Details</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-right text-sm font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-4 text-right text-sm font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {orders.length === 0 ? (
+                     <tr><td colSpan={5} className="px-6 py-12 text-center text-lg text-slate-500">No orders found matching this filter.</td></tr>
+                  ) : (
+                     orders.map(order => (
+                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                           <td className="px-6 py-6 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                 <Link to={`/admin/orders/${order.id}`} className="text-lg font-bold text-brand-dark hover:underline">
+                                    #{order.orderNumber || order.id.slice(0,8)}
+                                 </Link>
+                                 <span className="text-sm text-slate-500 mt-1">
+                                    {formatDate(order.createdAt)}
+                                 </span>
+                              </div>
+                           </td>
+                           <td className="px-6 py-6 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                 <span className="text-base font-bold text-slate-900">{order.customerName || 'Guest'}</span>
+                                 <span className="text-sm text-slate-500">{order.customerEmail || 'No email'}</span>
+                              </div>
+                           </td>
+                           <td className="px-6 py-6 whitespace-nowrap text-center">
+                              <span className={`px-4 py-2 inline-flex text-xs leading-5 font-bold rounded-full uppercase tracking-wider border ${getStatusStyles(order.status)}`}>
+                                 {order.status}
+                              </span>
+                           </td>
+                           <td className="px-6 py-6 whitespace-nowrap text-right">
+                              <span className="text-lg font-bold text-slate-900">{formatCurrency(order.total || 0)}</span>
+                              <div className="text-xs mt-1">
+                                {order.paymentStatus === 'paid' ? (
+                                    <span className="text-green-600 font-bold">PAID</span>
+                                ) : (
+                                    <span className="text-red-500 font-bold">UNPAID</span>
+                                )}
+                              </div>
+                           </td>
+                           <td className="px-6 py-6 whitespace-nowrap text-right">
+                              <Link to={`/admin/orders/${order.id}`}>
+                                <button className="bg-white border-2 border-slate-200 text-slate-700 hover:border-brand-green hover:text-brand-green font-bold py-2 px-6 rounded-xl transition-colors">
+                                    Open
+                                </button>
+                              </Link>
+                           </td>
+                        </tr>
+                     ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="bg-slate-50 border-t border-slate-200 p-4">
+                <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} isLoading={loading} />
+            </div>
+        </div>
       )}
     </div>
   );
