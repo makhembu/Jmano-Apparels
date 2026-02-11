@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '../../../ui/Button';
 import { Product } from '../../../../types';
@@ -12,6 +13,13 @@ interface ProductEditorHeaderProps {
 }
 
 export const ProductEditorHeader: React.FC<ProductEditorHeaderProps> = ({ product, isNew, onSave, isSaving, activeTab, onTabChange }) => {
+    // Check hostname to determine if we are in production (BrowserRouter) or dev (HashRouter)
+    // Matches logic in App.tsx
+    const isProd = window.location.hostname.includes('jamboapparels.com');
+    const productLink = isProd 
+        ? `/product/${product.slug || product.id}` 
+        : `/#/product/${product.slug || product.id}`;
+
     return (
         <div className="sticky top-[-1rem] md:top-[-2rem] z-30 bg-gray-100/95 backdrop-blur-md border-b border-slate-200 -mx-4 md:-mx-8 px-4 md:px-8 py-4 mb-8 shadow-sm">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -31,7 +39,7 @@ export const ProductEditorHeader: React.FC<ProductEditorHeaderProps> = ({ produc
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto">
                     {!isNew && (
-                        <a href={`/#/product/${product.slug || product.id}`} target="_blank" rel="noreferrer">
+                        <a href={productLink} target="_blank" rel="noreferrer">
                             <Button variant="outline" className="h-10 bg-white">View in Shop</Button>
                         </a>
                     )}
