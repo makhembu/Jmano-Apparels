@@ -265,6 +265,25 @@ export interface AppSettings {
   vatNumber?: string;
   paymentInstructions?: string;
   paymentTerms?: string;
+
+  // About Page Content
+  aboutHeroTag?: string;
+  aboutHeroTitle?: string;
+  aboutFounderTag?: string;
+  aboutMissionTitle?: string;
+  aboutMissionBody?: string;
+  aboutVisionTitle?: string;
+  aboutVisionBody?: string;
+  aboutValuesTag?: string;
+  aboutValuesTitle?: string;
+  aboutValuesIntro?: string;
+  
+  aboutValue1Title?: string;
+  aboutValue1Body?: string;
+  aboutValue2Title?: string;
+  aboutValue2Body?: string;
+  aboutValue3Title?: string;
+  aboutValue3Body?: string;
 }
 
 export interface ShippingOption {

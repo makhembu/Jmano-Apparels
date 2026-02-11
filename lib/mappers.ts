@@ -161,12 +161,31 @@ export const Mappers = {
     // Sitelinks
     priorityPages: (s.priority_pages as any[]) || undefined,
 
-    // Business Info (New)
+    // Business Info
     companyName: s.company_name || undefined,
     registrationNumber: s.registration_number || undefined,
     vatNumber: s.vat_number || undefined,
     paymentInstructions: s.payment_instructions || undefined,
-    paymentTerms: s.payment_terms || undefined
+    paymentTerms: s.payment_terms || undefined,
+
+    // About Page Content
+    aboutHeroTag: s.about_hero_tag || undefined,
+    aboutHeroTitle: s.about_hero_title || undefined,
+    aboutFounderTag: s.about_founder_tag || undefined,
+    aboutMissionTitle: s.about_mission_title || undefined,
+    aboutMissionBody: s.about_mission_body || undefined,
+    aboutVisionTitle: s.about_vision_title || undefined,
+    aboutVisionBody: s.about_vision_body || undefined,
+    aboutValuesTag: s.about_values_tag || undefined,
+    aboutValuesTitle: s.about_values_title || undefined,
+    aboutValuesIntro: s.about_values_intro || undefined,
+    
+    aboutValue1Title: s.about_value_1_title || undefined,
+    aboutValue1Body: s.about_value_1_body || undefined,
+    aboutValue2Title: s.about_value_2_title || undefined,
+    aboutValue2Body: s.about_value_2_body || undefined,
+    aboutValue3Title: s.about_value_3_title || undefined,
+    aboutValue3Body: s.about_value_3_body || undefined
   }),
 
   toEmailTemplate: (t: DbEmailTemplate): EmailTemplate => ({

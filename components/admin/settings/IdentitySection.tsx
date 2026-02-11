@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppSettings } from '../../../types';
 import { api } from '../../../lib/db';
@@ -121,10 +122,11 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
           rows={3} 
         />
         <Input 
-          label="Core Values" 
+          label="Core Values List" 
           name="coreValues" 
           value={settings.coreValues} 
           onChange={onChange} 
+          placeholder="Honesty, Excellence, Boldness {H.E.B.}"
         />
         
         <div className="pt-4 border-t border-slate-100">
@@ -169,6 +171,56 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
               onChange={onChange} 
             />
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-4">
+        <h3 className="text-lg font-medium border-b pb-2 text-brand-green">About Page Content</h3>
+        <p className="text-sm text-gray-500 mb-4">Customize titles and descriptions on the About Us page.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Input label="Hero Tag" name="aboutHeroTag" value={settings.aboutHeroTag || ''} onChange={onChange} placeholder="Our Divine Purpose" />
+             <Input label="Hero Title" name="aboutHeroTitle" value={settings.aboutHeroTitle || ''} onChange={onChange} placeholder="The Jambo Legacy" />
+             
+             <Input label="Founder Section Tag" name="aboutFounderTag" value={settings.aboutFounderTag || ''} onChange={onChange} placeholder="Message from the Heart" />
+             <Input label="Mission Section Title" name="aboutMissionTitle" value={settings.aboutMissionTitle || ''} onChange={onChange} placeholder="The Mission" />
+             
+             <div className="md:col-span-2">
+                <Textarea label="Mission Subtitle" name="aboutMissionBody" value={settings.aboutMissionBody || ''} onChange={onChange} rows={2} placeholder="To equip the saints..." />
+             </div>
+             
+             <Input label="Vision Section Title" name="aboutVisionTitle" value={settings.aboutVisionTitle || ''} onChange={onChange} placeholder="The Vision" />
+             <div className="md:col-span-2">
+                <Textarea label="Vision Subtitle" name="aboutVisionBody" value={settings.aboutVisionBody || ''} onChange={onChange} rows={2} placeholder="A world where the Gospel..." />
+             </div>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100 space-y-4">
+             <h4 className="text-sm font-bold text-gray-700">Core Values Section</h4>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Section Tag" name="aboutValuesTag" value={settings.aboutValuesTag || ''} onChange={onChange} placeholder="The Foundation" />
+                <Input label="Section Title" name="aboutValuesTitle" value={settings.aboutValuesTitle || ''} onChange={onChange} placeholder="Core Values (H.E.B.)" />
+                <div className="md:col-span-2">
+                   <Textarea label="Section Intro" name="aboutValuesIntro" value={settings.aboutValuesIntro || ''} onChange={onChange} rows={2} />
+                </div>
+             </div>
+             
+             <div className="grid grid-cols-1 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div>
+                       <Input label="Value 1 Title" name="aboutValue1Title" value={settings.aboutValue1Title || ''} onChange={onChange} placeholder="Honesty" />
+                       <Textarea label="Value 1 Description" name="aboutValue1Body" value={settings.aboutValue1Body || ''} onChange={onChange} rows={4} className="mt-2" />
+                   </div>
+                   <div>
+                       <Input label="Value 2 Title" name="aboutValue2Title" value={settings.aboutValue2Title || ''} onChange={onChange} placeholder="Excellence" />
+                       <Textarea label="Value 2 Description" name="aboutValue2Body" value={settings.aboutValue2Body || ''} onChange={onChange} rows={4} className="mt-2" />
+                   </div>
+                   <div>
+                       <Input label="Value 3 Title" name="aboutValue3Title" value={settings.aboutValue3Title || ''} onChange={onChange} placeholder="Boldness" />
+                       <Textarea label="Value 3 Description" name="aboutValue3Body" value={settings.aboutValue3Body || ''} onChange={onChange} rows={4} className="mt-2" />
+                   </div>
+                </div>
+             </div>
         </div>
       </div>
 
@@ -245,101 +297,6 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6 border border-gray-200 space-y-6">
-        <div className="flex items-center gap-2 border-b pb-2">
-           <h3 className="text-lg font-medium text-brand-green">Global SEO (Search Optimization)</h3>
-           <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Public</span>
-        </div>
-        <p className="text-xs text-gray-500 mb-2">These settings control how your homepage appears in Google search results and when shared on social media like WhatsApp, Facebook, and iMessage.</p>
-        
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <Input 
-              label="SEO Meta Title" 
-              name="seoTitle" 
-              value={settings.seoTitle || ''} 
-              onChange={onChange} 
-              placeholder={defaultTitle}
-            />
-            <p className="text-[10px] text-gray-400 mt-1 italic">The headline shown in browser tabs and search results. Optimal length: 50-60 characters.</p>
-          </div>
-
-          <div>
-            <Textarea 
-              label="SEO Meta Description" 
-              name="seoDescription" 
-              value={settings.seoDescription || ''} 
-              onChange={onChange} 
-              rows={2} 
-              placeholder={defaultDesc}
-            />
-            <p className="text-[10px] text-gray-400 mt-1 italic">The text snippet under the link. Optimal length: 150-160 characters.</p>
-          </div>
-        </div>
-
-        {/* Previews Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6 pt-6 border-t border-gray-100">
-            
-            {/* Google Preview */}
-            <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                  Google Search Result
-                </h4>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 font-sans shadow-sm">
-                    <div className="flex items-center gap-3 text-sm text-[#202124] mb-1">
-                        <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center p-1 border border-gray-200">
-                            {settings.logoImage ? (
-                                <img src={settings.logoImage} alt="" className="w-full h-full object-contain" />
-                            ) : (
-                                <img src="https://i.imgur.com/pkaScEv.png" alt="" className="w-full h-full object-contain opacity-80" />
-                            )}
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <span className="text-xs font-bold text-[#202124] leading-tight">Jambo Apparels</span>
-                            <span className="text-[10px] leading-tight text-[#5f6368]">https://jamboapparels.com</span>
-                        </div>
-                    </div>
-                    <h3 className="text-xl text-[#1a0dab] hover:underline cursor-pointer truncate font-normal leading-snug mb-1">
-                       {settings.seoTitle || defaultTitle}
-                    </h3>
-                    <p className="text-sm text-[#4d5156] line-clamp-2 leading-relaxed">
-                       {settings.seoDescription || defaultDesc}
-                    </p>
-                </div>
-            </div>
-
-            {/* Social Preview */}
-            <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-                  Social Share Card
-                </h4>
-                <div className="bg-white rounded-lg border border-gray-300 overflow-hidden max-w-sm shadow-sm">
-                    <div className="aspect-[1.91/1] bg-gray-100 w-full relative overflow-hidden flex items-center justify-center">
-                        {settings.heroBannerImage ? (
-                            <img src={settings.heroBannerImage} alt="Social Preview" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="flex flex-col items-center text-gray-400">
-                                <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span className="text-[10px] uppercase font-bold tracking-widest">Image Preview</span>
-                            </div>
-                        )}
-                    </div>
-                    <div className="p-3 bg-[#F0F2F5] border-t border-gray-200">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">JAMBOAPPARELS.COM</p>
-                        <h3 className="text-sm font-bold text-gray-900 truncate mb-1">
-                            {settings.seoTitle || defaultTitle}
-                        </h3>
-                        <p className="text-xs text-gray-600 line-clamp-1">
-                            {settings.seoDescription || defaultDesc}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-      </div>
     </div>
   );
 };
