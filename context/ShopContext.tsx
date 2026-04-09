@@ -135,14 +135,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateSettings = useCallback(async (newSettings: AppSettings) => {
     try {
-        await api.updateAppSettings(settings.id, newSettings);
+        await api.updateAppSettings(newSettings.id, newSettings);
         setSettings(newSettings);
         showToast('Settings updated', 'success');
     } catch (e: any) {
         console.error(e);
         showToast('Failed to update settings', 'error');
     }
-  }, [settings.id, showToast]);
+  }, [showToast]);
 
   const value = useMemo(() => ({ 
       products, categories, blogPosts, latestReviews, settings, 
