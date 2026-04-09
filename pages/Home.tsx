@@ -44,16 +44,19 @@ export const Home: React.FC = () => {
 
   const coreValueDetails = [
     {
-      bg: 'bg-brand-humility', textColor: 'text-brand-dark', iconBg: 'bg-white/20', // Green bg needs dark text
-      description: "Authentic faith, transparent practices, and integrity in every stitch."
+      bg: 'bg-brand-humility', textColor: 'text-brand-dark', iconBg: 'bg-white/20',
+      title: settings.aboutValue1Title || 'Honesty',
+      description: settings.aboutValue1Body || "Authentic faith, transparent practices, and integrity in every stitch."
     },
     {
-      bg: 'bg-brand-hope', textColor: 'text-brand-dark', iconBg: 'bg-black/10', // Yellow bg needs dark text
-      description: "Striving for the highest quality to reflect the character of God."
+      bg: 'bg-brand-hope', textColor: 'text-brand-dark', iconBg: 'bg-black/10',
+      title: settings.aboutValue2Title || 'Excellence',
+      description: settings.aboutValue2Body || "Striving for the highest quality to reflect the character of God."
     },
     {
-      bg: 'bg-brand-sainty', textColor: 'text-white', iconBg: 'bg-white/20', // Dark Red bg allows white text
-      description: "Courage to share the Gospel without compromise in the modern world."
+      bg: 'bg-brand-sainty', textColor: 'text-white', iconBg: 'bg-white/20',
+      title: settings.aboutValue3Title || 'Boldness',
+      description: settings.aboutValue3Body || "Courage to share the Gospel without compromise in the modern world."
     }
   ];
 
@@ -158,15 +161,14 @@ export const Home: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {(settings.coreValues || 'Honesty,Excellence,Boldness').replace(/\{.*\}/, '').split(',').map((value, index) => {
-                const detail = coreValueDetails[index % coreValueDetails.length];
-                const letter = value.trim().charAt(0);
+              {coreValueDetails.map((detail, index) => {
+                const letter = detail.title.charAt(0);
                 return (
                   <article key={index} className={`${detail.bg} ${detail.textColor} p-8 rounded-3xl shadow-xl text-center flex flex-col items-center`}>
                     <div className={`w-16 h-16 ${detail.iconBg} rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6`} aria-hidden="true">
                       {letter}
                     </div>
-                    <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{value.trim()}</h3>
+                    <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{detail.title}</h3>
                     <p className="text-sm font-medium leading-relaxed opacity-90">
                       {detail.description}
                     </p>
