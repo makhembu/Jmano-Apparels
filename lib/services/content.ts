@@ -238,7 +238,16 @@ export class SettingsService {
     try {
       const payload: any = { to: testEmail, subject: 'Jambo Apparels - Resend Integration Test', htmlBody: '<p>This is a test email.</p>', testMode: true };
       if (candidateKey) payload.providerConfig = { apiKey: candidateKey, from: candidateFrom };
-      const response = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+      // Attach the admin's session token so the server can verify admin privileges
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch('/api/send-email', { method: 'POST', headers, body: JSON.stringify(payload) });
       const data = await response.json();
       if (!response.ok) return { success: false, message: data.error || 'Provider rejected credentials' };
       return { success: true };
