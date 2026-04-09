@@ -155,7 +155,7 @@ export const Home: React.FC = () => {
                 Our Commitment to Faith & Quality
               </h2>
               <p className="text-slate-600 font-light leading-relaxed max-w-3xl mx-auto">
-                At Jambo Apparels, our mission is to thread scriptures into modern, ethical fashion. We are committed to creating high-quality Christian clothing that serves as a vehicle for the gospel.
+                At Jambo Apparels, our mission is to thread scriptures into modern, ethical fashion. We are committed to creating high-quality Christian clothing that serves as a chariot for the gospel.
               </p>
               <div className="w-20 h-1.5 bg-brand-hope rounded-full mt-8 mx-auto" aria-hidden="true"></div>
             </div>

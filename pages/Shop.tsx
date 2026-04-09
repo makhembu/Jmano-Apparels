@@ -277,7 +277,7 @@ export const Shop: React.FC = () => {
                 // EMPTY STATE
                 <div className="col-span-full pt-10">
                   <EmptyState 
-                    title="No pieces found" 
+                    title="Great pieces coming soon" 
                     description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
                     actionLabel="Reset Gallery"
                     actionLink="/shop"
