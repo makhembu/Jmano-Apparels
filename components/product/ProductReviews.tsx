@@ -61,7 +61,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, user,
         <div className="md:col-span-2 space-y-12">
           {reviews.length === 0 ? (
             <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-3xl">
-              <p className="text-slate-400 font-serif italic text-lg">No testimonies journalled yet.</p>
+              <p className="text-slate-400 font-serif italic text-lg">No testimonies journaled yet.</p>
               <p className="text-xs text-slate-300 mt-2 uppercase tracking-widest">Be the first to share your journey</p>
             </div>
           ) : (
