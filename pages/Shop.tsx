@@ -276,12 +276,60 @@ export const Shop: React.FC = () => {
               ) : (
                 // EMPTY STATE
                 <div className="col-span-full pt-10">
-                  <EmptyState 
-                    title="Great pieces coming soon" 
-                    description={filters.search ? `We couldn't find any items matching "${filters.search}".` : "Try adjusting your filters."}
-                    actionLabel="Reset Gallery"
-                    actionLink="/shop"
-                  />
+                  <div className="relative overflow-hidden text-center py-20 px-8 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+                    {/* Scrolling logo background */}
+                    <div className="absolute inset-0 flex flex-col justify-center gap-6 opacity-[0.04] pointer-events-none select-none overflow-hidden">
+                      {[0, 1, 2].map(row => (
+                        <div
+                          key={row}
+                          className="flex gap-12 whitespace-nowrap"
+                          style={{
+                            animation: `shopLogoScroll${row % 2 === 0 ? 'Left' : 'Right'} ${18 + row * 4}s linear infinite`,
+                          }}
+                        >
+                          {Array.from({ length: 12 }).map((_, i) => (
+                            <img
+                              key={i}
+                              src={settings.logoImage || "https://i.imgur.com/pkaScEv.png"}
+                              alt=""
+                              className="h-20 w-auto object-contain flex-shrink-0"
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative z-10">
+                      <div className="mx-auto h-16 w-16 text-slate-300 mb-6 flex items-center justify-center bg-slate-50 rounded-2xl">
+                        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                      </div>
+                      <h3 className="mt-2 text-xl font-bold text-brand-dark font-serif">Great pieces coming soon</h3>
+                      <p className="mt-2 text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                        {filters.search
+                          ? `We couldn't find any items matching "${filters.search}".`
+                          : "Something exciting is being threaded — check back soon."}
+                      </p>
+                      <div className="mt-8">
+                        <a href="/shop">
+                          <Button variant="primary" className="shadow-xl shadow-brand-green/20">Reset Gallery</Button>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <style>{`
+                    @keyframes shopLogoScrollLeft {
+                      0% { transform: translateX(0); }
+                      100% { transform: translateX(-50%); }
+                    }
+                    @keyframes shopLogoScrollRight {
+                      0% { transform: translateX(-50%); }
+                      100% { transform: translateX(0); }
+                    }
+                  `}</style>
                 </div>
               )}
             </div>
