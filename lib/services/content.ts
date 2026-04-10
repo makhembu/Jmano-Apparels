@@ -153,6 +153,7 @@ export class SettingsService {
       founder_name: settings.founderName, founder_bio: settings.founderBio, founder_image: settings.founderImage, founder_quote: settings.founderQuote,
       contact_email: settings.contactEmail, contact_phone: settings.contactPhone, contact_address: settings.contactAddress,
       business_hours: settings.businessHours, social_links: settings.socialLinks,
+      support_email: settings.supportEmail, currency: settings.currency,
       maintenance_mode: settings.maintenanceMode, maintenance_message: settings.maintenanceMessage,
       hero_banner_text: settings.heroBannerText, hero_banner_image: settings.heroBannerImage,
       announcement_text: settings.announcementText, is_announcement_enabled: settings.isAnnouncementEnabled,
@@ -196,19 +197,30 @@ export class SettingsService {
       blog_seo_title: settings.blogSeoTitle, blog_seo_description: settings.blogSeoDescription,
       about_seo_title: settings.aboutSeoTitle, about_seo_description: settings.aboutSeoDescription,
       paypal_client_id: settings.paypalClientId, paypal_secret_key: settings.paypalSecretKey,
-      paypal_mode: settings.paypalMode, payment_gateway_enabled: settings.paymentGatewayEnabled,
+      paypal_mode: settings.paypalMode, paypal_webhook_id: settings.paypalWebhookId, payment_gateway_enabled: settings.paymentGatewayEnabled,
       resend_api_key: settings.resendApiKey, resend_from_email: settings.resendFromEmail,
       seo_content_title: settings.seoContentTitle, seo_content_intro: settings.seoContentIntro,
       seo_content_col1_title: settings.seoContentCol1Title, seo_content_col1_body: settings.seoContentCol1Body,
       seo_content_col2_title: settings.seoContentCol2Title, seo_content_col2_body: settings.seoContentCol2Body,
       social_section_title: settings.socialSectionTitle, social_section_body: settings.socialSectionBody,
       
+      // About Page Content
+      about_hero_tag: settings.aboutHeroTag, about_hero_title: settings.aboutHeroTitle,
+      about_founder_tag: settings.aboutFounderTag,
+      about_mission_title: settings.aboutMissionTitle, about_mission_body: settings.aboutMissionBody,
+      about_vision_title: settings.aboutVisionTitle, about_vision_body: settings.aboutVisionBody,
+      about_values_tag: settings.aboutValuesTag, about_values_title: settings.aboutValuesTitle, about_values_intro: settings.aboutValuesIntro,
+      about_value_1_title: settings.aboutValue1Title, about_value_1_body: settings.aboutValue1Body,
+      about_value_2_title: settings.aboutValue2Title, about_value_2_body: settings.aboutValue2Body,
+      about_value_3_title: settings.aboutValue3Title, about_value_3_body: settings.aboutValue3Body,
+
       // Business Info
       company_name: settings.companyName,
       registration_number: settings.registrationNumber,
       vat_number: settings.vatNumber,
       payment_instructions: settings.paymentInstructions,
-      payment_terms: settings.paymentTerms
+      payment_terms: settings.paymentTerms,
+      priority_pages: settings.priorityPages
     };
     Object.keys(dbSettings).forEach(key => dbSettings[key] === undefined && delete dbSettings[key]);
     
