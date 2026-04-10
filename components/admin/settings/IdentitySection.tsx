@@ -10,9 +10,10 @@ import { Textarea } from '../../ui/Textarea';
 interface IdentitySectionProps {
   settings: AppSettings;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onImageSave?: (fieldName: string, url: string) => Promise<void>;
 }
 
-export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onChange }) => {
+export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onChange, onImageSave }) => {
   const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
 
@@ -29,14 +30,16 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
     try {
       const publicUrl = await api.uploadImage(file);
       const mockEvent = {
-        target: {
-          name: fieldName,
-          value: publicUrl
-        }
+        target: { name: fieldName, value: publicUrl }
       } as React.ChangeEvent<HTMLInputElement>;
-      
       onChange(mockEvent);
-      showToast('Image updated', 'success');
+
+      if (onImageSave) {
+        await onImageSave(fieldName, publicUrl);
+        showToast('Image saved', 'success');
+      } else {
+        showToast('Image uploaded — click Save to apply', 'success');
+      }
     } catch (error: any) {
       showToast(error.message || 'Failed to upload image', 'error');
     } finally {

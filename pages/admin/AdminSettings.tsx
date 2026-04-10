@@ -65,6 +65,12 @@ export const AdminAppSettings: React.FC = () => {
     setSearchParams({ tab: id });
   };
 
+  const handleImageSave = async (fieldName: string, url: string) => {
+    const updated = { ...formData, [fieldName]: url };
+    setFormData(updated);
+    await updateSettings(updated);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -122,7 +128,7 @@ export const AdminAppSettings: React.FC = () => {
           <div className="py-20 text-center text-slate-500">Loading secure configuration...</div>
       ) : (
           <form id="app-settings-form" onSubmit={handleSubmit} className="space-y-6">
-            {currentTab === 'brand' && <IdentitySection settings={formData} onChange={handleChange} />}
+            {currentTab === 'brand' && <IdentitySection settings={formData} onChange={handleChange} onImageSave={handleImageSave} />}
             {/* FIX: Pass the required 'onSitelinksUpdate' prop to handle sitelink configuration changes. */}
             {currentTab === 'seo' && <SeoSection settings={formData} onChange={handleChange} onSitelinksUpdate={(pages) => setFormData(prev => ({ ...prev, priorityPages: pages }))} />}
             {currentTab === 'payments' && <PaymentSection settings={formData} onChange={handleChange} />}
