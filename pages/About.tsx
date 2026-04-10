@@ -20,22 +20,22 @@ export const About: React.FC = () => {
   const heroTitle = settings.aboutHeroTitle || "The Jambo Legacy";
   const founderTag = settings.aboutFounderTag || "Message from the Heart";
   const missionTitle = settings.aboutMissionTitle || "The Mission";
-  const missionBody = settings.aboutMissionBody || "To equip the saints for the work of ministry through wearable art that speaks truth.";
+  const missionBody = settings.aboutMissionBody || '';
   const visionTitle = settings.aboutVisionTitle || "The Vision";
-  const visionBody = settings.aboutVisionBody || "A world where the Gospel is visible in every street, workplace, and gathering.";
+  const visionBody = settings.aboutVisionBody || '';
   
   const valuesTag = settings.aboutValuesTag || "The Foundation";
   const valuesTitle = settings.aboutValuesTitle || "Core Values (H.E.B.)";
-  const valuesIntro = settings.aboutValuesIntro || "These three pillars uphold everything we do, from sourcing fabrics to serving our community.";
+  const valuesIntro = settings.aboutValuesIntro || '';
 
   const val1Title = settings.aboutValue1Title || "Honesty";
-  const val1Body = settings.aboutValue1Body || "Authentic faith, transparent practices, and integrity in every stitch we thread. We believe in being true to God, true to our customers, and true to ourselves.";
+  const val1Body = settings.aboutValue1Body || '';
   
   const val2Title = settings.aboutValue2Title || "Excellence";
-  const val2Body = settings.aboutValue2Body || "Striving for the highest quality to reflect the character of God. We don't settle for mediocrity because our message deserves the best vessel.";
+  const val2Body = settings.aboutValue2Body || '';
   
   const val3Title = settings.aboutValue3Title || "Boldness";
-  const val3Body = settings.aboutValue3Body || "Courage to wear our scriptures and share the Gospel without compromise. In a world of blending in, we are called to stand out for Christ.";
+  const val3Body = settings.aboutValue3Body || '';
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-800 animate-fade-in">
@@ -100,9 +100,7 @@ export const About: React.FC = () => {
               <p className="font-serif text-2xl md:text-3xl font-bold leading-snug relative z-10">
                 {settings.mission}
               </p>
-              <p className="mt-4 text-brand-light/80 font-light text-sm relative z-10">
-                {missionBody}
-              </p>
+              {missionBody && <p className="mt-4 text-brand-light/80 font-light text-sm relative z-10">{missionBody}</p>}
             </div>
             <div className="bg-brand-testament text-white p-10 md:p-12 rounded-3xl shadow-xl flex flex-col justify-center text-center h-full relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -110,9 +108,7 @@ export const About: React.FC = () => {
               <p className="font-serif text-2xl md:text-3xl font-bold leading-snug relative z-10">
                 {settings.vision}
               </p>
-               <p className="mt-4 text-white/80 font-light text-sm relative z-10">
-                {visionBody}
-              </p>
+              {visionBody && <p className="mt-4 text-white/80 font-light text-sm relative z-10">{visionBody}</p>}
             </div>
           </div>
         </section>
@@ -122,9 +118,7 @@ export const About: React.FC = () => {
           <div className="text-center mb-12">
             <span className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2">{valuesTag}</span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark">{valuesTitle}</h2>
-            <p className="text-gray-500 mt-4 max-w-2xl mx-auto">
-                {valuesIntro}
-            </p>
+            {valuesIntro && <p className="text-gray-500 mt-4 max-w-2xl mx-auto">{valuesIntro}</p>}
             <div className="w-20 h-1.5 bg-brand-hope rounded-full mt-6 mx-auto"></div>
           </div>
 
@@ -133,27 +127,21 @@ export const About: React.FC = () => {
             <div className="bg-brand-humility text-white p-8 rounded-3xl shadow-xl text-center flex flex-col items-center transform transition-transform hover:-translate-y-2 duration-300">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">H</div>
               <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{val1Title}</h3>
-              <p className="text-sm font-light leading-relaxed">
-                {val1Body}
-              </p>
+              {val1Body && <p className="text-sm font-light leading-relaxed">{val1Body}</p>}
             </div>
 
             {/* Excellence */}
             <div className="bg-brand-hope text-brand-dark p-8 rounded-3xl shadow-xl text-center flex flex-col items-center transform transition-transform hover:-translate-y-2 duration-300">
               <div className="w-16 h-16 bg-black/10 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">E</div>
               <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{val2Title}</h3>
-              <p className="text-sm font-light leading-relaxed">
-                {val2Body}
-              </p>
+              {val2Body && <p className="text-sm font-light leading-relaxed">{val2Body}</p>}
             </div>
 
             {/* Boldness */}
             <div className="bg-brand-patience text-white p-8 rounded-3xl shadow-xl text-center flex flex-col items-center transform transition-transform hover:-translate-y-2 duration-300">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-serif font-bold text-3xl mb-6">B</div>
               <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{val3Title}</h3>
-              <p className="text-sm font-light leading-relaxed">
-                {val3Body}
-              </p>
+              {val3Body && <p className="text-sm font-light leading-relaxed">{val3Body}</p>}
             </div>
           </div>
         </section>

@@ -46,17 +46,17 @@ export const Home: React.FC = () => {
     {
       bg: 'bg-brand-humility', textColor: 'text-brand-dark', iconBg: 'bg-white/20',
       title: settings.aboutValue1Title || 'Honesty',
-      description: settings.aboutValue1Body || "Authentic faith, transparent practices, and integrity in every stitch."
+      description: settings.aboutValue1Body || ''
     },
     {
       bg: 'bg-brand-hope', textColor: 'text-brand-dark', iconBg: 'bg-black/10',
       title: settings.aboutValue2Title || 'Excellence',
-      description: settings.aboutValue2Body || "Striving for the highest quality to reflect the character of God."
+      description: settings.aboutValue2Body || ''
     },
     {
       bg: 'bg-brand-sainty', textColor: 'text-white', iconBg: 'bg-white/20',
       title: settings.aboutValue3Title || 'Boldness',
-      description: settings.aboutValue3Body || "Courage to share the Gospel without compromise in the modern world."
+      description: settings.aboutValue3Body || ''
     }
   ];
 
@@ -169,9 +169,7 @@ export const Home: React.FC = () => {
                       {letter}
                     </div>
                     <h3 className="font-bold text-xl uppercase tracking-wider mb-3">{detail.title}</h3>
-                    <p className="text-sm font-medium leading-relaxed opacity-90">
-                      {detail.description}
-                    </p>
+                    {detail.description && <p className="text-sm font-medium leading-relaxed opacity-90">{detail.description}</p>}
                   </article>
                 );
               })}
@@ -369,9 +367,7 @@ export const Home: React.FC = () => {
             <h2 id="social-heading" className="text-3xl font-bold font-serif text-white mb-4">
               {settings.socialSectionTitle || "Follow Our Journey"}
             </h2>
-            <p className="text-brand-light max-w-xl mx-auto mb-8 font-medium">
-              {settings.socialSectionBody || "Join our community on social media for behind-the-scenes content, new drops, and daily inspiration."}
-            </p>
+            {settings.socialSectionBody && <p className="text-brand-light max-w-xl mx-auto mb-8 font-medium">{settings.socialSectionBody}</p>}
             <nav className="flex justify-center space-x-6" aria-label="Social media links">
               {Object.entries(settings.socialLinks).map(([platform, url]) =>
                 url && SocialIcons[platform] ? (
