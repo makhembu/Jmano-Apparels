@@ -79,11 +79,6 @@ export const About: React.FC = () => {
               
               <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed mb-8 whitespace-pre-wrap">
                 <p>{settings.founderBio}</p>
-                <p>
-                  Jambo Apparels was born not just from a desire to create clothing, but from a calling to create conversation. 
-                  In a world often loud with distraction, we aim to offer a quiet, steadfast testimony through what we wear. 
-                  Every design is prayerfully considered, ensuring that it aligns with the truth of Scripture while meeting the aesthetic needs of the modern believer.
-                </p>
               </div>
 
               <div className="bg-brand-testament/10 p-6 rounded-2xl relative">
