@@ -202,6 +202,10 @@ export class SettingsService {
       seo_content_title: settings.seoContentTitle, seo_content_intro: settings.seoContentIntro,
       seo_content_col1_title: settings.seoContentCol1Title, seo_content_col1_body: settings.seoContentCol1Body,
       seo_content_col2_title: settings.seoContentCol2Title, seo_content_col2_body: settings.seoContentCol2Body,
+      commitment_section_title: settings.commitmentSectionTitle, commitment_section_body: settings.commitmentSectionBody,
+      categories_section_title: settings.categoriesSectionTitle, categories_section_subtitle: settings.categoriesSectionSubtitle,
+      community_section_title: settings.communitySectionTitle, community_section_subtitle: settings.communitySectionSubtitle,
+      journal_section_title: settings.journalSectionTitle, journal_section_subtitle: settings.journalSectionSubtitle,
       social_section_title: settings.socialSectionTitle, social_section_body: settings.socialSectionBody,
       
       // About Page Content

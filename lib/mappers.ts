@@ -172,6 +172,15 @@ export const Mappers = {
     seoContentCol2Title: s.seo_content_col2_title || 'Ethical, Sustainable, Faithful',
     seoContentCol2Body: s.seo_content_col2_body || 'We don\'t compromise on quality or integrity.',
     
+    // Homepage Section Text
+    commitmentSectionTitle: s.commitment_section_title || undefined,
+    commitmentSectionBody: s.commitment_section_body || undefined,
+    categoriesSectionTitle: s.categories_section_title || undefined,
+    categoriesSectionSubtitle: s.categories_section_subtitle || undefined,
+    communitySectionTitle: s.community_section_title || undefined,
+    communitySectionSubtitle: s.community_section_subtitle || undefined,
+    journalSectionTitle: s.journal_section_title || undefined,
+    journalSectionSubtitle: s.journal_section_subtitle || undefined,
     // Social Section Text
     socialSectionTitle: s.social_section_title || 'Follow Our Journey',
     socialSectionBody: s.social_section_body || 'Join our community on social media.',

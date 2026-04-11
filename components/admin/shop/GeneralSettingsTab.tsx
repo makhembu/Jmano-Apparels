@@ -168,24 +168,52 @@ export const GeneralSettingsTab: React.FC = () => {
                 checked={generalForm.enableCommitmentSection ?? true}
                 onChange={(val) => handleSwitchChange('enableCommitmentSection', val)}
             />
+            {generalForm.enableCommitmentSection && (
+                <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2 space-y-3">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Commitment Section Content</h5>
+                    <Input label="Title" name="commitmentSectionTitle" value={generalForm.commitmentSectionTitle || ''} onChange={handleGeneralChange} placeholder="Our Commitment to Faith & Quality" />
+                    <Textarea label="Body" name="commitmentSectionBody" value={generalForm.commitmentSectionBody || ''} onChange={handleGeneralChange} rows={3} placeholder="At Jambo Apparels..." />
+                </div>
+            )}
             <Switch 
                 label="Shop by Category"
                 description="Show the 'Shop by Category' links."
                 checked={generalForm.enableCategoriesSection ?? true}
                 onChange={(val) => handleSwitchChange('enableCategoriesSection', val)}
             />
+            {generalForm.enableCategoriesSection && (
+                <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2 space-y-3">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Categories Section Content</h5>
+                    <Input label="Heading" name="categoriesSectionTitle" value={generalForm.categoriesSectionTitle || ''} onChange={handleGeneralChange} placeholder="Shop by Category" />
+                    <Input label="Subtitle" name="categoriesSectionSubtitle" value={generalForm.categoriesSectionSubtitle || ''} onChange={handleGeneralChange} placeholder="Explore our curated collections..." />
+                </div>
+            )}
             <Switch 
                 label="Community Reviews"
                 description="Show the 'From Our Community' section."
                 checked={generalForm.enableCommunitySection ?? true}
                 onChange={(val) => handleSwitchChange('enableCommunitySection', val)}
             />
+            {generalForm.enableCommunitySection && (
+                <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2 space-y-3">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Community Section Content</h5>
+                    <Input label="Heading" name="communitySectionTitle" value={generalForm.communitySectionTitle || ''} onChange={handleGeneralChange} placeholder="From Our Community" />
+                    <Input label="Subtitle" name="communitySectionSubtitle" value={generalForm.communitySectionSubtitle || ''} onChange={handleGeneralChange} placeholder="Real testimonies from believers..." />
+                </div>
+            )}
             <Switch 
                 label="Latest Journal"
                 description="Show the 'Latest from our Journal' section."
                 checked={generalForm.enableJournalSection ?? true}
                 onChange={(val) => handleSwitchChange('enableJournalSection', val)}
             />
+            {generalForm.enableJournalSection && (
+                <div className="animate-fade-in pl-4 border-l-2 border-brand-green ml-2 space-y-3">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Journal Section Content</h5>
+                    <Input label="Heading" name="journalSectionTitle" value={generalForm.journalSectionTitle || ''} onChange={handleGeneralChange} placeholder="Latest from our Journal" />
+                    <Input label="Subtitle" name="journalSectionSubtitle" value={generalForm.journalSectionSubtitle || ''} onChange={handleGeneralChange} placeholder="Stories of faith, style guides..." />
+                </div>
+            )}
             <Switch 
                 label="Social Media Follow"
                 description="Show the 'Follow Our Journey' section."

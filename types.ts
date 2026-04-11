@@ -291,6 +291,15 @@ export interface AppSettings {
   seoContentCol1Body?: string;
   seoContentCol2Title?: string;
   seoContentCol2Body?: string;
+  // Homepage Section Text
+  commitmentSectionTitle?: string;
+  commitmentSectionBody?: string;
+  categoriesSectionTitle?: string;
+  categoriesSectionSubtitle?: string;
+  communitySectionTitle?: string;
+  communitySectionSubtitle?: string;
+  journalSectionTitle?: string;
+  journalSectionSubtitle?: string;
   // Social Section Text
   socialSectionTitle?: string;
   socialSectionBody?: string;

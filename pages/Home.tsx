@@ -152,10 +152,10 @@ export const Home: React.FC = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 id="commitment-heading" className="text-3xl font-bold text-brand-dark mb-4 font-serif">
-                Our Commitment to Faith & Quality
+                {settings.commitmentSectionTitle || "Our Commitment to Faith & Quality"}
               </h2>
               <p className="text-slate-600 font-light leading-relaxed max-w-3xl mx-auto">
-                At Jambo Apparels, our mission is to thread scriptures into modern, ethical fashion. We are committed to creating high-quality Christian clothing that serves as a chariot for the gospel.
+                {settings.commitmentSectionBody || "At Jambo Apparels, our mission is to thread scriptures into modern, ethical fashion. We are committed to creating high-quality Christian clothing that serves as a chariot for the gospel."}
               </p>
               <div className="w-20 h-1.5 bg-brand-hope rounded-full mt-8 mx-auto" aria-hidden="true"></div>
             </div>
@@ -184,9 +184,9 @@ export const Home: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-2xl mx-auto mb-12">
                 <h2 id="categories-heading" className="text-3xl font-bold font-serif text-brand-dark mb-4">
-                  Shop by Category
+                  {settings.categoriesSectionTitle || "Shop by Category"}
                 </h2>
-                <p className="text-brand-dark/70">Explore our curated collections, each designed with a specific spiritual intention.</p>
+                <p className="text-brand-dark/70">{settings.categoriesSectionSubtitle || "Explore our curated collections, each designed with a specific spiritual intention."}</p>
               </div>
               {/* Mobile Grid (2 cols) | Desktop Flex */}
               <nav className="grid grid-cols-2 md:flex md:flex-wrap md:justify-center gap-3 md:gap-4" aria-label="Product categories">
@@ -288,9 +288,9 @@ export const Home: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 id="reviews-heading" className="text-3xl font-bold font-serif text-brand-dark mb-4">
-                From Our Community
+                {settings.communitySectionTitle || "From Our Community"}
               </h2>
-              <p className="text-brand-dark/70">Real testimonies from believers who wear their faith boldly.</p>
+              <p className="text-brand-dark/70">{settings.communitySectionSubtitle || "Real testimonies from believers who wear their faith boldly."}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {latestReviews.slice(0, 3).map((review) => (
@@ -316,9 +316,9 @@ export const Home: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
                <div>
                   <h2 id="blog-heading" className="text-3xl font-serif font-bold text-brand-dark">
-                    Latest from our Journal
+                    {settings.journalSectionTitle || "Latest from our Journal"}
                   </h2>
-                  <p className="text-gray-500 mt-2">Stories of faith, style guides, and community testimonies.</p>
+                  <p className="text-gray-500 mt-2">{settings.journalSectionSubtitle || "Stories of faith, style guides, and community testimonies."}</p>
                </div>
                <Link to="/blog" aria-label="View all journal entries">
                   <Button variant="ghost" className="text-brand-green font-bold">View All Journal Entries &rarr;</Button>
