@@ -77,7 +77,7 @@ export const Home: React.FC = () => {
             <div className="pt-10 lg:pt-28 mx-auto max-w-7xl px-6 sm:px-8 lg:px-8">
               <div className="text-left lg:text-left">
                 <h1 id="hero-heading" className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-serif font-bold text-white leading-tight">
-                  Wear Your Scriptures in Humility and Boldness
+                  {settings.secondarySlogan || "Wear Your Scriptures in Humility and Boldness"}
                 </h1>
                 <p className="mt-6 text-sm sm:text-lg text-brand-light font-light max-w-xl leading-relaxed opacity-100 min-h-[3rem]">
                   {settings.mission || "Premium Christian streetwear combining faith, style, and ethical craftsmanship"}
