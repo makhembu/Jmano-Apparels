@@ -42,7 +42,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-brand-dark text-white pt-10 pb-6">
+    <footer className="bg-brand-dark text-white pt-10 pb-6 site-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">

@@ -5,6 +5,7 @@ import App from './App';
 import { ToastProvider } from './context/ToastContext';
 import './index.css';
 import './styles/copilot.css';
+import './styles/ui-adjustments.css';
 import { CacheManager } from './lib/cache';
 
 // Initialize System Cache (Service Workers, etc)

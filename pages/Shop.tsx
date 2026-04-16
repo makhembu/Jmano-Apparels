@@ -167,7 +167,7 @@ export const Shop: React.FC = () => {
         
         {/* --- DESKTOP TOOLBAR (Compressed) --- */}
         {/* Adjusted top offset to top-32 to clear the navbar + announcement bar */}
-        <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8 sticky top-32 z-30 bg-white/95 backdrop-blur-xl py-3 px-5 rounded-2xl border border-slate-200 shadow-xl shadow-brand-green/5 transition-all">
+        <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8 sticky top-32 z-30 bg-white/95 backdrop-blur-xl py-3 px-5 rounded-2xl border border-slate-200 shadow-xl shadow-brand-green/5 transition-all shop-toolbar-container">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <Button 
               variant={showFilters ? "primary" : "outline"}
@@ -217,7 +217,7 @@ export const Shop: React.FC = () => {
           
           {/* --- DESKTOP SIDEBAR --- */}
           <div className={`hidden md:block flex-shrink-0 transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
-            <aside className="w-64">
+            <aside className="w-64 shop-filter-sidebar">
               {/* Increased sticky top to top-52 to sit below the new toolbar position */}
               <div className="sticky top-52 space-y-6 bg-white p-6 rounded-3xl shadow-xl shadow-brand-green/5 border border-slate-100">
                 <div>

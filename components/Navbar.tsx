@@ -36,7 +36,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-brand-dark shadow-md border-b border-brand-green transition-all duration-200">
+      <header className="sticky top-0 z-50 bg-brand-dark shadow-md border-b border-brand-green transition-all duration-200 site-navbar">
         {/* --- ANNOUNCEMENT BAR --- */}
         <AnnouncementBar />
 
