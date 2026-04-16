@@ -18,7 +18,6 @@ export const About: React.FC = () => {
   // Fallback defaults for visual display if settings are empty
   const heroTag = settings.aboutHeroTag || "Our Divine Purpose";
   const heroTitle = settings.aboutHeroTitle || "The Jambo Legacy";
-  const founderTag = settings.aboutFounderTag || "Message from the Heart";
   const missionTitle = settings.aboutMissionTitle || "The Mission";
   const missionBody = settings.aboutMissionBody || '';
   const visionTitle = settings.aboutVisionTitle || "The Vision";
@@ -64,7 +63,7 @@ export const About: React.FC = () => {
         {/* Founder Section */}
         <section className="max-w-4xl mx-auto px-4 -mt-32 md:-mt-40 relative z-20">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden p-8 md:p-16">
-            <span className="text-brand-green font-bold text-xs uppercase tracking-widest mb-2 block">{founderTag}</span>
+            
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">{settings.founderName}</h2>
             <div className="w-20 h-1.5 bg-brand-hope rounded-full mb-8"></div>
             
