@@ -63,12 +63,12 @@ export const About: React.FC = () => {
       <main className="py-16 md:py-24 space-y-16 md:space-y-24">
         {/* Founder Section */}
         <section className="max-w-6xl mx-auto px-4 -mt-32 md:-mt-48 relative z-20">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5 author-block">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5">
             <div className="lg:col-span-2 relative">
               <img 
                 src={settings.founderImage || "https://i.imgur.com/EuNbPGG.png"} 
                 alt={settings.founderName || 'Linah Makembu, Founder of Jambo Apparels'} 
-                className="w-full h-full object-cover object-top aspect-[4/5] photo"
+                className="w-full h-full object-cover object-top aspect-[4/5]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden"></div>
             </div>
