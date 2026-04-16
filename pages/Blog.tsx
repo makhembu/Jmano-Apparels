@@ -67,7 +67,7 @@ export const Blog: React.FC = () => {
       />
       
       {/* Desktop Hero (Matches Shop Layout) */}
-      <header className="hidden md:block relative bg-brand-dark pt-20 pb-28 overflow-hidden text-center border-b border-brand-green/20">
+      <header className="hidden md:block relative bg-brand-dark pt-16 pb-20 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
           <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
             Digital Witness
