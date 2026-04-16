@@ -96,10 +96,13 @@ export const Shop: React.FC = () => {
       {/* --- DESKTOP HERO (Compressed height to push products up) --- */}
       <header className="hidden md:block relative bg-brand-dark pt-16 pb-20 overflow-hidden text-center border-b border-brand-green/20">
         <div className="max-w-5xl mx-auto px-4 relative z-10">
-          <h1 className="text-4xl lg:text-6xl font-serif font-bold text-white mb-2 tracking-tighter leading-none">
+          <span className="text-brand-dark text-[10px] font-black uppercase tracking-[0.5em] mb-4 inline-block bg-brand-hope px-6 py-2 rounded-full shadow-lg">
+            Digital Witness
+          </span>
+          <h1 className="text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
             {heroTitle}
           </h1>
-          <p className="text-lg text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
+          <p className="text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
             {heroSubtitle}
           </p>
         </div>
