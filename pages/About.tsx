@@ -18,6 +18,7 @@ export const About: React.FC = () => {
   // Fallback defaults for visual display if settings are empty
   const heroTag = settings.aboutHeroTag || "Our Divine Purpose";
   const heroTitle = settings.aboutHeroTitle || "The Jambo Legacy";
+  const founderTag = settings.aboutFounderTag || "Message from the Heart";
   const missionTitle = settings.aboutMissionTitle || "The Mission";
   const missionBody = settings.aboutMissionBody || '';
   const visionTitle = settings.aboutVisionTitle || "The Vision";
@@ -60,6 +61,26 @@ export const About: React.FC = () => {
       </header>
 
 <main className="py-16 md:py-24 space-y-16 md:space-y-24">
+        {/* Founder Section */}
+        <section className="max-w-4xl mx-auto px-4 -mt-32 md:-mt-40 relative z-20">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden p-8 md:p-16">
+            <span className="text-brand-green font-bold text-xs uppercase tracking-widest mb-2 block">{founderTag}</span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">{settings.founderName}</h2>
+            <div className="w-20 h-1.5 bg-brand-hope rounded-full mb-8"></div>
+            
+            <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed mb-8 whitespace-pre-wrap">
+              <p>{settings.founderBio}</p>
+            </div>
+
+            <div className="bg-brand-testament/10 p-6 rounded-2xl relative">
+              <span className="absolute -left-3 -top-3 text-brand-testament text-7xl font-serif opacity-20">"</span>
+              <blockquote className="text-brand-dark font-serif text-xl italic leading-relaxed">
+                {settings.founderQuote}
+              </blockquote>
+            </div>
+          </div>
+        </section>
+
         {/* Mission & Vision */}
         <section className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
