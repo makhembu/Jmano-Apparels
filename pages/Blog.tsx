@@ -13,7 +13,6 @@ export const Blog: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const blogCategories = [
-    { key: 'ALL', label: 'All Entries' },
     { key: 'TESTIMONY', label: 'Testimonies' },
     { key: 'STYLE', label: 'Style Guides' },
     { key: 'FAITH', label: 'Faith & Living' },
