@@ -123,40 +123,40 @@ export const Blog: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:-mt-12 relative z-20 pt-6 md:pt-0 pb-32">
         
         {/* Desktop Category Bar (Matches Shop Card Style) */}
-        <div className="hidden md:flex bg-white p-4 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 mb-12 flex-col gap-4">
+        <div className="hidden md:flex bg-white p-3 rounded-2xl shadow-lg border border-slate-100 max-w-3xl mx-auto relative z-10 mb-8 flex-row items-center justify-between gap-4">
            {/* Search Row */}
-<div className="w-full max-w-md mx-auto relative">
+<div className="flex-1 max-w-xs">
                <input 
                    type="text" 
-                   placeholder="Search journal entries..." 
+                   placeholder="Search..." 
                    value={searchQuery}
                    onChange={(e) => setSearchQuery(e.target.value)}
-                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none transition-all"
+                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-8 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none transition-all"
                />
-               <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+               <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                {searchQuery && (
                  <button 
                    onClick={() => setSearchQuery('')}
-                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                   className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                  >
-                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                  </button>
                )}
             </div>
             
             {/* Categories Row */}
-            <div className="flex gap-2 justify-center px-4 w-full flex-wrap">
+            <div className="flex gap-2 flex-wrap">
              {blogCategories.map(cat => (
                <button
                  key={cat.key}
                  onClick={() => setActiveCategory(activeCategory === cat.key ? '' : cat.key)}
-                 className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                 className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-[0.15em] whitespace-nowrap ${
                    activeCategory === cat.key
-                     ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
+                     ? 'bg-brand-green text-white'
                      : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
                  }`}
                >
-{cat.label}
+                 {cat.label}
                </button>
              ))}
            </div>
