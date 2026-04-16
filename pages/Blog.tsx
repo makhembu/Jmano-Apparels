@@ -9,7 +9,7 @@ import { SEO } from '../components/SEO';
 
 export const Blog: React.FC = () => {
   const { blogPosts, settings, loading } = useShop();
-  const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const blogCategories = [
@@ -84,31 +84,29 @@ export const Blog: React.FC = () => {
       {/* Mobile Sticky Filter Bar (Matches Shop) */}
       <div className="md:hidden sticky top-16 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm transition-all">
          <div className="px-4 py-3 space-y-3">
-             <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search articles..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-100 border-none rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-             </div>
-<div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
-                 <button
-                   onClick={() => setActiveCategory('')}
-                   className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
-                     !activeCategory
-                       ? 'bg-brand-dark text-white border-brand-dark'
-                       : 'bg-white text-slate-500 border-slate-200'
-                   }`}
-                 >
-                   All
-                 </button>
+<div className="relative">
+                 <input 
+                   type="text" 
+                   placeholder="Search articles..." 
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   className="w-full bg-slate-100 border-none rounded-xl py-2 pl-9 pr-10 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none"
+                 />
+                 <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                 {searchQuery && (
+                   <button 
+                     onClick={() => setSearchQuery('')}
+                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                   >
+                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                   </button>
+                 )}
+              </div>
+              <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
                  {blogCategories.map(cat => (
                    <button
                      key={cat.key}
-                     onClick={() => setActiveCategory(cat.key)}
+                     onClick={() => setActiveCategory(activeCategory === cat.key ? '' : cat.key)}
                      className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
                        activeCategory === cat.key
                          ? 'bg-brand-green text-white border-brand-green'
@@ -118,7 +116,7 @@ export const Blog: React.FC = () => {
                      {cat.label}
                    </button>
                  ))}
-             </div>
+              </div>
          </div>
       </div>
 
@@ -127,43 +125,41 @@ export const Blog: React.FC = () => {
         {/* Desktop Category Bar (Matches Shop Card Style) */}
         <div className="hidden md:flex bg-white p-4 rounded-3xl shadow-xl border border-slate-100 max-w-5xl mx-auto relative z-10 mb-12 flex-col gap-4">
            {/* Search Row */}
-           <div className="w-full max-w-md mx-auto relative">
-              <input 
-                  type="text" 
-                  placeholder="Search journal entries..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none transition-all"
-              />
-              <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-           </div>
-           
-           {/* Categories Row */}
-<div className="flex gap-2 justify-center px-4 w-full flex-wrap">
-             <button
-               onClick={() => setActiveCategory('')}
-               className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
-                 !activeCategory
-                   ? 'bg-brand-dark text-white shadow-lg shadow-brand-dark/20'
-                   : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
-               }`}
-             >
-               All
-             </button>
+<div className="w-full max-w-md mx-auto relative">
+               <input 
+                   type="text" 
+                   placeholder="Search journal entries..." 
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm focus:ring-2 focus:ring-brand-green/20 outline-none transition-all"
+               />
+               <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+               {searchQuery && (
+                 <button 
+                   onClick={() => setSearchQuery('')}
+                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                 >
+                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                 </button>
+               )}
+            </div>
+            
+            {/* Categories Row */}
+            <div className="flex gap-2 justify-center px-4 w-full flex-wrap">
              {blogCategories.map(cat => (
                <button
                  key={cat.key}
-                 onClick={() => setActiveCategory(cat.key)}
+                 onClick={() => setActiveCategory(activeCategory === cat.key ? '' : cat.key)}
                  className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
                    activeCategory === cat.key
                      ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
                      : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
                  }`}
                >
-                 {cat.label}
+{cat.label}
                </button>
-            ))}
-          </div>
+             ))}
+           </div>
         </div>
 
         {filteredPosts.length > 0 ? (
