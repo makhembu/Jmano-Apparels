@@ -23,7 +23,7 @@ export const Blog: React.FC = () => {
     let posts = blogPosts.filter(post => post.status === 'published');
     
     // 1. Filter by Category
-    if (activeCategory !== 'ALL') {
+    if (activeCategory) {
       posts = posts.filter(post => {
         const lowerCategory = activeCategory.toLowerCase();
         // Simple approximation based on title if no explicit category logic matches yet
@@ -94,20 +94,30 @@ export const Blog: React.FC = () => {
                 />
                 <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
              </div>
-             <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
-                {blogCategories.map(cat => (
-                  <button
-                    key={cat.key}
-                    onClick={() => setActiveCategory(cat.key)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
-                      activeCategory === cat.key
-                        ? 'bg-brand-green text-white border-brand-green'
-                        : 'bg-white text-slate-500 border-slate-200'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+<div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+                 <button
+                   onClick={() => setActiveCategory('')}
+                   className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
+                     !activeCategory
+                       ? 'bg-brand-dark text-white border-brand-dark'
+                       : 'bg-white text-slate-500 border-slate-200'
+                   }`}
+                 >
+                   All
+                 </button>
+                 {blogCategories.map(cat => (
+                   <button
+                     key={cat.key}
+                     onClick={() => setActiveCategory(cat.key)}
+                     className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
+                       activeCategory === cat.key
+                         ? 'bg-brand-green text-white border-brand-green'
+                         : 'bg-white text-slate-500 border-slate-200'
+                     }`}
+                   >
+                     {cat.label}
+                   </button>
+                 ))}
              </div>
          </div>
       </div>
@@ -129,19 +139,29 @@ export const Blog: React.FC = () => {
            </div>
            
            {/* Categories Row */}
-           <div className="flex gap-2 justify-center px-4 w-full flex-wrap">
-            {blogCategories.map(cat => (
-              <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
-                  activeCategory === cat.key
-                    ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
-                    : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
-                }`}
-              >
-                {cat.label}
-              </button>
+<div className="flex gap-2 justify-center px-4 w-full flex-wrap">
+             <button
+               onClick={() => setActiveCategory('')}
+               className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                 !activeCategory
+                   ? 'bg-brand-dark text-white shadow-lg shadow-brand-dark/20'
+                   : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
+               }`}
+             >
+               All
+             </button>
+             {blogCategories.map(cat => (
+               <button
+                 key={cat.key}
+                 onClick={() => setActiveCategory(cat.key)}
+                 className={`px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                   activeCategory === cat.key
+                     ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
+                     : 'bg-transparent text-slate-400 hover:text-brand-dark hover:bg-brand-light/30'
+                 }`}
+               >
+                 {cat.label}
+               </button>
             ))}
           </div>
         </div>
