@@ -45,7 +45,7 @@ export const About: React.FC = () => {
       />
 
       {/* Header */}
-      <header className="hidden md:block relative bg-brand-dark pt-16 pb-20 overflow-hidden text-center border-b border-brand-green/20">
+      <header className="hidden md:block relative bg-brand-dark pt-16 pb-20 overflow-hidden text-center text-white border-b border-brand-green/20">
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <span className="inline-block bg-brand-hope text-brand-dark font-bold text-xs uppercase tracking-widest px-6 py-2 rounded-full mb-6 shadow-lg">
             {heroTag}
