@@ -23,7 +23,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   height, 
   quality = 80,
   className,
-  fit = 'cover',
+  fit = 'contain',
   priority = false,
   ...props 
 }) => {
@@ -42,8 +42,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     if (height && !targetWidth) params.append('height', height.toString()); // Only use height if no target width, to maintain aspect ratio
     
     params.append('quality', quality.toString());
-    params.append('format', 'webp'); // Force WebP for size reduction
-    params.append('resize', fit);
+    params.append('format', 'webp');
 
     return `${url}?${params.toString()}`;
   };

@@ -55,7 +55,19 @@ export const ProductDetails: React.FC = () => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   
-  const product = products.find(p => p.id === id || p.slug === id);
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
+  const [productLoading, setProductLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setProductLoading(true);
+    api.getProductById(id)
+      .then(p => { setFetchedProduct(p); setProductLoading(false); })
+      .catch(() => { setFetchedProduct(null); setProductLoading(false); });
+  }, [id]);
+
+  const contextProduct = products.find(p => p.id === id || p.slug === id);
+  const product = fetchedProduct || contextProduct;
   const category = categories.find(c => c.key === product?.categoryKey);
 
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -149,7 +161,7 @@ export const ProductDetails: React.FC = () => {
   const hasAnnouncement = settings.isAnnouncementEnabled && settings.announcementText;
   const galleryTopClass = hasAnnouncement ? 'lg:top-[8rem]' : 'lg:top-24';
 
-  if (loading) return <ProductDetailsSkeleton />;
+  if (loading || productLoading) return <ProductDetailsSkeleton />;
   if (!product) return <div className="p-20 text-center text-gray-500">Product not found. <Link to="/shop" className="text-brand-green underline">Back to Shop</Link></div>;
 
   return (

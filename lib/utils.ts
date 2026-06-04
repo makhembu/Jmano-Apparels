@@ -127,6 +127,8 @@ export const getColorHex = (colorName: string): string => {
       grey: '#808080',
       gray: '#808080',
       charcoal: '#36454F',
+      charcoalgrey: '#36454F',
+      charcoalgray: '#36454F',
       brown: '#A52A2A',
       tan: '#D2B48C',
       beige: '#F5F5DC',
