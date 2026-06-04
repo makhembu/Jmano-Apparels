@@ -194,19 +194,20 @@ export const Home: React.FC = () => {
                     [1,2,3,4].map(i => <div key={i} className="h-20 md:h-14 w-full md:w-32 bg-white/50 rounded-2xl animate-pulse" role="status" aria-label="Loading category"></div>)
                 ) : (
                     displayCategories.map(cat => {
-                      // Logic for accessible text color on category buttons
-                      const isLighter = cat.bgColorClass.includes('hope') || 
-                                        cat.bgColorClass.includes('testament') || 
-                                        cat.bgColorClass.includes('humility') ||
-                                        cat.bgColorClass.includes('triumph');
-                      
-                      const textColor = isLighter ? 'text-brand-dark' : 'text-white';
+                      const bgHex = cat.color || '#2E7D32';
+                      const hex = bgHex.replace('#', '');
+                      const r = parseInt(hex.substring(0, 2), 16);
+                      const g = parseInt(hex.substring(2, 4), 16);
+                      const b = parseInt(hex.substring(4, 6), 16);
+                      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                      const textColor = luminance > 0.5 ? 'text-brand-dark' : 'text-white';
                       
                       return (
                         <Link 
                           to={`/shop?cat=${cat.key}`} 
                           key={cat.key} 
-                          className={`${cat.bgColorClass} ${textColor} px-4 py-4 md:px-8 md:py-4 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 text-sm md:text-base font-bold border-2 border-white/20 flex items-center justify-center text-center h-full min-h-[4.5rem]`}
+                          className={`${textColor} px-4 py-4 md:px-8 md:py-4 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 text-sm md:text-base font-bold border-2 border-white/20 flex items-center justify-center text-center h-full min-h-[4.5rem]`}
+                          style={{ backgroundColor: bgHex }}
                           aria-label={`Browse ${cat.label} category`}
                         >
                             {cat.label}
