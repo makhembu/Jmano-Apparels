@@ -113,6 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           width={500}
           height={500}
           quality={80}
+          fit="cover"
           className="group-hover:scale-105 transition-transform duration-500"
         />
         
