@@ -282,21 +282,22 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({ settings, onCh
                         </div>
                      )}
                   </div>
-               </div>
-               <div className="relative">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={(e) => handleImageUpload(e, 'founderImage')} 
-                    disabled={uploading}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                  />
-                  <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-12 rounded-xl">
-                    {uploading ? 'Processing...' : 'Upload Image'}
-                  </Button>
-               </div>
-            </div>
-          </div>
+                </div>
+                <div className="relative">
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     onChange={(e) => handleImageUpload(e, 'founderImage')} 
+                     disabled={uploading}
+                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                   />
+                   <Button type="button" variant="outline" isLoading={uploading} className="whitespace-nowrap h-12 rounded-xl">
+                     {uploading ? 'Processing...' : 'Upload Image'}
+                   </Button>
+                </div>
+             </div>
+             <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-block mt-2 font-medium">4:5 ratio recommended (e.g. 800×1000px)</p>
+           </div>
         </div>
       </div>
 
