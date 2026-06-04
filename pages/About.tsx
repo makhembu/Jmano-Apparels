@@ -61,31 +61,21 @@ export const About: React.FC = () => {
 
 <main className="py-16 md:py-24 space-y-16 md:space-y-24">
         {/* Founder Section */}
-        <section className="max-w-6xl mx-auto px-4 -mt-32 md:-mt-40 relative z-20">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5">
-            <div className="lg:col-span-2 relative">
-              <img 
-                src={settings.founderImage || "https://i.imgur.com/EuNbPGG.png"} 
-                alt={settings.founderName || 'Linah Makembu, Founder of Jambo Apparels'} 
-                className="w-full h-full object-cover object-top aspect-[4/5]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden"></div>
+        <section className="max-w-4xl mx-auto px-4 -mt-32 md:-mt-40 relative z-20">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden p-8 md:p-16">
+            
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">{settings.founderName}</h2>
+            <div className="w-20 h-1.5 bg-brand-hope rounded-full mb-8"></div>
+            
+            <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed mb-8 whitespace-pre-wrap">
+              <p>{settings.founderBio}</p>
             </div>
-            <div className="lg:col-span-3 p-8 md:p-16 flex flex-col justify-center">
-              
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-dark leading-tight mb-4">{settings.founderName}</h2>
-              <div className="w-20 h-1.5 bg-brand-hope rounded-full mb-8"></div>
-              
-              <div className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed mb-8 whitespace-pre-wrap">
-                <p>{settings.founderBio}</p>
-              </div>
 
-              <div className="bg-brand-testament/10 p-6 rounded-2xl relative">
-                <span className="absolute -left-3 -top-3 text-brand-testament text-7xl font-serif opacity-20">"</span>
-                <blockquote className="text-brand-dark font-serif text-xl italic leading-relaxed">
-                  {settings.founderQuote}
-                </blockquote>
-              </div>
+            <div className="bg-brand-testament/10 p-6 rounded-2xl relative">
+              <span className="absolute -left-3 -top-3 text-brand-testament text-7xl font-serif opacity-20">"</span>
+              <blockquote className="text-brand-dark font-serif text-xl italic leading-relaxed">
+                {settings.founderQuote}
+              </blockquote>
             </div>
           </div>
         </section>
