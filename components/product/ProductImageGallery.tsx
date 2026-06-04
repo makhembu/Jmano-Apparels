@@ -68,11 +68,11 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             key={images[activeIndex]}
             src={images[activeIndex]} 
             alt={product.title} 
-            className="w-full h-full object-center object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="w-full h-full object-center transition-transform duration-700 ease-out group-hover:scale-105"
             width={800}
             height={1000}
             priority={true}
-            fit="cover"
+            fit="contain"
           />
           
           {/* Image Navigation Overlay Buttons (Visible on Mobile & Hover Desktop) */}
