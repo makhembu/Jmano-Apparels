@@ -56,9 +56,6 @@ export const About: React.FC = () => {
           <p className="mt-4 text-lg md:text-xl font-light italic opacity-90 max-w-2xl mx-auto">
             Divinely Threaded Scriptures
           </p>
-          <p className="mt-6 text-lg md:text-xl font-light italic opacity-90 max-w-2xl mx-auto">
-            "{settings.secondarySlogan}"
-          </p>
         </div>
       </header>
 
