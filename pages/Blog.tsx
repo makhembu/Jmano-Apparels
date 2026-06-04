@@ -73,7 +73,7 @@ export const Blog: React.FC = () => {
             Digital Witness
           </span>
           <h1 className="text-6xl lg:text-7xl font-serif font-bold text-white mb-6 tracking-tighter leading-none">
-            Journey of <span className="text-brand-humility">Journaled Faith</span>
+            Journeys of <span className="text-white">Journaled faith</span>
           </h1>
           <p className="text-xl text-brand-light font-light max-w-2xl mx-auto leading-relaxed italic">
             "Threading faith into the fabric of everyday life."

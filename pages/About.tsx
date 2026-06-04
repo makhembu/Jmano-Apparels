@@ -53,6 +53,9 @@ export const About: React.FC = () => {
           <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight">
             {heroTitle}
           </h1>
+          <p className="mt-4 text-lg md:text-xl font-light italic opacity-90 max-w-2xl mx-auto">
+            Divinely Threaded Scriptures
+          </p>
           <p className="mt-6 text-lg md:text-xl font-light italic opacity-90 max-w-2xl mx-auto">
             "{settings.secondarySlogan}"
           </p>

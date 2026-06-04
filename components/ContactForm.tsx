@@ -39,7 +39,7 @@ export const ContactForm: React.FC = () => {
           <span className="text-brand-green font-bold text-xs uppercase tracking-widest mb-2 block">Reach Out</span>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark mb-4">Get in Touch</h2>
           <p className="text-slate-500 font-medium max-w-xl mx-auto">
-            Have a question about an order, a testimony to share, or just want to say hello? We'd love to hear from you.
+            Reach out to us
           </p>
         </div>
 

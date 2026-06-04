@@ -106,7 +106,21 @@ export const Footer: React.FC = () => {
                   Cookie Settings
                 </button>
               </li>
-              <li className="pt-2 text-brand-light font-medium break-all">
+              <li className="pt-2 border-t border-green-800 mt-2"></li>
+              <li>
+                <a href={settings.socialLinks?.facebook || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-brand-light hover:text-brand-hope font-medium">
+                  <span className="w-4 h-4">{SocialIcons.facebook}</span>
+                  Facebook
+                </a>
+              </li>
+              <li>
+                <a href={settings.socialLinks?.instagram || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-brand-light hover:text-brand-hope font-medium">
+                  <span className="w-4 h-4">{SocialIcons.instagram}</span>
+                  Instagram
+                </a>
+              </li>
+              <li className="pt-2 border-t border-green-800 mt-2"></li>
+              <li className="text-brand-light font-medium break-all">
                 {settings.contactEmail || 'support@jamboapparels.com'}
               </li>
               <li className="text-brand-light font-medium">
