@@ -42,7 +42,10 @@ export const VisualsForm: React.FC<VisualsFormProps> = ({ images, isUploading, o
             )}
             <div className="flex justify-between items-center border-b border-slate-50 pb-4 mb-6">
                 <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Visual Gallery</h2>
-                <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-1 rounded">Max 5MB per image</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-1 rounded">Max 5MB per image</span>
+                    <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded font-medium">1:1 ratio recommended</span>
+                </div>
             </div>
             <div className="space-y-6">
                 {images && images.length > 0 && (
