@@ -4,6 +4,7 @@ import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { MediaPicker } from '../../ui/MediaPicker';
+import { getVideoEmbedUrl } from '../../../lib/video-utils';
 
 interface BlogEditorSidebarProps {
   formData: Partial<BlogPost>;
@@ -278,7 +279,7 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
                     <video src={formData.heroVideo} className="w-full h-full object-cover" preload="metadata" muted controls />
                   ) : (
                     <iframe
-                      src={formData.heroVideo}
+                      src={getVideoEmbedUrl(formData.heroVideo) || formData.heroVideo}
                       title="Hero video preview"
                       className="w-full h-full absolute inset-0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
