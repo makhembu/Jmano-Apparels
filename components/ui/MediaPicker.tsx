@@ -111,6 +111,9 @@ const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) 
   );
 };
 
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
 export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) => {
   const [videos, setVideos] = useState<{ name: string; url: string; bucket: string; path: string; size: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,6 +122,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [storageFiles, setStorageFiles] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const dragCounterRef = useRef(0);
 
   const loadVideos = async () => {
     try {
@@ -156,6 +162,60 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const videoFiles = files.filter(f => {
+      const ext = '.' + f.name.split('.').pop()?.toLowerCase();
+      return VIDEO_EXTENSIONS.includes(ext);
+    });
+
+    if (videoFiles.length === 0) return;
+
+    for (const file of videoFiles) {
+      if (file.size > MAX_FILE_SIZE) {
+        window.alert(`"${file.name}" exceeds the 100 MB limit and was skipped.`);
+        continue;
+      }
+      try {
+        setUploading(true);
+        await api.uploadVideo(file);
+      } catch (err) {
+        console.error('Upload failed:', err);
+      }
+    }
+
+    setUploading(false);
+    await loadVideos();
+  };
+
   const filteredVideos = videos.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -170,8 +230,32 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl relative" onClick={e => e.stopPropagation()}>
+        {/* Drag-and-drop overlay */}
+        {isDragOver && (
+          <div className="absolute inset-0 z-50 bg-brand-green/10 border-2 border-dashed border-brand-green rounded-2xl flex flex-col items-center justify-center pointer-events-none">
+            <svg className="w-16 h-16 text-brand-green mb-3 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p className="text-brand-green font-bold text-lg">Drop video files here</p>
+            <p className="text-brand-green/70 text-sm mt-1">MP4, WebM, MOV, AVI, MKV — max 100 MB each</p>
+          </div>
+        )}
+        {/* Uploading overlay */}
+        {uploading && (
+          <div className="absolute inset-0 z-50 bg-white/80 rounded-2xl flex flex-col items-center justify-center">
+            <div className="animate-spin h-10 w-10 border-2 border-brand-green border-t-transparent rounded-full mb-3"></div>
+            <p className="text-sm font-medium text-slate-600">Uploading...</p>
+          </div>
+        )}
         {/* Header */}
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
