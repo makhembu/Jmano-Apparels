@@ -58,6 +58,57 @@ export class StorageService {
     }
   }
 
+  /**
+   * Uploads a video to Supabase storage with fallback logic for bucket names.
+   */
+  async uploadVideo(file: File): Promise<string> {
+    const primaryBucket = 'videos';
+    const fallbackBucket = 'images';
+    
+    log('VIDEO_UPLOAD_ATTEMPT', primaryBucket, file.name);
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const filePath = fileName;
+
+    try {
+      const { data, error: uploadError } = await supabase.storage
+        .from(primaryBucket)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        if (uploadError.message.includes('not found') || (uploadError as any).status === 404) {
+          log('VIDEO_UPLOAD_FALLBACK', fallbackBucket, 'Primary bucket not found');
+          
+          const { data: fallbackData, error: fallbackError } = await supabase.storage
+            .from(fallbackBucket)
+            .upload(`videos/${filePath}`, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (fallbackError) {
+            this.handleStorageError(fallbackError, [primaryBucket, fallbackBucket]);
+          }
+          
+          const { data: urlData } = supabase.storage.from(fallbackBucket).getPublicUrl(`videos/${filePath}`);
+          return urlData.publicUrl;
+        }
+
+        this.handleStorageError(uploadError, [primaryBucket]);
+      }
+
+      const { data: urlData } = supabase.storage.from(primaryBucket).getPublicUrl(filePath);
+      return urlData.publicUrl;
+    } catch (err: any) {
+      console.error('Video Storage Service Exception:', err);
+      throw new Error(err.message || 'An unexpected error occurred during video upload.');
+    }
+  }
+
   private handleStorageError(error: any, attemptedBuckets: string[]) {
     console.error('Supabase Storage Error:', error);
     

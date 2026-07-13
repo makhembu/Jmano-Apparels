@@ -11,6 +11,7 @@ interface BlogEditorSidebarProps {
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>, field: 'featuredImage' | 'thumbnail') => void;
   onImageClear: (field: 'featuredImage' | 'thumbnail') => void;
   onQuickCategoryAdd: () => void; // Trigger refresh in parent
+  onVideoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   loading: boolean;
   uploading: boolean;
   id?: string;
@@ -19,7 +20,7 @@ interface BlogEditorSidebarProps {
 type ImageInputType = 'url' | 'upload';
 
 export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({ 
-  formData, categories, onChange, onImageChange, onImageClear, onQuickCategoryAdd, loading, uploading, id 
+  formData, categories, onChange, onImageChange, onImageClear, onQuickCategoryAdd, onVideoUpload, loading, uploading, id 
 }) => {
   const { showToast } = useToast();
   const [featImageType, setFeatImageType] = useState<ImageInputType>('url');
@@ -236,9 +237,27 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
               name="heroVideo"
               value={formData.heroVideo || ''}
               onChange={onChange}
-              placeholder="YouTube, Vimeo URL, or iframe embed code..."
+              placeholder="YouTube, Vimeo URL, or paste embed code..."
               className="block w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none"
             />
+            <div className="relative">
+              <div className={`w-full border-2 border-dashed rounded-xl p-3 flex items-center justify-center gap-2 transition-colors ${uploading ? 'border-brand-green bg-brand-light/20' : 'border-slate-200 hover:border-brand-green/50 hover:bg-slate-50'}`}>
+                {uploading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-brand-green border-t-transparent rounded-full"></div>
+                    <span className="text-[10px] font-black text-brand-green uppercase tracking-widest">Uploading...</span>
+                  </div>
+                ) : (
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or upload video file</span>
+                )}                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={onVideoUpload}
+                      disabled={uploading}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+              </div>
+            </div>
             {formData.heroVideo && (
               <p className="text-[10px] text-slate-400">Leave empty to hide hero video.</p>
             )}

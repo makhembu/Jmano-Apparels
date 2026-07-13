@@ -59,6 +59,23 @@ export const AdminBlogEditor: React.FC = () => {
     }
   }, [id]);
 
+  const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    if (file.size > 100 * 1024 * 1024) {
+      showToast('Video too large (max 100MB)', 'error');
+      return;
+    }
+    try {
+      showToast('Uploading video...', 'info');
+      const publicUrl = await api.uploadVideo(file);
+      setFormData(prev => ({ ...prev, heroVideo: publicUrl }));
+      showToast('Video uploaded successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to upload video', 'error');
+    }
+  };
+
   const loadCategories = () => {
     api.getBlogCategories().then(setCategories).catch(console.error);
   };
@@ -314,6 +331,7 @@ export const AdminBlogEditor: React.FC = () => {
                 onImageChange={handleImageUpload}
                 onImageClear={handleImageClear}
                 onQuickCategoryAdd={loadCategories}
+                onVideoUpload={handleHeroVideoUpload}
                 loading={loading}
                 uploading={uploadingField !== null}
                 id={id}

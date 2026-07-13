@@ -240,6 +240,7 @@ export const api = {
 
   // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
+  uploadVideo: (file: File) => storageService.uploadVideo(file),
 
   // Analytics
   getAnalyticsOverview: (start: Date, end: Date) => analyticsService.getAnalyticsOverview(start, end),

@@ -19,7 +19,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUpdatingRef = useRef(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
