@@ -194,12 +194,17 @@ export default async function handler(req, res) {
                 meta.isNoIndex = post.is_noindex || false;
                 meta.isNoFollow = post.is_nofollow || false;
                 
+                // Video URL for OG/Twitter meta tags
+                const videoUrl = post.hero_video || null;
+                
                 const publishedTime = new Date(post.date).toISOString();
                 const modifiedTime = new Date(post.updated_at || post.date).toISOString();
                 extraMeta = `
       <meta property="article:published_time" content="${publishedTime}" />
       <meta property="article:modified_time" content="${modifiedTime}" />
       <meta property="article:author" content="${post.author || 'Jambo Apparels'}" />
+      ${videoUrl ? `<meta property="og:video" content="${esc(videoUrl)}" />
+      <meta name="twitter:player" content="${esc(videoUrl)}" />` : ''}
     `;
 
                 structuredData = { 
@@ -210,7 +215,8 @@ export default async function handler(req, res) {
                     datePublished: publishedTime,
                     dateModified: modifiedTime,
                     author: { "@type": "Organization", name: "Jambo Apparels" },
-                    mainEntityOfPage: { "@type": "WebPage", "@id": meta.url }
+                    mainEntityOfPage: { "@type": "WebPage", "@id": meta.url },
+                    ...(videoUrl ? { video: { "@type": "VideoObject", contentUrl: videoUrl, embedUrl: videoUrl, name: post.title } } : {})
                 };
             }
         }

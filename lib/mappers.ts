@@ -231,6 +231,7 @@ export const Mappers = {
     content: b.content,
     thumbnail: b.thumbnail || '',
     featuredImage: b.featured_image || undefined,
+    heroVideo: b.hero_video || undefined,
     slug: b.slug || undefined,
     status: b.status || 'draft',
     author: b.author || '',

@@ -84,6 +84,7 @@ export interface BlogPost {
   content: string;
   thumbnail: string;
   featuredImage?: string;
+  heroVideo?: string;
   slug?: string;
   status: 'draft' | 'published' | 'archived';
   author: string;

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Product } from '../../../types';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
+import { getVideoEmbedUrl } from '../../../lib/video-utils';
 
 interface MarkdownEditorProps {
     value: string;
@@ -26,6 +27,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+    const [videoInput, setVideoInput] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const { showToast } = useToast();
 
@@ -152,6 +155,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                 <ToolbarButton title="Bullet List" onClick={applyList}>List</ToolbarButton>
                 <div className="w-px h-5 bg-slate-200 mx-1"></div>
                 <ToolbarButton title="Embed Product" onClick={() => setIsProductModalOpen(true)}>Product</ToolbarButton>
+                <ToolbarButton title="Embed Video" onClick={() => setIsVideoModalOpen(true)}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </ToolbarButton>
             </div>
             <input
                 type="file"
@@ -168,6 +174,49 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                 className="w-full flex-1 p-4 font-mono text-sm text-slate-800 leading-relaxed resize-none focus:outline-none bg-white rounded-b-xl custom-scrollbar"
                 spellCheck="false"
             />
+
+            {isVideoModalOpen && (
+                <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={() => { setIsVideoModalOpen(false); setVideoInput(''); }}>
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl p-6" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold p-0 pb-4 border-b">Embed Video</h3>
+                        <p className="text-sm text-slate-600 mt-4 mb-3">Paste a YouTube, Vimeo URL, or raw iframe embed code:</p>
+                        <textarea
+                            value={videoInput}
+                            onChange={(e) => setVideoInput(e.target.value)}
+                            placeholder="https://youtube.com/watch?v=..."
+                            className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none h-24 font-mono"
+                        />
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button onClick={() => { setIsVideoModalOpen(false); setVideoInput(''); }} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+                            <button onClick={() => {
+                                if (!videoInput.trim()) return;
+                                let embedCode = '';
+                                if (videoInput.trim().startsWith('<iframe')) {
+                                    embedCode = `\n${videoInput.trim()}\n`;
+                                } else {
+                                    const embedUrl = getVideoEmbedUrl(videoInput.trim());
+                                    if (embedUrl) {
+                                        embedCode = `\n<div class=\"video-responsive\"><iframe src=\"${embedUrl}\" title=\"Embedded video\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowFullScreen></iframe></div>\n`;
+                                    }
+                                }
+                                if (embedCode) {
+                                    const textarea = textareaRef.current;
+                                    if (textarea) {
+                                        const start = textarea.selectionStart;
+                                        const newText = `${textarea.value.substring(0, start)}${embedCode}${textarea.value.substring(start)}`;
+                                        onChange(newText);
+                                    }
+                                    setIsVideoModalOpen(false);
+                                    setVideoInput('');
+                                    showToast('Video embedded', 'success');
+                                } else {
+                                    showToast('Invalid video URL', 'error');
+                                }
+                            }} className="px-4 py-2 text-sm font-bold bg-brand-green text-white rounded-lg hover:bg-brand-dark transition-colors">Embed</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isProductModalOpen && (
                 <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsProductModalOpen(false)}>

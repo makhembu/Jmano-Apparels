@@ -14,6 +14,7 @@ import { BlogComments } from '../components/blog/BlogComments';
 import { NextPost } from '../components/blog/NextPost';
 import { RelatedProducts } from '../components/blog/RelatedProducts';
 import { BlogShare } from '../components/blog/BlogShare';
+import { VideoEmbed } from '../components/ui/VideoEmbed';
 import { ProductCard } from '../components/ProductCard';
 
 // --- Reading Progress Component ---
@@ -139,8 +140,11 @@ export const BlogPost: React.FC = () => {
 
   const renderContent = () => {
      if (isHtml(post.content)) {
-         // Sanitize HTML
-         const cleanHtml = DOMPurify.sanitize(post.content);
+         // Sanitize HTML — allow iframe tags for video embeds
+         const cleanHtml = DOMPurify.sanitize(post.content, {
+           ADD_TAGS: ['iframe'],
+           ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'loading'],
+         });
          return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
      } else {
          const contentBlocks = post.content.split(/(\n@\[product:[a-zA-Z0-9-]+\]\n)/g);
@@ -198,9 +202,17 @@ export const BlogPost: React.FC = () => {
           </div>
         </header>
 
-        <div className="my-8 md:my-12 rounded-xl overflow-hidden shadow-2xl shadow-slate-200/50">
-           <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
-        </div>
+        {post.featuredImage && (
+          <div className="my-8 md:my-12 rounded-xl overflow-hidden shadow-2xl shadow-slate-200/50">
+             <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        {post.heroVideo && (
+          <div className="my-8 md:my-12 rounded-xl overflow-hidden shadow-2xl shadow-slate-200/50">
+             <VideoEmbed url={post.heroVideo} title={post.title} />
+          </div>
+        )}
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">
           <div className="lg:col-span-8">

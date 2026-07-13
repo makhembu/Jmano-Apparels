@@ -438,6 +438,7 @@ export type Database = {
           content: string
           date: string | null
           featured_image: string | null
+          hero_video: string | null
           id: string
           is_nofollow: boolean | null
           is_noindex: boolean | null
@@ -462,6 +463,7 @@ export type Database = {
           content: string
           date?: string | null
           featured_image?: string | null
+          hero_video?: string | null
           id?: string
           is_nofollow?: boolean | null
           is_noindex?: boolean | null
@@ -486,6 +488,7 @@ export type Database = {
           content?: string
           date?: string | null
           featured_image?: string | null
+          hero_video?: string | null
           id?: string
           is_nofollow?: boolean | null
           is_noindex?: boolean | null

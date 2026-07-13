@@ -21,6 +21,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
   const isUpdatingRef = useRef(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -174,6 +176,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
         <ToolbarButton onClick={triggerImageUpload} isActive={false} title="Image">
            Img
         </ToolbarButton>
+        <ToolbarButton onClick={() => setShowVideoModal(true)} isActive={false} title="Embed Video">
+           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </ToolbarButton>
 
         <div className="flex-1"></div>
         <button
@@ -200,6 +205,40 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
          <EditorContent editor={editor} />
       </div>
 
+      {/* VIDEO EMBED MODAL */}
+      {showVideoModal && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center p-8 animate-fade-in">
+           <div className="bg-white border border-slate-200 shadow-2xl rounded-2xl p-8 max-w-md w-full relative">
+              <button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900">
+                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              <h3 className="text-xl font-bold font-serif text-brand-dark mb-4">Embed Video</h3>
+              <div className="space-y-3">
+                 <p className="text-sm text-slate-600">Paste a YouTube, Vimeo URL, or raw iframe embed code:</p>
+                 <textarea
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=... or <iframe src=...></iframe>"
+                    className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none h-24 font-mono text-xs"
+                 />
+              </div>
+              <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
+                 <Button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} variant="ghost" size="sm">Cancel</Button>
+                 <Button onClick={() => {
+                    if (!videoUrl.trim()) return;
+                    const iframeHtml = videoUrl.trim().startsWith('<iframe')
+                       ? videoUrl.trim()
+                       : `<div class=\"video-responsive\"><iframe src=\"${videoUrl.trim()}\" title=\"Embedded video\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowFullScreen></iframe></div>`;
+                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    setShowVideoModal(false);
+                    setVideoUrl('');
+                    showToast('Video embedded', 'success');
+                 }} size="sm">Embed</Button>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* HELP MODAL */}
       {showHelp && (
         <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center p-8 animate-fade-in">
@@ -224,6 +263,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                     <li><code className="bg-slate-100 px-1 rounded">1. </code> for Numbered List</li>
                     <li><code className="bg-slate-100 px-1 rounded">&gt; </code> for Quote</li>
                  </ul>
+                 <p><strong className="text-slate-900">Video:</strong> Click the play button in the toolbar to embed a video from YouTube, Vimeo, or any platform.</p>
               </div>
               <div className="mt-6 pt-6 border-t border-slate-100 text-center">
                  <Button onClick={() => setShowHelp(false)} size="sm">Got it</Button>

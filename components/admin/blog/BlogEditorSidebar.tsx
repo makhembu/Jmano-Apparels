@@ -227,6 +227,22 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 pb-4">Media Assets</h3>
           {renderImageInput('Featured Image (Hero)', 'featuredImage', featImageType, setFeatImageType)}
           {renderImageInput('Thumbnail (Grid)', 'thumbnail', thumbImageType, setThumbImageType)}
+
+          {/* Hero Video */}
+          <div className="space-y-3 pt-4 border-t border-slate-100">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Hero Video</label>
+            <input
+              type="text"
+              name="heroVideo"
+              value={formData.heroVideo || ''}
+              onChange={onChange}
+              placeholder="YouTube, Vimeo URL, or iframe embed code..."
+              className="block w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none"
+            />
+            {formData.heroVideo && (
+              <p className="text-[10px] text-slate-400">Leave empty to hide hero video.</p>
+            )}
+          </div>
        </div>
 
        <div className="bg-white p-8 shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-200 space-y-4">

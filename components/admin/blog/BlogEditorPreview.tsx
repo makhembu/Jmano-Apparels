@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { OptimizedImage } from '../../ui/OptimizedImage';
+import { VideoEmbed } from '../../ui/VideoEmbed';
 
 interface BlogEditorPreviewProps {
   formData: Partial<BlogPost>;
@@ -22,7 +23,10 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
   const renderContent = () => {
      const content = formData.content || '';
      if (isHtml(content)) {
-         const cleanHtml = DOMPurify.sanitize(content);
+         const cleanHtml = DOMPurify.sanitize(content, {
+           ADD_TAGS: ['iframe'],
+           ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'loading'],
+         });
          return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
      } else {
          return <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>;
@@ -51,6 +55,13 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
                 </div>
             )}
          </div>
+
+         {/* Hero Video */}
+         {formData.heroVideo && (
+           <div className="w-full">
+             <VideoEmbed url={formData.heroVideo} title="Hero video" />
+           </div>
+         )}
 
          <div className="p-8 md:p-12">
             {/* Header */}
