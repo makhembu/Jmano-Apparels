@@ -5,12 +5,15 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../context/ShopContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Button } from '../components/ui/Button';
+import { Pagination } from '../components/ui/Pagination';
 import { SEO } from '../components/SEO';
 
 export const Blog: React.FC = () => {
   const { blogPosts, settings, loading } = useShop();
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 9;
 
   const blogCategories = [
     { key: 'TESTIMONY', label: 'Testimonies' },
@@ -43,6 +46,18 @@ export const Blog: React.FC = () => {
 
     return posts;
   }, [blogPosts, activeCategory, searchQuery]);
+
+  // Reset to page 1 when filters change
+  const resetPage = () => setCurrentPage(1);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [activeCategory, searchQuery]);
+
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const paginatedPosts = filteredPosts.slice(
+    (currentPage - 1) * POSTS_PER_PAGE,
+    currentPage * POSTS_PER_PAGE
+  );
 
   const getCardColorStyles = (index: number) => {
     // Most text set to text-brand-dark per user request
@@ -106,7 +121,7 @@ export const Blog: React.FC = () => {
                  {blogCategories.map(cat => (
                    <button
                      key={cat.key}
-                     onClick={() => setActiveCategory(activeCategory === cat.key ? '' : cat.key)}
+                     onClick={() => { setActiveCategory(activeCategory === cat.key ? '' : cat.key); resetPage(); }}
                      className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all ${
                        activeCategory === cat.key
                          ? 'bg-brand-green text-white border-brand-green'
@@ -163,9 +178,11 @@ export const Blog: React.FC = () => {
         </div>
 
         {filteredPosts.length > 0 ? (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-            {filteredPosts.map((post, idx) => {
-              const colors = getCardColorStyles(idx);
+            {paginatedPosts.map((post, idx) => {
+              const globalIdx = (currentPage - 1) * POSTS_PER_PAGE + idx;
+              const colors = getCardColorStyles(globalIdx);
               return (
                 <article
                   key={post.id}
@@ -211,12 +228,16 @@ export const Blog: React.FC = () => {
               );
             })}
           </div>
+          <div className="mt-12">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </div>
+          </>
         ) : (
           <div className="py-32 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
             <p className="text-slate-400 font-serif italic text-2xl mb-6">
                 {searchQuery ? `No entries matching "${searchQuery}"` : "This chapter is currently being threaded."}
             </p>
-            <Button onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); }} variant="primary" size="sm">Reset Filters</Button>
+            <Button                 onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); setCurrentPage(1); }} variant="primary" size="sm">Reset Filters</Button>
           </div>
         )}
       </div>
