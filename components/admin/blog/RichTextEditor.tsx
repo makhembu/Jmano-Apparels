@@ -8,6 +8,7 @@ import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
+import { MediaPicker } from '../../ui/MediaPicker';
 
 interface RichTextEditorProps {
   value: string;
@@ -21,7 +22,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
   const isUpdatingRef = useRef(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -87,7 +90,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
       showToast('Uploading image...', 'info');
       const url = await api.uploadImage(file);
       editor?.chain().focus().setImage({ src: url }).run();
-      setIsMenuOpen(false);
+
       showToast('Image inserted', 'success');
     } catch (error) {
       showToast('Failed to upload image', 'error');
@@ -213,14 +216,38 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               </button>
               <h3 className="text-xl font-bold font-serif text-brand-dark mb-4">Embed Video</h3>
               <div className="space-y-3">
-                 <p className="text-sm text-slate-600">Paste a YouTube, Vimeo URL, or raw iframe embed code:</p>
+                 <p className="text-sm text-slate-600">Paste a URL, upload, or browse media:</p>
                  <textarea
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://youtube.com/watch?v=... or <iframe src=...></iframe>"
-                    className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none h-24 font-mono text-xs"
+                    className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none h-20 font-mono text-xs"
                  />
+                 <div className="flex gap-2">
+                    <button type="button" onClick={() => setShowMediaPicker(true)} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                       Browse Media
+                    </button>
+                    <button type="button" onClick={() => videoFileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                       Upload New
+                    </button>
+                 </div>
               </div>
+              <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
+                 const file = e.target.files?.[0];
+                 if (!file) return;
+                 if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
+                 try {
+                    showToast('Uploading video...', 'info');
+                    const url = await api.uploadVideo(file);
+                    const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
+                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    setShowVideoModal(false);
+                    setVideoUrl('');
+                    showToast('Video embedded', 'success');
+                 } catch (err: any) { showToast(err.message || 'Upload failed', 'error'); }
+              }} />
               <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
                  <Button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} variant="ghost" size="sm">Cancel</Button>
                  <Button onClick={() => {
@@ -234,6 +261,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                     showToast('Video embedded', 'success');
                  }} size="sm">Embed</Button>
               </div>
+
+              {showMediaPicker && (
+                 <MediaPicker onSelect={(url) => {
+                    const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
+                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    setShowVideoModal(false);
+                    setVideoUrl('');
+                    showToast('Video embedded', 'success');
+                 }} onClose={() => setShowMediaPicker(false)} />
+              )}
            </div>
         </div>
       )}

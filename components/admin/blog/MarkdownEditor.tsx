@@ -3,6 +3,7 @@ import { Product } from '../../../types';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
+import { MediaPicker } from '../../ui/MediaPicker';
 
 interface MarkdownEditorProps {
     value: string;
@@ -28,8 +29,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+    const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [videoInput, setVideoInput] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const videoFileInputRef = useRef<HTMLInputElement>(null);
     const { showToast } = useToast();
 
     const applyMarkdown = (syntaxStart: string, syntaxEnd: string = syntaxStart) => {
@@ -179,13 +182,43 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                 <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={() => { setIsVideoModalOpen(false); setVideoInput(''); }}>
                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl p-6" onClick={e => e.stopPropagation()}>
                         <h3 className="text-lg font-bold p-0 pb-4 border-b">Embed Video</h3>
-                        <p className="text-sm text-slate-600 mt-4 mb-3">Paste a YouTube, Vimeo URL, or raw iframe embed code:</p>
+                        <p className="text-sm text-slate-600 mt-4 mb-3">Paste a URL, upload, or browse media:</p>
                         <textarea
                             value={videoInput}
                             onChange={(e) => setVideoInput(e.target.value)}
                             placeholder="https://youtube.com/watch?v=..."
-                            className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none h-24 font-mono"
+                            className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none h-20 font-mono"
                         />
+                        <div className="flex gap-2 mt-2">
+                            <button type="button" onClick={() => setShowMediaPicker(true)} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                Browse Media
+                            </button>
+                            <button type="button" onClick={() => videoFileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                                Upload New
+                            </button>
+                        </div>
+                        <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
+                            try {
+                                showToast('Uploading video...', 'info');
+                                const url = await api.uploadVideo(file);
+                                const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
+                                const textarea = textareaRef.current;
+                                if (textarea) {
+                                    const start = textarea.selectionStart;
+                                    const newText = `${textarea.value.substring(0, start)}${embedCode}${textarea.value.substring(start)}`;
+                                    onChange(newText);
+                                }
+                                setIsVideoModalOpen(false);
+                                setVideoInput('');
+                                showToast('Video embedded', 'success');
+                            } catch (err: any) { showToast(err.message || 'Upload failed', 'error'); }
+                            if (e.target) e.target.value = '';
+                        }} />
                         <div className="flex justify-end gap-2 mt-4">
                             <button onClick={() => { setIsVideoModalOpen(false); setVideoInput(''); }} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
                             <button onClick={() => {
@@ -214,6 +247,21 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                                 }
                             }} className="px-4 py-2 text-sm font-bold bg-brand-green text-white rounded-lg hover:bg-brand-dark transition-colors">Embed</button>
                         </div>
+
+                        {showMediaPicker && (
+                            <MediaPicker onSelect={(url) => {
+                                const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
+                                const textarea = textareaRef.current;
+                                if (textarea) {
+                                    const start = textarea.selectionStart;
+                                    const newText = `${textarea.value.substring(0, start)}${embedCode}${textarea.value.substring(start)}`;
+                                    onChange(newText);
+                                }
+                                setIsVideoModalOpen(false);
+                                setVideoInput('');
+                                showToast('Video embedded', 'success');
+                            }} onClose={() => setShowMediaPicker(false)} />
+                        )}
                     </div>
                 </div>
             )}
