@@ -6,40 +6,99 @@ interface MediaPickerProps {
   onClose: () => void;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) => {
-  const [videos, setVideos] = useState<{ name: string; url: string }[]>([]);
+  const [videos, setVideos] = useState<{ name: string; url: string; bucket: string; path: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageFiles, setStorageFiles] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadVideos = async () => {
-      try {
-        setLoading(true);
-        const files = await api.listVideos();
-        setVideos(files);
-      } catch (e) {
-        console.error('Failed to load videos:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVideos();
-  }, []);
+  const loadVideos = async () => {
+    try {
+      setLoading(true);
+      const files = await api.listVideos();
+      setVideos(files);
+
+      // Get storage usage for both buckets
+      const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
+      const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
+      setStorageUsed(imagesUsage.used + videosUsage.used);
+      setStorageFiles(imagesUsage.files + videosUsage.files);
+    } catch (e) {
+      console.error('Failed to load videos:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadVideos(); }, []);
+
+  const handleDelete = async (video: { name: string; bucket: string; path: string }) => {
+    if (!window.confirm(`Delete "${video.name}"? This cannot be undone.`)) return;
+    try {
+      setDeleting(video.name);
+      await api.deleteFile(video.bucket, video.path);
+      setVideos(prev => prev.filter(v => v.path !== video.path || v.bucket !== video.bucket));
+      // Refresh storage usage
+      const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
+      const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
+      setStorageUsed(imagesUsage.used + videosUsage.used);
+      setStorageFiles(imagesUsage.files + videosUsage.files);
+    } catch (e) {
+      console.error('Failed to delete video:', e);
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const filteredVideos = videos.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const STORAGE_LIMIT = 1024 * 1024 * 1024; // 1GB typical Supabase free tier
+  const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
+        {/* Header */}
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold font-serif text-brand-dark">Select Video</h3>
+            <h3 className="text-lg font-bold font-serif text-brand-dark">Media Library</h3>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
+
+          {/* Storage Usage Bar */}
+          <div className="bg-slate-50 rounded-xl p-3 mb-3">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Storage</span>
+              <span className="text-[10px] font-bold text-slate-600">
+                {formatBytes(storageUsed)} / 1 GB
+              </span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5">
+              <div
+                className={`h-1.5 rounded-full transition-all ${usagePercent > 80 ? 'bg-red-500' : usagePercent > 60 ? 'bg-yellow-500' : 'bg-brand-green'}`}
+                style={{ width: `${usagePercent}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[9px] text-slate-400">{storageFiles} files</span>
+              <span className="text-[9px] text-slate-400">{usagePercent.toFixed(0)}% used</span>
+            </div>
+          </div>
+
           <input
             type="text"
             placeholder="Search videos..."
@@ -48,6 +107,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
             className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none"
           />
         </div>
+
+        {/* Video Grid */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="py-12 text-center">
@@ -60,29 +121,46 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
               <p className="text-slate-400 font-medium">
                 {searchQuery ? 'No matching videos found' : 'No videos uploaded yet'}
               </p>
-              <p className="text-xs text-slate-300 mt-1">Upload a video using the button below</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filteredVideos.map((video) => (
-                <button
-                  key={video.url}
-                  onClick={() => { onSelect(video.url); onClose(); }}
+                <div
+                  key={`${video.bucket}-${video.path}`}
                   className="relative group aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-green transition-all"
                 >
-                  <video
-                    src={video.url}
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                    muted
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <p className="text-[9px] text-white font-medium truncate">{video.name}</p>
-                  </div>
-                </button>
+                  <button
+                    onClick={() => { onSelect(video.url); onClose(); }}
+                    className="w-full h-full"
+                  >
+                    <video
+                      src={video.url}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      muted
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                      <p className="text-[9px] text-white font-medium truncate">{video.name}</p>
+                    </div>
+                  </button>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
+                    disabled={deleting === video.name}
+                    className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    title="Delete video"
+                  >
+                    {deleting === video.name ? (
+                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    )}
+                  </button>
+                </div>
               ))}
             </div>
           )}

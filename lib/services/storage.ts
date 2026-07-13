@@ -112,7 +112,7 @@ export class StorageService {
   /**
    * Lists files in a Supabase storage bucket.
    */
-  async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string }[]> {
+  async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string; bucket: string; path: string }[]> {
     const { data, error } = await supabase.storage
       .from(bucket)
       .list(folder, {
@@ -126,9 +126,9 @@ export class StorageService {
     }
 
     return (data || []).map((file: any) => {
-      const path = folder ? `${folder}/${file.name}` : file.name;
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      return { name: file.name, url: urlData.publicUrl };
+      const filePath = folder ? `${folder}/${file.name}` : file.name;
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      return { name: file.name, url: urlData.publicUrl, bucket, path: filePath };
     }).filter((f: any) => {
       const ext = f.name.split('.').pop()?.toLowerCase();
       return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '');
@@ -138,9 +138,9 @@ export class StorageService {
   /**
    * Lists video files from both 'videos' and 'images' buckets.
    */
-  async listAllVideos(): Promise<{ name: string; url: string }[]> {
+  async listAllVideos(): Promise<{ name: string; url: string; bucket: string; path: string }[]> {
     const buckets = ['videos', 'images'];
-    const allVideos: { name: string; url: string }[] = [];
+    const allVideos: { name: string; url: string; bucket: string; path: string }[] = [];
 
     for (const bucket of buckets) {
       try {
@@ -152,6 +152,37 @@ export class StorageService {
     }
 
     return allVideos;
+  }
+
+  /**
+   * Gets storage usage for a bucket (total size of all files).
+   * Supabase doesn't have a direct API, so we list all files and sum their metadata.
+   */
+  async getStorageUsage(bucket: string = 'images'): Promise<{ used: number; files: number }> {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+
+    if (error || !data) {
+      return { used: 0, files: 0 };
+    }
+
+    const totalSize = data.reduce((sum: number, file: any) => sum + (file.metadata?.size || 0), 0);
+    return { used: totalSize, files: data.length };
+  }
+
+  /**
+   * Deletes a file from a Supabase storage bucket.
+   */
+  async deleteFile(bucket: string, filePath: string): Promise<void> {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Delete file error:', error);
+      throw new Error(error.message || 'Failed to delete file');
+    }
   }
 
   private handleStorageError(error: any, attemptedBuckets: string[]) {

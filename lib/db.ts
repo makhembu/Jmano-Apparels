@@ -242,6 +242,8 @@ export const api = {
   uploadImage: (file: File) => storageService.uploadImage(file),
   uploadVideo: (file: File) => storageService.uploadVideo(file),
   listVideos: () => storageService.listAllVideos(),
+  getStorageUsage: (bucket?: string) => storageService.getStorageUsage(bucket),
+  deleteFile: (bucket: string, filePath: string) => storageService.deleteFile(bucket, filePath),
 
   // Analytics
   getAnalyticsOverview: (start: Date, end: Date) => analyticsService.getAnalyticsOverview(start, end),
