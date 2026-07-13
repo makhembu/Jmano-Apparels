@@ -3,6 +3,7 @@ import { BlogPost, BlogCategory } from '../../../types';
 import { Button } from '../../ui/Button';
 import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
+import { MediaPicker } from '../../ui/MediaPicker';
 
 interface BlogEditorSidebarProps {
   formData: Partial<BlogPost>;
@@ -27,6 +28,7 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
   const [thumbImageType, setThumbImageType] = useState<ImageInputType>('url');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
 
   const handleQuickAddCategory = async () => {
     if(!newCatName) return;
@@ -240,28 +242,46 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
               placeholder="YouTube, Vimeo URL, or paste embed code..."
               className="block w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-xs focus:ring-2 focus:ring-brand-green/10 outline-none"
             />
-            <div className="relative">
-              <div className={`w-full border-2 border-dashed rounded-xl p-3 flex items-center justify-center gap-2 transition-colors ${uploading ? 'border-brand-green bg-brand-light/20' : 'border-slate-200 hover:border-brand-green/50 hover:bg-slate-50'}`}>
-                {uploading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-brand-green border-t-transparent rounded-full"></div>
-                    <span className="text-[10px] font-black text-brand-green uppercase tracking-widest">Uploading...</span>
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or upload video file</span>
-                )}                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={onVideoUpload}
-                      disabled={uploading}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                    />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(true)}
+                className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-3 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                Browse Media
+              </button>
+              <div className="relative flex-1">
+                <div className={`w-full border-2 border-dashed rounded-xl p-3 flex items-center justify-center transition-colors ${uploading ? 'border-brand-green bg-brand-light/20' : 'border-slate-200 hover:border-brand-green/50 hover:bg-slate-50'}`}>
+                  {uploading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-brand-green border-t-transparent rounded-full"></div>
+                      <span className="text-[10px] font-black text-brand-green uppercase tracking-widest">Uploading...</span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload New</span>
+                  )}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={onVideoUpload}
+                    disabled={uploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
             </div>
             {formData.heroVideo && (
               <p className="text-[10px] text-slate-400">Leave empty to hide hero video.</p>
             )}
           </div>
+
+          {showMediaPicker && (
+            <MediaPicker
+              onSelect={(url) => onChange({ target: { name: 'heroVideo', value: url } } as any)}
+              onClose={() => setShowMediaPicker(false)}
+            />
+          )}
        </div>
 
        <div className="bg-white p-8 shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-200 space-y-4">

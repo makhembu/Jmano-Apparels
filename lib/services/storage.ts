@@ -109,6 +109,33 @@ export class StorageService {
     }
   }
 
+  /**
+   * Lists files in a Supabase storage bucket.
+   */
+  async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string }[]> {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(folder, {
+        limit: 100,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (error) {
+      log('LIST_FILES_ERROR', bucket, error.message);
+      return [];
+    }
+
+    return (data || []).map((file: any) => {
+      const path = folder ? `${folder}/${file.name}` : file.name;
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+      return { name: file.name, url: urlData.publicUrl };
+    }).filter((f: any) => {
+      // Only include files that are videos
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '');
+    });
+  }
+
   private handleStorageError(error: any, attemptedBuckets: string[]) {
     console.error('Supabase Storage Error:', error);
     
