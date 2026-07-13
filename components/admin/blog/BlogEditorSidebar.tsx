@@ -272,7 +272,31 @@ export const BlogEditorSidebar: React.FC<BlogEditorSidebarProps> = ({
               </div>
             </div>
             {formData.heroVideo && (
-              <p className="text-[10px] text-slate-400">Leave empty to hide hero video.</p>
+              <>
+                <div className="relative group aspect-video rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-900">
+                  {/\.(mp4|webm|ogg|mov|avi)$/i.test(formData.heroVideo) ? (
+                    <video src={formData.heroVideo} className="w-full h-full object-cover" preload="metadata" muted controls />
+                  ) : (
+                    <iframe
+                      src={formData.heroVideo}
+                      title="Hero video preview"
+                      className="w-full h-full absolute inset-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      frameBorder="0"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onChange({ target: { name: 'heroVideo', value: '' } } as any)}
+                    className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    title="Remove video"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400">Leave empty to hide hero video.</p>
+              </>
             )}
           </div>
 
