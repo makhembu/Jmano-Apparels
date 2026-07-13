@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
 
 interface MediaPickerProps {
@@ -22,17 +22,61 @@ function formatDuration(seconds: number): string {
 
 const ITEMS_PER_PAGE = 12;
 
+// Shared ref to track the currently hovered video across all thumbnails
+let currentlyPlayingVideo: HTMLVideoElement | null = null;
+
 const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) => {
   const [duration, setDuration] = useState<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Pause any other currently playing video
+    if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
+      currentlyPlayingVideo.pause();
+      currentlyPlayingVideo.currentTime = 0;
+    }
+    // Start playing after a short delay to avoid accidental triggers
+    hoverTimeoutRef.current = setTimeout(() => {
+      currentlyPlayingVideo = video;
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    }, 300);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+      if (currentlyPlayingVideo === video) currentlyPlayingVideo = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <>
       <video
+        ref={videoRef}
         src={url}
         className="w-full h-full object-cover"
         preload="metadata"
         muted
+        playsInline
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       />
       <div className="absolute bottom-2 right-2 flex items-center gap-1">
         {duration !== null && duration > 0 && (
