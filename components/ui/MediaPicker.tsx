@@ -27,6 +27,7 @@ let currentlyPlayingVideo: HTMLVideoElement | null = null;
 
 const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) => {
   const [duration, setDuration] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,7 +43,7 @@ const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) 
     hoverTimeoutRef.current = setTimeout(() => {
       currentlyPlayingVideo = video;
       video.currentTime = 0;
-      video.play().catch(() => {});
+      video.play().then(() => setIsPlaying(true)).catch(() => {});
     }, 300);
   };
 
@@ -57,6 +58,7 @@ const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) 
       video.currentTime = 0;
       if (currentlyPlayingVideo === video) currentlyPlayingVideo = null;
     }
+    setIsPlaying(false);
   };
 
   useEffect(() => {
@@ -78,6 +80,21 @@ const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="bg-black/50 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {isPlaying ? (
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+        </div>
+      </div>
       <div className="absolute bottom-2 right-2 flex items-center gap-1">
         {duration !== null && duration > 0 && (
           <span className="bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
