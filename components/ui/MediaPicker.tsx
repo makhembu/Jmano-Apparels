@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/db';
-import { LoadingSpinner } from './LoadingSpinner';
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
@@ -52,8 +51,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="py-12 text-center">
-              <LoadingSpinner />
-              <p className="text-sm text-slate-400 mt-2">Loading videos...</p>
+              <div className="animate-spin h-8 w-8 border-2 border-brand-green border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p className="text-sm text-slate-400">Loading videos...</p>
             </div>
           ) : filteredVideos.length === 0 ? (
             <div className="py-12 text-center">

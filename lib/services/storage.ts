@@ -130,10 +130,28 @@ export class StorageService {
       const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
       return { name: file.name, url: urlData.publicUrl };
     }).filter((f: any) => {
-      // Only include files that are videos
       const ext = f.name.split('.').pop()?.toLowerCase();
       return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '');
     });
+  }
+
+  /**
+   * Lists video files from both 'videos' and 'images' buckets.
+   */
+  async listAllVideos(): Promise<{ name: string; url: string }[]> {
+    const buckets = ['videos', 'images'];
+    const allVideos: { name: string; url: string }[] = [];
+
+    for (const bucket of buckets) {
+      try {
+        const files = await this.listFiles(bucket);
+        allVideos.push(...files);
+      } catch (e) {
+        // Bucket may not exist, skip
+      }
+    }
+
+    return allVideos;
   }
 
   private handleStorageError(error: any, attemptedBuckets: string[]) {
