@@ -112,7 +112,7 @@ export class StorageService {
   /**
    * Lists files in a Supabase storage bucket.
    */
-  async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string; bucket: string; path: string }[]> {
+  async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
     const { data, error } = await supabase.storage
       .from(bucket)
       .list(folder, {
@@ -128,7 +128,7 @@ export class StorageService {
     return (data || []).map((file: any) => {
       const filePath = folder ? `${folder}/${file.name}` : file.name;
       const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-      return { name: file.name, url: urlData.publicUrl, bucket, path: filePath };
+      return { name: file.name, url: urlData.publicUrl, bucket, path: filePath, size: file.metadata?.size || 0 };
     }).filter((f: any) => {
       const ext = f.name.split('.').pop()?.toLowerCase();
       return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '');
@@ -138,9 +138,9 @@ export class StorageService {
   /**
    * Lists video files from both 'videos' and 'images' buckets.
    */
-  async listAllVideos(): Promise<{ name: string; url: string; bucket: string; path: string }[]> {
+  async listAllVideos(): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
     const buckets = ['videos', 'images'];
-    const allVideos: { name: string; url: string; bucket: string; path: string }[] = [];
+    const allVideos: { name: string; url: string; bucket: string; path: string; size: number }[] = [];
 
     for (const bucket of buckets) {
       try {
