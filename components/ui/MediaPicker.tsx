@@ -14,6 +14,8 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+const ITEMS_PER_PAGE = 12;
+
 export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) => {
   const [videos, setVideos] = useState<{ name: string; url: string; bucket: string; path: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [storageUsed, setStorageUsed] = useState(0);
   const [storageFiles, setStorageFiles] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadVideos = async () => {
     try {
@@ -28,7 +31,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       const files = await api.listVideos();
       setVideos(files);
 
-      // Get storage usage for both buckets
       const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
       const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
       setStorageUsed(imagesUsage.used + videosUsage.used);
@@ -48,7 +50,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       setDeleting(video.name);
       await api.deleteFile(video.bucket, video.path);
       setVideos(prev => prev.filter(v => v.path !== video.path || v.bucket !== video.bucket));
-      // Refresh storage usage
       const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
       const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
       setStorageUsed(imagesUsage.used + videosUsage.used);
@@ -64,7 +65,13 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const STORAGE_LIMIT = 1024 * 1024 * 1024; // 1GB typical Supabase free tier
+  const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
+  const paginatedVideos = filteredVideos.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const STORAGE_LIMIT = 1024 * 1024 * 1024;
   const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
 
   return (
@@ -103,7 +110,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
             type="text"
             placeholder="Search videos..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none"
           />
         </div>
@@ -123,46 +130,86 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filteredVideos.map((video) => (
-                <div
-                  key={`${video.bucket}-${video.path}`}
-                  className="relative group aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-green transition-all"
-                >
-                  <button
-                    onClick={() => { onSelect(video.url); onClose(); }}
-                    className="w-full h-full"
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {paginatedVideos.map((video) => (
+                  <div
+                    key={`${video.bucket}-${video.path}`}
+                    className="relative group aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-green transition-all"
                   >
-                    <video
-                      src={video.url}
-                      className="w-full h-full object-cover"
-                      preload="metadata"
-                      muted
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                      <p className="text-[9px] text-white font-medium truncate">{video.name}</p>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => { onSelect(video.url); onClose(); }}
+                      className="w-full h-full"
+                    >
+                      <video
+                        src={video.url}
+                        className="w-full h-full object-cover"
+                        preload="metadata"
+                        muted
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                        <p className="text-[9px] text-white font-medium truncate">{video.name}</p>
+                      </div>
+                    </button>
 
-                  {/* Delete Button */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
-                    disabled={deleting === video.name}
-                    className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                    title="Delete video"
-                  >
-                    {deleting === video.name ? (
-                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    )}
-                  </button>
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
+                      disabled={deleting === video.name}
+                      className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                      title="Delete video"
+                    >
+                      {deleting === video.name ? (
+                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-[10px] text-slate-400">
+                    {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredVideos.length)} of {filteredVideos.length}
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                    >
+                      Prev
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-7 h-7 text-[10px] font-bold rounded-lg transition-colors ${
+                          currentPage === page
+                            ? 'bg-brand-green text-white'
+                            : 'text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
