@@ -127,6 +127,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const dragCounterRef = useRef(0);
+  const failedFilesRef = useRef<File[]>([]);
 
   const loadVideos = async () => {
     try {
@@ -197,6 +198,61 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
 
   const { showToast } = useToast();
 
+  const uploadFiles = useCallback(async (files: File[]) => {
+    const total = files.length;
+    let current = 0;
+    let uploaded = 0;
+    let skipped = 0;
+    const failed: File[] = [];
+
+    setUploading(true);
+    setUploadProgress({ current: 0, total });
+
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        skipped++;
+        current++;
+        setUploadProgress({ current, total });
+        continue;
+      }
+      try {
+        await api.uploadVideo(file);
+        uploaded++;
+      } catch (err) {
+        console.error('Upload failed:', err);
+        failed.push(file);
+      }
+      current++;
+      setUploadProgress({ current, total });
+    }
+
+    setUploading(false);
+    setUploadProgress({ current: 0, total: 0 });
+    failedFilesRef.current = failed;
+    await loadVideos();
+
+    const parts: string[] = [];
+    if (uploaded > 0) parts.push(`${uploaded} uploaded`);
+    if (skipped > 0) parts.push(`${skipped} skipped (over 100 MB)`);
+    if (failed.length > 0) parts.push(`${failed.length} failed`);
+    if (parts.length > 0) {
+      const msg = parts.join(', ');
+      if (failed.length > 0 && uploaded === 0) {
+        showToast(msg, 'error', { label: 'Retry', onClick: () => retryFailed() });
+      } else if (failed.length > 0) {
+        showToast(msg, 'success', { label: 'Retry failed', onClick: () => retryFailed() });
+      } else {
+        showToast(msg, 'success');
+      }
+    }
+  }, [showToast]);
+
+  const retryFailed = useCallback(async () => {
+    const files = failedFilesRef.current;
+    if (files.length === 0) return;
+    await uploadFiles(files);
+  }, [uploadFiles]);
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -214,45 +270,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       return;
     }
 
-    const total = videoFiles.length;
-    let current = 0;
-    let uploaded = 0;
-    let skipped = 0;
-    let failed = 0;
-
-    setUploading(true);
-    setUploadProgress({ current: 0, total });
-
-    for (const file of videoFiles) {
-      if (file.size > MAX_FILE_SIZE) {
-        skipped++;
-        current++;
-        setUploadProgress({ current, total });
-        continue;
-      }
-      try {
-        await api.uploadVideo(file);
-        uploaded++;
-      } catch (err) {
-        console.error('Upload failed:', err);
-        failed++;
-      }
-      current++;
-      setUploadProgress({ current, total });
-    }
-
-    setUploading(false);
-    setUploadProgress({ current: 0, total: 0 });
-    await loadVideos();
-
-    const parts: string[] = [];
-    if (uploaded > 0) parts.push(`${uploaded} uploaded`);
-    if (skipped > 0) parts.push(`${skipped} skipped (over 100 MB)`);
-    if (failed > 0) parts.push(`${failed} failed`);
-    if (parts.length > 0) {
-      showToast(parts.join(', '), uploaded > 0 ? 'success' : 'error');
-    }
-  }, [showToast]);
+    await uploadFiles(videoFiles);
+  }, [showToast, uploadFiles]);
 
   const filteredVideos = videos.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
