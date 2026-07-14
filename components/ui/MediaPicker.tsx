@@ -238,20 +238,14 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     if (parts.length > 0) {
       const msg = parts.join(', ');
       if (failed.length > 0 && uploaded === 0) {
-        showToast(msg, 'error', { label: 'Retry', onClick: () => retryFailed() });
+        showToast(msg, 'error', { label: 'Retry', onClick: () => uploadFiles(failedFilesRef.current) });
       } else if (failed.length > 0) {
-        showToast(msg, 'success', { label: 'Retry failed', onClick: () => retryFailed() });
+        showToast(msg, 'success', { label: 'Retry failed', onClick: () => uploadFiles(failedFilesRef.current) });
       } else {
         showToast(msg, 'success');
       }
     }
   }, [showToast]);
-
-  const retryFailed = useCallback(async () => {
-    const files = failedFilesRef.current;
-    if (files.length === 0) return;
-    await uploadFiles(files);
-  }, [uploadFiles]);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
