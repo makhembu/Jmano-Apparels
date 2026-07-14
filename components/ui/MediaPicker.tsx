@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
+import { useToast } from '../../context/ToastContext';
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
@@ -185,7 +186,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     e.stopPropagation();
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const { showToast } = useToast();
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounterRef.current = 0;
@@ -197,24 +200,41 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       return VIDEO_EXTENSIONS.includes(ext);
     });
 
-    if (videoFiles.length === 0) return;
+    if (videoFiles.length === 0) {
+      if (files.length > 0) showToast('No video files found in drop', 'info');
+      return;
+    }
+
+    setUploading(true);
+    let uploaded = 0;
+    let skipped = 0;
+    let failed = 0;
 
     for (const file of videoFiles) {
       if (file.size > MAX_FILE_SIZE) {
-        window.alert(`"${file.name}" exceeds the 100 MB limit and was skipped.`);
+        skipped++;
         continue;
       }
       try {
-        setUploading(true);
         await api.uploadVideo(file);
+        uploaded++;
       } catch (err) {
         console.error('Upload failed:', err);
+        failed++;
       }
     }
 
     setUploading(false);
     await loadVideos();
-  };
+
+    const parts: string[] = [];
+    if (uploaded > 0) parts.push(`${uploaded} uploaded`);
+    if (skipped > 0) parts.push(`${skipped} skipped (over 100 MB)`);
+    if (failed > 0) parts.push(`${failed} failed`);
+    if (parts.length > 0) {
+      showToast(parts.join(', '), uploaded > 0 ? 'success' : 'error');
+    }
+  }, [showToast]);
 
   const filteredVideos = videos.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
