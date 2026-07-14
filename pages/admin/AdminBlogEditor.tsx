@@ -68,8 +68,12 @@ export const AdminBlogEditor: React.FC = () => {
       return;
     }
     try {
+      let fileToUpload = file;
+      if (shouldCompress(file)) {
+        showToast('Compressing video...', 'info');
+        fileToUpload = await compressVideo(file);
+      }
       showToast('Uploading video...', 'info');
-      const fileToUpload = shouldCompress(file) ? await compressVideo(file) : file;
       const publicUrl = await api.uploadVideo(fileToUpload);
       setFormData(prev => ({ ...prev, heroVideo: publicUrl }));
       showToast('Video uploaded successfully', 'success');

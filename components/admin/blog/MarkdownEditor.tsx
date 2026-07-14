@@ -205,8 +205,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                             if (!file) return;
                             if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
                             try {
+                                let fileToUpload = file;
+                                if (shouldCompress(file)) {
+                                    showToast('Compressing video...', 'info');
+                                    fileToUpload = await compressVideo(file);
+                                }
                                 showToast('Uploading video...', 'info');
-                                const fileToUpload = shouldCompress(file) ? await compressVideo(file) : file;
                                 const url = await api.uploadVideo(fileToUpload);
                                 const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
                                 const textarea = textareaRef.current;
