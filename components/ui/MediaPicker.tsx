@@ -146,8 +146,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
 
   useEffect(() => { loadVideos(); }, []);
 
-  const handleDelete = async (video: { name: string; bucket: string; path: string }) => {
-    if (!window.confirm(`Delete "${video.name}"? This cannot be undone.`)) return;
+  const confirmDelete = async (video: { name: string; bucket: string; path: string }) => {
     try {
       setDeleting(video.name);
       await api.deleteFile(video.bucket, video.path);
@@ -156,11 +155,20 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
       setStorageUsed(imagesUsage.used + videosUsage.used);
       setStorageFiles(imagesUsage.files + videosUsage.files);
+      showToast(`"${video.name}" deleted`, 'success');
     } catch (e) {
+      showToast(`Failed to delete "${video.name}"`, 'error');
       console.error('Failed to delete video:', e);
     } finally {
       setDeleting(null);
     }
+  };
+
+  const handleDelete = (video: { name: string; bucket: string; path: string }) => {
+    showToast(`Delete "${video.name}"?`, 'info', {
+      label: 'Delete',
+      onClick: () => confirmDelete(video),
+    });
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
