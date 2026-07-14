@@ -125,6 +125,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [currentPage, setCurrentPage] = useState(1);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const dragCounterRef = useRef(0);
 
   const loadVideos = async () => {
@@ -213,14 +214,20 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       return;
     }
 
-    setUploading(true);
+    const total = videoFiles.length;
+    let current = 0;
     let uploaded = 0;
     let skipped = 0;
     let failed = 0;
 
+    setUploading(true);
+    setUploadProgress({ current: 0, total });
+
     for (const file of videoFiles) {
       if (file.size > MAX_FILE_SIZE) {
         skipped++;
+        current++;
+        setUploadProgress({ current, total });
         continue;
       }
       try {
@@ -230,9 +237,12 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         console.error('Upload failed:', err);
         failed++;
       }
+      current++;
+      setUploadProgress({ current, total });
     }
 
     setUploading(false);
+    setUploadProgress({ current: 0, total: 0 });
     await loadVideos();
 
     const parts: string[] = [];
@@ -280,8 +290,25 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         {/* Uploading overlay */}
         {uploading && (
           <div className="absolute inset-0 z-50 bg-white/80 rounded-2xl flex flex-col items-center justify-center">
-            <div className="animate-spin h-10 w-10 border-2 border-brand-green border-t-transparent rounded-full mb-3"></div>
-            <p className="text-sm font-medium text-slate-600">Uploading...</p>
+            <div className="relative h-14 w-14 mb-3">
+              <div className="absolute inset-0 animate-spin h-14 w-14 border-2 border-brand-green border-t-transparent rounded-full"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-bold text-brand-green">{uploadProgress.current}/{uploadProgress.total}</span>
+              </div>
+            </div>
+            <p className="text-sm font-medium text-slate-600">
+              Uploading {uploadProgress.current} of {uploadProgress.total}...
+            </p>
+            {uploadProgress.total > 1 && (
+              <div className="w-48 mt-3">
+                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full bg-brand-green transition-all duration-300"
+                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
         {/* Header */}
