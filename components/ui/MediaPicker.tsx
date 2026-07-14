@@ -128,6 +128,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [trimVideo, setTrimVideo] = useState<{ url: string; name: string } | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const dragCounterRef = useRef(0);
   const failedFilesRef = useRef<File[]>([]);
 
@@ -269,6 +272,56 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     await uploadFiles(videoFiles);
   }, [showToast, uploadFiles]);
 
+  const videoKey = (v: { bucket: string; path: string }) => `${v.bucket}:${v.path}`;
+
+  const toggleSelect = (video: { bucket: string; path: string }) => {
+    const key = videoKey(video);
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const allVisibleSelected = paginatedVideos.length > 0 && paginatedVideos.every(v => selectedIds.has(videoKey(v)));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedVideos.map(v => videoKey(v))));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedIds.size;
+    showToast(`Delete ${count} video${count > 1 ? 's' : ''}?`, 'info', {
+      label: `Delete ${count}`,
+      onClick: async () => {
+        setBulkDeleting(true);
+        let deleted = 0;
+        let failed = 0;
+        for (const v of videos) {
+          if (!selectedIds.has(videoKey(v))) continue;
+          try {
+            await api.deleteFile(v.bucket, v.path);
+            deleted++;
+          } catch {
+            failed++;
+          }
+        }
+        setSelectedIds(new Set());
+        setSelectMode(false);
+        setBulkDeleting(false);
+        await loadVideos();
+        const parts: string[] = [];
+        if (deleted > 0) parts.push(`${deleted} deleted`);
+        if (failed > 0) parts.push(`${failed} failed`);
+        if (parts.length > 0) showToast(parts.join(', '), deleted > 0 ? 'success' : 'error');
+      },
+    });
+  };
+
   const filteredVideos = videos.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -330,9 +383,26 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold font-serif text-brand-dark">Media Library</h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+            <div className="flex items-center gap-2">
+              {selectMode && (
+                <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-1 rounded-lg">
+                  {selectedIds.size} selected
+                </span>
+              )}
+              <button
+                onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); }}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-colors ${
+                  selectMode
+                    ? 'border-brand-green bg-brand-green/10 text-brand-green'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
           </div>
 
           {/* Storage Usage Bar */}
@@ -384,10 +454,29 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                 {paginatedVideos.map((video) => (
                   <div
                     key={`${video.bucket}-${video.path}`}
-                    className="relative group aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-green transition-all"
+                    className={`relative group aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 transition-all ${
+                      selectMode && selectedIds.has(videoKey(video))
+                        ? 'border-brand-green ring-2 ring-brand-green/30'
+                        : 'border-transparent hover:border-brand-green'
+                    }`}
                   >
+                    {/* Selection checkbox */}
+                    {selectMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(video); }}
+                        className="absolute top-2 left-2 z-20 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shadow-lg"
+                        style={{
+                          borderColor: selectedIds.has(videoKey(video)) ? '#16a34a' : 'rgba(255,255,255,0.6)',
+                          backgroundColor: selectedIds.has(videoKey(video)) ? '#16a34a' : 'rgba(0,0,0,0.4)',
+                        }}
+                      >
+                        {selectedIds.has(videoKey(video)) && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        )}
+                      </button>
+                    )}
                     <button
-                      onClick={() => { onSelect(video.url); onClose(); }}
+                      onClick={() => { if (selectMode) { toggleSelect(video); } else { onSelect(video.url); onClose(); } }}
                       className="w-full h-full"
                     >
                       <VideoThumbnail url={video.url} size={video.size} />
@@ -400,30 +489,58 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                     </button>
 
                     {/* Trim Button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setTrimVideo({ url: video.url, name: video.name }); }}
-                      className="absolute top-2 left-2 bg-brand-green/80 hover:bg-brand-green text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                      title="Trim video"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </button>
+                    {!selectMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setTrimVideo({ url: video.url, name: video.name }); }}
+                        className="absolute top-2 left-2 bg-brand-green/80 hover:bg-brand-green text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        title="Trim video"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      </button>
+                    )}
 
                     {/* Delete Button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
-                      disabled={deleting === video.name}
-                      className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                      title="Delete video"
-                    >
-                      {deleting === video.name ? (
-                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      )}
-                    </button>
+                    {!selectMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
+                        disabled={deleting === video.name}
+                        className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        title="Delete video"
+                      >
+                        {deleting === video.name ? (
+                          <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        )}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
+
+              {/* Bulk Action Bar */}
+              {selectMode && selectedIds.size > 0 && (
+                <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-200 flex items-center justify-between">
+                  <span className="text-xs font-bold text-red-700">
+                    {selectedIds.size} video{selectedIds.size > 1 ? 's' : ''} selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-3 py-1.5 text-[10px] font-bold text-slate-600 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+                    >
+                      {allVisibleSelected ? 'Deselect page' : 'Select page'}
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleting}
+                      className="px-3 py-1.5 text-[10px] font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {bulkDeleting ? 'Deleting...' : `Delete ${selectedIds.size}`}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Pagination */}
               {totalPages > 1 && (
