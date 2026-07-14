@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
+import { VideoTrimmer } from './VideoTrimmer';
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
@@ -126,6 +127,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [trimVideo, setTrimVideo] = useState<{ url: string; name: string } | null>(null);
   const dragCounterRef = useRef(0);
   const failedFilesRef = useRef<File[]>([]);
 
@@ -397,6 +399,15 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                       </div>
                     </button>
 
+                    {/* Trim Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setTrimVideo({ url: video.url, name: video.name }); }}
+                      className="absolute top-2 left-2 bg-brand-green/80 hover:bg-brand-green text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                      title="Trim video"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+
                     {/* Delete Button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
@@ -455,6 +466,27 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
           )}
         </div>
       </div>
+      {/* Video Trimmer Modal */}
+      {trimVideo && (
+        <VideoTrimmer
+          videoUrl={trimVideo.url}
+          videoName={trimVideo.name}
+          onTrimmed={async (trimmedFile) => {
+            try {
+              setUploading(true);
+              await api.uploadVideo(trimmedFile);
+              showToast('Trimmed video uploaded', 'success');
+              await loadVideos();
+            } catch (err) {
+              showToast('Failed to upload trimmed video', 'error');
+            } finally {
+              setUploading(false);
+              setTrimVideo(null);
+            }
+          }}
+          onClose={() => setTrimVideo(null)}
+        />
+      )}
     </div>
   );
 };
