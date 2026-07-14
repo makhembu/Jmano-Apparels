@@ -3,19 +3,14 @@ import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { VideoTrimmer } from './VideoTrimmer';
 import { compressVideo, shouldCompress } from '../../lib/video-compress';
+import { formatBytes } from '../../lib/utils';
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
   onClose: () => void;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
+
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -210,6 +205,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     let current = 0;
     let uploaded = 0;
     let skipped = 0;
+    let totalSaved = 0;
     const failed: File[] = [];
 
     setUploading(true);
@@ -227,6 +223,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         if (needsCompress) setCompressionProgress(0);
         const fileToUpload = needsCompress ? await compressVideo(file, setCompressionProgress) : file;
         setCompressionProgress(null);
+        if (fileToUpload.size < file.size) totalSaved += file.size - fileToUpload.size;
         await api.uploadVideo(fileToUpload);
         uploaded++;
       } catch (err) {
@@ -246,6 +243,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     if (uploaded > 0) parts.push(`${uploaded} uploaded`);
     if (skipped > 0) parts.push(`${skipped} skipped (over 100 MB)`);
     if (failed.length > 0) parts.push(`${failed.length} failed`);
+    if (totalSaved > 0) parts.push(`${formatBytes(totalSaved)} saved`);
     if (parts.length > 0) {
       const msg = parts.join(', ');
       if (failed.length > 0 && uploaded === 0) {

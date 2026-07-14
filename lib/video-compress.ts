@@ -1,5 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { formatBytes } from './utils';
 
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoaded = false;
@@ -122,6 +123,12 @@ export async function compressAndUpload(
   if (shouldCompress(file)) {
     showToast('Compressing video...', 'info');
     fileToUpload = await compressVideo(file, onCompressProgress);
+    // Show size savings if compression actually reduced the file
+    if (fileToUpload.size < file.size) {
+      const saved = file.size - fileToUpload.size;
+      const pct = Math.round((saved / file.size) * 100);
+      showToast(`Compressed ${formatBytes(file.size)} → ${formatBytes(fileToUpload.size)} (${pct}% smaller)`, 'success');
+    }
   }
   showToast('Uploading video...', 'info');
   return uploadFn(fileToUpload);
