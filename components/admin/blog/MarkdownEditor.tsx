@@ -4,7 +4,7 @@ import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
 import { MediaPicker } from '../../ui/MediaPicker';
-import { compressVideo, shouldCompress } from '../../../lib/video-compress';
+import { compressAndUpload } from '../../../lib/video-compress';
 
 interface MarkdownEditorProps {
     value: string;
@@ -203,15 +203,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                         <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
-                            try {
-                                let fileToUpload = file;
-                                if (shouldCompress(file)) {
-                                    showToast('Compressing video...', 'info');
-                                    fileToUpload = await compressVideo(file);
-                                }
-                                showToast('Uploading video...', 'info');
-                                const url = await api.uploadVideo(fileToUpload);
+                            if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }                             try {
+                                const url = await compressAndUpload(file, api.uploadVideo, showToast);
                                 const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
                                 const textarea = textareaRef.current;
                                 if (textarea) {

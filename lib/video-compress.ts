@@ -92,3 +92,22 @@ export async function compressVideo(file: File): Promise<File> {
 export function shouldCompress(file: File): boolean {
   return file.size > COMPRESS_THRESHOLD;
 }
+
+/**
+ * Compresses a video if needed, then uploads it via the provided upload function.
+ * Shows "Compressing..." toast during compression.
+ * Returns the public URL of the uploaded file.
+ */
+export async function compressAndUpload(
+  file: File,
+  uploadFn: (f: File) => Promise<string>,
+  showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
+): Promise<string> {
+  let fileToUpload = file;
+  if (shouldCompress(file)) {
+    showToast('Compressing video...', 'info');
+    fileToUpload = await compressVideo(file);
+  }
+  showToast('Uploading video...', 'info');
+  return uploadFn(fileToUpload);
+}
