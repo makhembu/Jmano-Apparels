@@ -4,6 +4,7 @@ import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
 import { MediaPicker } from '../../ui/MediaPicker';
+import { compressVideo, shouldCompress } from '../../../lib/video-compress';
 
 interface MarkdownEditorProps {
     value: string;
@@ -205,7 +206,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                             if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
                             try {
                                 showToast('Uploading video...', 'info');
-                                const url = await api.uploadVideo(file);
+                                const fileToUpload = shouldCompress(file) ? await compressVideo(file) : file;
+                                const url = await api.uploadVideo(fileToUpload);
                                 const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
                                 const textarea = textareaRef.current;
                                 if (textarea) {

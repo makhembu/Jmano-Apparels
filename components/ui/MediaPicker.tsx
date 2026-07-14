@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { VideoTrimmer } from './VideoTrimmer';
+import { compressVideo, shouldCompress } from '../../lib/video-compress';
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
@@ -221,7 +222,10 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         continue;
       }
       try {
-        await api.uploadVideo(file);
+        const needsCompress = shouldCompress(file);
+        if (needsCompress) showToast(`Compressing ${file.name}...`, 'info');
+        const fileToUpload = needsCompress ? await compressVideo(file) : file;
+        await api.uploadVideo(fileToUpload);
         uploaded++;
       } catch (err) {
         console.error('Upload failed:', err);

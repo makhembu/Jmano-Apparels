@@ -9,6 +9,7 @@ import { useToast } from '../../../context/ToastContext';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
 import { MediaPicker } from '../../ui/MediaPicker';
+import { compressVideo, shouldCompress } from '../../../lib/video-compress';
 
 interface RichTextEditorProps {
   value: string;
@@ -240,7 +241,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                  if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
                  try {
                     showToast('Uploading video...', 'info');
-                    const url = await api.uploadVideo(file);
+                    const fileToUpload = shouldCompress(file) ? await compressVideo(file) : file;
+                    const url = await api.uploadVideo(fileToUpload);
                     const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
                     editor?.chain().focus().insertContent(iframeHtml).run();
                     setShowVideoModal(false);

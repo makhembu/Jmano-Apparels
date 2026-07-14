@@ -11,6 +11,7 @@ import { MarkdownEditor } from '../../components/admin/blog/MarkdownEditor';
 import { RichTextEditor } from '../../components/admin/blog/RichTextEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 import { useShop } from '../../context/ShopContext';
+import { compressVideo, shouldCompress } from '../../lib/video-compress';
 
 export const AdminBlogEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,7 +69,8 @@ export const AdminBlogEditor: React.FC = () => {
     }
     try {
       showToast('Uploading video...', 'info');
-      const publicUrl = await api.uploadVideo(file);
+      const fileToUpload = shouldCompress(file) ? await compressVideo(file) : file;
+      const publicUrl = await api.uploadVideo(fileToUpload);
       setFormData(prev => ({ ...prev, heroVideo: publicUrl }));
       showToast('Video uploaded successfully', 'success');
     } catch (error: any) {
