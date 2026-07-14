@@ -40,7 +40,10 @@ async function getFFmpeg(): Promise<FFmpeg | null> {
  *
  * Strategy: re-encode with reduced bitrate (CRF 26) to shrink file size.
  */
-export async function compressVideo(file: File): Promise<File> {
+export async function compressVideo(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<File> {
   // Skip files under the threshold
   if (file.size <= COMPRESS_THRESHOLD) return file;
 
@@ -50,8 +53,16 @@ export async function compressVideo(file: File): Promise<File> {
   const inputName = 'input.mp4';
   const outputName = 'output.mp4';
 
+  // Wire up progress listener (progress is a 0–1 float)
+  const onProgressHandler = ({ progress }: { progress: number }) => {
+    onProgress?.(Math.min(Math.round(progress * 100), 100));
+  };
+  ffmpeg.on('progress', onProgressHandler);
+
   try {
+    onProgress?.(0);
     await ffmpeg.writeFile(inputName, await fetchFile(file));
+    onProgress?.(5); // file written, encoding about to start
 
     await ffmpeg.exec([
       '-i', inputName,
@@ -83,6 +94,9 @@ export async function compressVideo(file: File): Promise<File> {
     await ffmpeg.deleteFile(inputName).catch(() => {});
     await ffmpeg.deleteFile(outputName).catch(() => {});
     return file; // graceful fallback
+  } finally {
+    ffmpeg.off('progress', onProgressHandler);
+    onProgress?.(0); // reset
   }
 }
 
@@ -102,11 +116,12 @@ export async function compressAndUpload(
   file: File,
   uploadFn: (f: File) => Promise<string>,
   showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
+  onCompressProgress?: (percent: number) => void,
 ): Promise<string> {
   let fileToUpload = file;
   if (shouldCompress(file)) {
     showToast('Compressing video...', 'info');
-    fileToUpload = await compressVideo(file);
+    fileToUpload = await compressVideo(file, onCompressProgress);
   }
   showToast('Uploading video...', 'info');
   return uploadFn(fileToUpload);

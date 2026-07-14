@@ -128,6 +128,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [compressionProgress, setCompressionProgress] = useState<number | null>(null);
   const [trimVideo, setTrimVideo] = useState<{ url: string; name: string } | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -223,8 +224,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       }
       try {
         const needsCompress = shouldCompress(file);
-        if (needsCompress) showToast(`Compressing ${file.name}...`, 'info');
-        const fileToUpload = needsCompress ? await compressVideo(file) : file;
+        if (needsCompress) setCompressionProgress(0);
+        const fileToUpload = needsCompress ? await compressVideo(file, setCompressionProgress) : file;
+        setCompressionProgress(null);
         await api.uploadVideo(fileToUpload);
         uploaded++;
       } catch (err) {
@@ -369,14 +371,17 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
               </div>
             </div>
             <p className="text-sm font-medium text-slate-600">
-              Uploading {uploadProgress.current} of {uploadProgress.total}...
+              {compressionProgress !== null
+                ? `Compressing video... ${compressionProgress}%`
+                : `Uploading ${uploadProgress.current} of ${uploadProgress.total}...`
+              }
             </p>
-            {uploadProgress.total > 1 && (
+            {(uploadProgress.total > 1 || compressionProgress !== null) && (
               <div className="w-48 mt-3">
                 <div className="w-full bg-slate-200 rounded-full h-1.5">
                   <div
                     className="h-1.5 rounded-full bg-brand-green transition-all duration-300"
-                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                    style={{ width: `${compressionProgress !== null ? compressionProgress : (uploadProgress.current / uploadProgress.total) * 100}%` }}
                   />
                 </div>
               </div>
