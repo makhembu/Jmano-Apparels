@@ -4,7 +4,7 @@ import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
 import { MediaPicker } from '../../ui/MediaPicker';
-import { compressAndUpload } from '../../../lib/video-compress';
+import { useVideoUpload } from '../../../hooks/useVideoUpload';
 
 interface MarkdownEditorProps {
     value: string;
@@ -35,6 +35,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
     const [isUploading, setIsUploading] = useState(false);
     const videoFileInputRef = useRef<HTMLInputElement>(null);
     const { showToast } = useToast();
+    const { uploadVideo: uploadVideoFile } = useVideoUpload();
 
     const applyMarkdown = (syntaxStart: string, syntaxEnd: string = syntaxStart) => {
         const textarea = textareaRef.current;
@@ -203,8 +204,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                         <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }                             try {
-                                const url = await compressAndUpload(file, api.uploadVideo, showToast);
+                            const url = await uploadVideoFile(file);
+                            if (url) {
                                 const embedCode = `\n<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>\n`;
                                 const textarea = textareaRef.current;
                                 if (textarea) {
@@ -215,7 +216,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange,
                                 setIsVideoModalOpen(false);
                                 setVideoInput('');
                                 showToast('Video embedded', 'success');
-                            } catch (err: any) { showToast(err.message || 'Upload failed', 'error'); }
+                            }
                             if (e.target) e.target.value = '';
                         }} />
                         <div className="flex justify-end gap-2 mt-4">

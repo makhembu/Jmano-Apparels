@@ -11,7 +11,7 @@ import { MarkdownEditor } from '../../components/admin/blog/MarkdownEditor';
 import { RichTextEditor } from '../../components/admin/blog/RichTextEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 import { useShop } from '../../context/ShopContext';
-import { compressAndUpload } from '../../lib/video-compress';
+import { useVideoUpload } from '../../hooks/useVideoUpload';
 
 export const AdminBlogEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +19,7 @@ export const AdminBlogEditor: React.FC = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
   const { products } = useShop();
+  const { uploadVideo: uploadVideoFile } = useVideoUpload();
   const submitActionRef = useRef<'publish' | 'schedule'>('publish');
   
   // Environment Detection
@@ -63,16 +64,10 @@ export const AdminBlogEditor: React.FC = () => {
   const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    if (file.size > 100 * 1024 * 1024) {
-      showToast('Video too large (max 100MB)', 'error');
-      return;
-    }
-    try {
-      const publicUrl = await compressAndUpload(file, api.uploadVideo, showToast);
+    const publicUrl = await uploadVideoFile(file);
+    if (publicUrl) {
       setFormData(prev => ({ ...prev, heroVideo: publicUrl }));
       showToast('Video uploaded successfully', 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Failed to upload video', 'error');
     }
   };
 

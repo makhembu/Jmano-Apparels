@@ -9,7 +9,7 @@ import { useToast } from '../../../context/ToastContext';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
 import { MediaPicker } from '../../ui/MediaPicker';
-import { compressAndUpload } from '../../../lib/video-compress';
+import { useVideoUpload } from '../../../hooks/useVideoUpload';
 
 interface RichTextEditorProps {
   value: string;
@@ -19,6 +19,7 @@ interface RichTextEditorProps {
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
   const { showToast } = useToast();
+  const { uploadVideo: uploadVideoFile } = useVideoUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUpdatingRef = useRef(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -238,15 +239,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
                  const file = e.target.files?.[0];
                  if (!file) return;
-                 if (file.size > 100 * 1024 * 1024) { showToast('Video too large (max 100MB)', 'error'); return; }
-                 try {
-                    const url = await compressAndUpload(file, api.uploadVideo, showToast);
+                 const url = await uploadVideoFile(file);
+                 if (url) {
                     const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
                     editor?.chain().focus().insertContent(iframeHtml).run();
                     setShowVideoModal(false);
                     setVideoUrl('');
                     showToast('Video embedded', 'success');
-                 } catch (err: any) { showToast(err.message || 'Upload failed', 'error'); }
+                 }
               }} />
               <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
                  <Button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} variant="ghost" size="sm">Cancel</Button>
