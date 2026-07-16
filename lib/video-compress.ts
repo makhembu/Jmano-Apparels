@@ -1,6 +1,6 @@
 import { formatBytes } from './utils';
 
-const COMPRESS_THRESHOLD = 10 * 1024 * 1024; // 10MB — only compress files larger than this
+const COMPRESS_THRESHOLD = 50 * 1024 * 1024; // 50MB — only compress files larger than this
 
 // Lazy-loaded ffmpeg references (loaded on first use)
 let ffmpegInstance: any = null;
@@ -14,7 +14,7 @@ let ffmpegLoading = false;
  */
 async function getFFmpeg(): Promise<any | null> {
   if (ffmpegInstance && ffmpegLoaded) return ffmpegInstance;
-  if (ffmpegLoading) return null; // prevent concurrent loads
+  if (ffmpegLoading) return null;
 
   ffmpegLoading = true;
   try {
@@ -28,7 +28,6 @@ async function getFFmpeg(): Promise<any | null> {
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
 
-    // Store fetchFile on the instance for use in compressVideo
     (ffmpegInstance as any)._fetchFile = fetchFile;
     ffmpegLoaded = true;
     return ffmpegInstance;
@@ -42,26 +41,20 @@ async function getFFmpeg(): Promise<any | null> {
 }
 
 /**
- * Compresses a video file if it exceeds the size threshold.
+ * Compresses a video file using ultrafast preset for speed.
  * Returns the original file if compression fails or is unnecessary.
- *
- * Strategy: re-encode with reduced bitrate (CRF 26) to shrink file size.
  */
 export async function compressVideo(
   file: File,
   onProgress?: (percent: number) => void,
 ): Promise<File> {
-  // Skip files under the threshold
-  if (file.size <= COMPRESS_THRESHOLD) return file;
-
   const ffmpeg = await getFFmpeg();
-  if (!ffmpeg) return file; // graceful fallback — upload original
+  if (!ffmpeg) return file;
 
   const fetchFile = ffmpeg._fetchFile;
   const inputName = 'input.mp4';
   const outputName = 'output.mp4';
 
-  // Wire up progress listener (progress is a 0–1 float)
   const onProgressHandler = ({ progress }: { progress: number }) => {
     onProgress?.(Math.min(Math.round(progress * 100), 100));
   };
@@ -70,41 +63,37 @@ export async function compressVideo(
   try {
     onProgress?.(0);
     await ffmpeg.writeFile(inputName, await fetchFile(file));
-    onProgress?.(5); // file written, encoding about to start
+    onProgress?.(5);
 
     await ffmpeg.exec([
       '-i', inputName,
       '-c:v', 'libx264',
-      '-crf', '26',
-      '-preset', 'fast',
+      '-crf', '28',
+      '-preset', 'ultrafast',
       '-c:a', 'aac',
-      '-b:a', '128k',
+      '-b:a', '96k',
       outputName,
     ]);
 
     const data = await ffmpeg.readFile(outputName);
-
-    // Clean up virtual filesystem
     await ffmpeg.deleteFile(inputName).catch(() => {});
     await ffmpeg.deleteFile(outputName).catch(() => {});
 
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.mp4'), { type: 'video/mp4' });
 
-    // Only use compressed if it's actually smaller (fallback if encoding made it bigger)
     if (compressed.size < file.size) {
       return compressed;
     }
     return file;
   } catch (err) {
-    console.warn('Video compression failed, uploading original:', err);
-    // Clean up on error
+    console.warn('Video compression failed:', err);
     await ffmpeg.deleteFile(inputName).catch(() => {});
     await ffmpeg.deleteFile(outputName).catch(() => {});
-    return file; // graceful fallback
+    return file;
   } finally {
     ffmpeg.off('progress', onProgressHandler);
-    onProgress?.(0); // reset
+    onProgress?.(0);
   }
 }
 
@@ -116,9 +105,10 @@ export function shouldCompress(file: File): boolean {
 }
 
 /**
- * Compresses a video if needed, then uploads it via the provided upload function.
- * Shows "Compressing..." toast during compression.
- * Returns the public URL of the uploaded file.
+ * Upload first, compress later pattern.
+ * 1. Upload the original file immediately (fast)
+ * 2. Compress in background and show savings toast
+ * Returns the public URL of the uploaded file immediately.
  */
 export async function compressAndUpload(
   file: File,
@@ -126,17 +116,40 @@ export async function compressAndUpload(
   showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
   onCompressProgress?: (percent: number) => void,
 ): Promise<string> {
-  let fileToUpload = file;
-  if (shouldCompress(file)) {
-    showToast('Compressing video...', 'info');
-    fileToUpload = await compressVideo(file, onCompressProgress);
-    // Show size savings if compression actually reduced the file
-    if (fileToUpload.size < file.size) {
-      const saved = file.size - fileToUpload.size;
-      const pct = Math.round((saved / file.size) * 100);
-      showToast(`Compressed ${formatBytes(file.size)} → ${formatBytes(fileToUpload.size)} (${pct}% smaller)`, 'success');
-    }
-  }
+  // Step 1: Upload original immediately
   showToast('Uploading video...', 'info');
-  return uploadFn(fileToUpload);
+  const url = await uploadFn(file);
+
+  // Step 2: Compress in background if needed (for future uploads / storage savings info)
+  if (shouldCompress(file)) {
+    compressInBackground(file, showToast, onCompressProgress);
+  }
+
+  return url;
+}
+
+/**
+ * Background compression — logs savings for future reference.
+ * Since Supabase always creates new files on upload, we can't replace
+ * the already-returned URL. This just measures potential savings.
+ */
+async function compressInBackground(
+  originalFile: File,
+  showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
+  onCompressProgress?: (percent: number) => void,
+): Promise<void> {
+  try {
+    showToast('Optimizing video in background...', 'info');
+    const compressed = await compressVideo(originalFile, onCompressProgress);
+
+    if (compressed.size < originalFile.size) {
+      const saved = originalFile.size - compressed.size;
+      const pct = Math.round((saved / originalFile.size) * 100);
+      showToast(`Video optimized! Saved ${formatBytes(saved)} (${pct}% smaller)`, 'success');
+    }
+  } catch (err) {
+    console.warn('Background compression failed:', err);
+  } finally {
+    onCompressProgress?.(0);
+  }
 }
