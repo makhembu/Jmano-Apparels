@@ -3,6 +3,7 @@ import React from 'react';
 import { BlogPost, BlogCategory } from '../../../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import DOMPurify from 'dompurify';
 import { OptimizedImage } from '../../ui/OptimizedImage';
 import { VideoEmbed } from '../../ui/VideoEmbed';
@@ -16,12 +17,21 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
   const category = categories.find(c => c.id === formData.categoryId);
   const date = formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
 
+  // Decode HTML entities that Tiptap may have escaped (e.g. &lt; → <)
+  const unescapeHtml = (str: string): string => {
+    if (!str.includes('&lt;') && !str.includes('&amp;lt;')) return str;
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  };
+
   const isHtml = (content: string) => {
     return /<[a-z][\s\S]*>/i.test(content) && !content.trim().startsWith('#');
   };
 
   const renderContent = () => {
-     const content = formData.content || '';
+     const raw = formData.content || '';
+     const content = unescapeHtml(raw);
      if (isHtml(content)) {
          const cleanHtml = DOMPurify.sanitize(content, {
            ADD_TAGS: ['iframe'],
@@ -29,7 +39,7 @@ export const BlogEditorPreview: React.FC<BlogEditorPreviewProps> = ({ formData, 
          });
          return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
      } else {
-         return <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>;
+         return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>;
      }
   };
 

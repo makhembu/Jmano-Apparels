@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import DOMPurify from 'dompurify';
 import { api } from '../lib/db';
 import { BlogPost as BlogPostType, BlogCategory } from '../types';
@@ -131,30 +132,36 @@ export const BlogPost: React.FC = () => {
   if (loading) return <LoadingSpinner fullScreen />;
   if (!post) return <div className="p-32 text-center"><h1 className="text-4xl font-serif font-bold text-brand-dark mb-6">Entry Not Found</h1><Link to="/blog"><Button>Back to Journal</Button></Link></div>;
 
-  // Hybrid Content Render
-  // Check if content looks like HTML (starts with < and contains tags)
-  // Or fallback to markdown
+  // Decode HTML entities that Tiptap may have escaped (e.g. &lt; → <)
+  const unescapeHtml = (str: string): string => {
+    if (!str.includes('&lt;') && !str.includes('&amp;lt;')) return str;
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  };
+
   const isHtml = (content: string) => {
     return /<[a-z][\s\S]*>/i.test(content) && !content.trim().startsWith('#');
   };
 
   const renderContent = () => {
-     if (isHtml(post.content)) {
+     const raw = unescapeHtml(post.content);
+     if (isHtml(raw)) {
          // Sanitize HTML — allow iframe tags for video embeds
-         const cleanHtml = DOMPurify.sanitize(post.content, {
+         const cleanHtml = DOMPurify.sanitize(raw, {
            ADD_TAGS: ['iframe'],
            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'loading'],
          });
          return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
      } else {
-         const contentBlocks = post.content.split(/(\n@\[product:[a-zA-Z0-9-]+\]\n)/g);
+         const contentBlocks = raw.split(/(\n@\[product:[a-zA-Z0-9-]+\]\n)/g);
          return contentBlocks.map((block, index) => {
             const match = block.match(/@\[product:([a-zA-Z0-9-]+)\]/);
             if (match) {
                 const product = products.find(p => p.id === match[1]);
                 return product ? <div key={index} className="my-12 not-prose"><ProductCard product={product} /></div> : null;
             }
-            return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} components={markdownComponents}>{block}</ReactMarkdown>;
+            return <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{block}</ReactMarkdown>;
          });
      }
   };
