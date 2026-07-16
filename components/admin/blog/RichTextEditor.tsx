@@ -11,6 +11,7 @@ import { Button } from '../../ui/Button';
 import { MediaPicker } from '../../ui/MediaPicker';
 import { useVideoUpload } from '../../../hooks/useVideoUpload';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
+import { VideoEmbed } from '../../../lib/tiptap-video-embed';
 
 interface RichTextEditorProps {
   value: string;
@@ -46,6 +47,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
       Placeholder.configure({
         placeholder: placeholder || 'Type "/" for commands...',
       }),
+      VideoEmbed,
     ],
     editorProps: {
       attributes: {
@@ -242,8 +244,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                  if (!file) return;
                  const url = await uploadVideoFile(file);
                  if (url) {
-                    const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
-                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
                     setShowVideoModal(false);
                     setVideoUrl('');
                     showToast('Video embedded', 'success');
@@ -255,10 +256,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                     if (!videoUrl.trim()) return;
                     const embedUrl = getVideoEmbedUrl(videoUrl.trim());
                     if (!embedUrl) { showToast('Could not parse video URL', 'error'); return; }
-                    const iframeHtml = videoUrl.trim().startsWith('<iframe')
-                       ? videoUrl.trim()
-                       : `<div class=\"video-responsive\"><iframe src=\"${embedUrl}\" title=\"Embedded video\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowFullScreen></iframe></div>`;
-                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    editor?.chain().focus().insertVideoEmbed({ src: embedUrl, type: 'iframe' }).run();
                     setShowVideoModal(false);
                     setVideoUrl('');
                     showToast('Video embedded', 'success');
@@ -267,8 +265,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
 
               {showMediaPicker && (
                  <MediaPicker onSelect={(url) => {
-                    const iframeHtml = `<div class=\"video-responsive\"><video src=\"${url}\" controls preload=\"metadata\" class=\"w-full h-full\"></video></div>`;
-                    editor?.chain().focus().insertContent(iframeHtml).run();
+                    editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
                     setShowVideoModal(false);
                     setVideoUrl('');
                     showToast('Video embedded', 'success');
