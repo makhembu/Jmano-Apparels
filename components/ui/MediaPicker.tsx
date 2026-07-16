@@ -34,6 +34,33 @@ const ITEMS_PER_PAGE = 12;
 // Shared ref to track the currently hovered video across all thumbnails
 let currentlyPlayingVideo: HTMLVideoElement | null = null;
 
+const MediaThumbnail: React.FC<{ url: string; size: number; name: string }> = ({ url, size, name }) => {
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  const isImage = IMAGE_EXTENSIONS.includes(`.${ext}`);
+
+  if (isImage) {
+    return (
+      <>
+        <img
+          src={url}
+          alt={name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute bottom-2 right-2">
+          {size > 0 && (
+            <span className="bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+              {formatBytes(size)}
+            </span>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  return <VideoThumbnail url={url} size={size} />;
+};
+
 const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) => {
   const [duration, setDuration] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -120,7 +147,9 @@ const VideoThumbnail: React.FC<{ url: string; size: number }> = ({ url, size }) 
   );
 };
 
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+const MEDIA_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS];
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) => {
@@ -147,13 +176,18 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const loadVideos = async () => {
     try {
       setLoading(true);
-      const files = await api.listVideos();
+      const files = await api.listAllMedia();
       setVideos(files);
 
+      // Get Supabase storage usage
       const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
       const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
-      setStorageUsed(imagesUsage.used + videosUsage.used);
-      setStorageFiles(imagesUsage.files + videosUsage.files);
+
+      // Get R2 storage usage
+      const r2Usage = await api.getR2StorageUsage().catch(() => ({ used: 0, files: 0 }));
+
+      setStorageUsed(imagesUsage.used + videosUsage.used + r2Usage.used);
+      setStorageFiles(imagesUsage.files + videosUsage.files + r2Usage.files);
     } catch (e) {
       console.error('Failed to load videos:', e);
     } finally {
@@ -175,10 +209,13 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       setDeleting(video.name);
       await api.deleteFile(video.bucket, video.path);
       setVideos(prev => prev.filter(v => v.path !== video.path || v.bucket !== video.bucket));
+
       const imagesUsage = await api.getStorageUsage('images').catch(() => ({ used: 0, files: 0 }));
       const videosUsage = await api.getStorageUsage('videos').catch(() => ({ used: 0, files: 0 }));
-      setStorageUsed(imagesUsage.used + videosUsage.used);
-      setStorageFiles(imagesUsage.files + videosUsage.files);
+      const r2Usage = await api.getR2StorageUsage().catch(() => ({ used: 0, files: 0 }));
+
+      setStorageUsed(imagesUsage.used + videosUsage.used + r2Usage.used);
+      setStorageFiles(imagesUsage.files + videosUsage.files + r2Usage.files);
       showToast(`"${video.name}" deleted`, 'success');
     } catch (e) {
       showToast(`Failed to delete "${video.name}"`, 'error');
@@ -221,17 +258,17 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const { showToast } = useToast();
 
   const uploadFiles = useCallback(async (files: File[]) => {
-    // Filter to video files only
-    const videoFiles = files.filter(f => {
+    // Filter to media files only (images + videos)
+    const mediaFiles = files.filter(f => {
       const ext = '.' + f.name.split('.').pop()?.toLowerCase();
-      return VIDEO_EXTENSIONS.includes(ext);
+      return MEDIA_EXTENSIONS.includes(ext);
     });
-    if (videoFiles.length === 0) {
-      showToast('No video files selected', 'info');
+    if (mediaFiles.length === 0) {
+      showToast('No supported media files selected (images or videos)', 'info');
       return;
     }
 
-    const total = videoFiles.length;
+    const total = mediaFiles.length;
     let current = 0;
     let uploaded = 0;
     let skipped = 0;
@@ -240,7 +277,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     setUploading(true);
     setUploadProgress({ current: 0, total });
 
-    for (const file of videoFiles) {
+    for (const file of mediaFiles) {
       if (file.size > MAX_FILE_SIZE) {
         skipped++;
         current++;
@@ -248,8 +285,15 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         continue;
       }
       try {
-        const compressAndUpload = await loadCompression();
-        await compressAndUpload(file, api.uploadVideo, showToast, setCompressionProgress);
+        const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+        const isVideo = VIDEO_EXTENSIONS.includes(ext);
+
+        if (isVideo) {
+          const compressAndUpload = await loadCompression();
+          await compressAndUpload(file, api.uploadVideo, showToast, setCompressionProgress);
+        } else {
+          await api.uploadImage(file);
+        }
         uploaded++;
       } catch (err) {
         console.error('Upload failed:', err);
@@ -288,17 +332,17 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     setIsDragOver(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const videoFiles = files.filter(f => {
+    const mediaFiles = files.filter(f => {
       const ext = '.' + f.name.split('.').pop()?.toLowerCase();
-      return VIDEO_EXTENSIONS.includes(ext);
+      return MEDIA_EXTENSIONS.includes(ext);
     });
 
-    if (videoFiles.length === 0) {
-      if (files.length > 0) showToast('No video files found in drop', 'info');
+    if (mediaFiles.length === 0) {
+      if (files.length > 0) showToast('No supported media files found in drop (images or videos)', 'info');
       return;
     }
 
-    await uploadFiles(videoFiles);
+    await uploadFiles(mediaFiles);
   }, [showToast, uploadFiles]);
 
   const videoKey = (v: { bucket: string; path: string }) => `${v.bucket}:${v.path}`;
@@ -379,8 +423,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
             <svg className="w-16 h-16 text-brand-green mb-3 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-brand-green font-bold text-lg">Drop video files here</p>
-            <p className="text-brand-green/70 text-sm mt-1">MP4, WebM, MOV, AVI, MKV — max 100 MB each</p>
+            <p className="text-brand-green font-bold text-lg">Drop media files here</p>
+            <p className="text-brand-green/70 text-sm mt-1">Images & videos — max 100 MB each</p>
           </div>
         )}
         {/* Uploading overlay */}
@@ -434,7 +478,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/*"
+                accept="image/*,video/*"
                 multiple
                 className="hidden"
                 onChange={async (e) => {
@@ -478,7 +522,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
 
           <input
             type="text"
-            placeholder="Search videos..."
+            placeholder="Search media..."
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none"
@@ -496,7 +540,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
             <div className="py-12 text-center">
               <svg className="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               <p className="text-slate-400 font-medium">
-                {searchQuery ? 'No matching videos found' : 'No videos uploaded yet'}
+                {searchQuery ? 'No matching media found' : 'No media uploaded yet'}
               </p>
             </div>
           ) : (
@@ -532,7 +576,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                       onClick={() => { if (selectMode) { toggleSelect(video); } else { onSelect(video.url); onClose(); } }}
                       className="w-full h-full"
                     >
-                      <VideoThumbnail url={video.url} size={video.size} />
+                      <MediaThumbnail url={video.url} size={video.size} name={video.name} />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>

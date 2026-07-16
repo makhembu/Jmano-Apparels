@@ -242,7 +242,9 @@ export const api = {
   uploadImage: (file: File) => storageService.uploadImage(file),
   uploadVideo: (file: File, fixedPath?: string) => storageService.uploadVideo(file, fixedPath),
   listVideos: () => storageService.listAllVideos(),
+  listAllMedia: () => storageService.listAllMedia(),
   getStorageUsage: (bucket?: string) => storageService.getStorageUsage(bucket),
+  getR2StorageUsage: () => storageService.getR2StorageUsage(),
   deleteFile: (bucket: string, filePath: string) => storageService.deleteFile(bucket, filePath),
 
   // Analytics

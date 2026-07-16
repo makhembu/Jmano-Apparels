@@ -180,6 +180,46 @@ export class StorageService {
   }
 
   /**
+   * Lists all media files (images + videos) from both R2 and Supabase storage.
+   */
+  async listAllMedia(): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
+    const allMedia: { name: string; url: string; bucket: string; path: string; size: number }[] = [];
+
+    // R2 media
+    try {
+      const r2Files = await this.listR2Files('');
+      allMedia.push(...r2Files.map(f => ({
+        name: f.name,
+        url: f.url,
+        bucket: 'r2',
+        path: f.key,
+        size: f.size,
+      })));
+    } catch (e) {
+      // R2 may not be configured
+    }
+
+    // Supabase media (legacy)
+    for (const bucket of ['images', 'videos']) {
+      try {
+        const files = await this.listFilesAll(bucket);
+        allMedia.push(...files);
+      } catch (e) {
+        // Bucket may not exist
+      }
+    }
+
+    try {
+      const subFiles = await this.listFilesAll('images', 'videos');
+      allMedia.push(...subFiles);
+    } catch (e) {
+      // Subfolder may not exist
+    }
+
+    return allMedia;
+  }
+
+  /**
    * Lists video files from both R2 and Supabase storage.
    */
   async listAllVideos(): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
@@ -220,7 +260,33 @@ export class StorageService {
   }
 
   /**
-   * Lists files in a Supabase storage bucket.
+   * Lists ALL files (images + videos) in a Supabase storage bucket.
+   */
+  async listFilesAll(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(folder, {
+        limit: 100,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (error) {
+      log('LIST_FILES_ERROR', bucket, error.message);
+      return [];
+    }
+
+    return (data || []).map((file: any) => {
+      const filePath = folder ? `${folder}/${file.name}` : file.name;
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      return { name: file.name, url: urlData.publicUrl, bucket, path: filePath, size: file.metadata?.size || 0 };
+    }).filter((f: any) => {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      return ['mp4', 'webm', 'ogg', 'mov', 'avi', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+    });
+  }
+
+  /**
+   * Lists files in a Supabase storage bucket (videos only).
    */
   async listFiles(bucket: string = 'images', folder: string = ''): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
     const { data, error } = await supabase.storage
@@ -243,6 +309,21 @@ export class StorageService {
       const ext = f.name.split('.').pop()?.toLowerCase();
       return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '');
     });
+  }
+
+  /**
+   * Gets R2 storage usage from the Worker.
+   */
+  async getR2StorageUsage(): Promise<{ used: number; files: number }> {
+    if (!R2_WORKER_URL) return { used: 0, files: 0 };
+
+    try {
+      const res = await fetch(`${R2_WORKER_URL}/usage`);
+      if (!res.ok) return { used: 0, files: 0 };
+      return await res.json<{ used: number; files: number }>();
+    } catch {
+      return { used: 0, files: 0 };
+    }
   }
 
   /**

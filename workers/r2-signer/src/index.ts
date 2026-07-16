@@ -35,6 +35,10 @@ export default {
       return this.handleList(request, env, corsHeaders);
     }
 
+    if (request.method === 'GET' && url.pathname === '/usage') {
+      return this.handleUsage(env, corsHeaders);
+    }
+
     return new Response('Not found', { status: 404, headers: corsHeaders });
   },
 
@@ -109,6 +113,32 @@ export default {
         truncated: listed.truncated,
         cursor: listed.cursor,
       }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  },
+
+  async handleUsage(env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+    try {
+      let totalSize = 0;
+      let fileCount = 0;
+      let cursor: string | undefined;
+
+      do {
+        const listed = await env.BUCKET.list({ limit: 1000, cursor });
+        for (const obj of listed.objects) {
+          totalSize += obj.size;
+          fileCount++;
+        }
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor);
+
+      return new Response(JSON.stringify({ used: totalSize, files: fileCount }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
