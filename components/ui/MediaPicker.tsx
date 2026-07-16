@@ -606,24 +606,30 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       </div>
       {/* Video Trimmer Modal */}
       {trimVideo && (
-        <VideoTrimmer
-          videoUrl={trimVideo.url}
-          videoName={trimVideo.name}
-          onTrimmed={async (trimmedFile) => {
-            try {
-              setUploading(true);
-              await api.uploadVideo(trimmedFile);
-              showToast('Trimmed video uploaded', 'success');
-              await loadVideos();
-            } catch (err) {
-              showToast('Failed to upload trimmed video', 'error');
-            } finally {
-              setUploading(false);
-              setTrimVideo(null);
-            }
-          }}
-          onClose={() => setTrimVideo(null)}
-        />
+        <Suspense fallback={
+          <div className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center">
+            <div className="animate-spin h-8 w-8 border-2 border-brand-green border-t-transparent rounded-full" />
+          </div>
+        }>
+          <VideoTrimmer
+            videoUrl={trimVideo.url}
+            videoName={trimVideo.name}
+            onTrimmed={async (trimmedFile) => {
+              try {
+                setUploading(true);
+                await api.uploadVideo(trimmedFile);
+                showToast('Trimmed video uploaded', 'success');
+                await loadVideos();
+              } catch (err) {
+                showToast('Failed to upload trimmed video', 'error');
+              } finally {
+                setUploading(false);
+                setTrimVideo(null);
+              }
+            }}
+            onClose={() => setTrimVideo(null)}
+          />
+        </Suspense>
       )}
     </div>
   );

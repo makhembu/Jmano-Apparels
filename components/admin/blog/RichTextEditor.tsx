@@ -8,7 +8,7 @@ import { api } from '../../../lib/db';
 import { useToast } from '../../../context/ToastContext';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
-const MediaPicker = React.lazy(() => import('../../ui/MediaPicker').then(m => ({ default: m.MediaPicker })));
+import { MediaPicker } from '../../ui/MediaPicker';
 import { useVideoUpload } from '../../../hooks/useVideoUpload';
 import { getVideoEmbedUrl } from '../../../lib/video-utils';
 
@@ -296,7 +296,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
       )}
 
       {showMediaPicker && (
-         <React.Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-brand-green border-t-transparent rounded-full"></div></div>}>
          <MediaPicker onSelect={(url) => {
             const videoHtml = `<div class="video-responsive"><video src="${url}" controls preload="metadata" class="w-full h-full"></video></div>`;
             editor?.chain().focus().insertContent(videoHtml).run();
@@ -304,7 +303,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
             setVideoUrl('');
             showToast('Video embedded', 'success');
          }} onClose={() => setShowMediaPicker(false)} />
-         </React.Suspense>
       )}
 
       {/* HELP MODAL */}
