@@ -106,6 +106,7 @@ export class BlogService {
       title: post.title, summary: post.summary, content: post.content,
       slug: post.slug, status: post.status, featured_image: post.featuredImage,
       thumbnail: post.thumbnail, author: post.author, reading_time: post.readingTime,
+      hero_video: post.heroVideo || null,
       category_id: post.categoryId, seo_title: post.seoTitle, seo_description: post.seoDescription,
       canonical_url: post.canonicalUrl, is_noindex: post.isNoIndex, is_nofollow: post.isNoFollow,
       keywords: post.keywords, scheduled_for: post.scheduledFor || null, updated_at: new Date().toISOString(),
