@@ -240,7 +240,7 @@ export const api = {
 
   // Storage
   uploadImage: (file: File) => storageService.uploadImage(file),
-  uploadVideo: (file: File) => storageService.uploadVideo(file),
+  uploadVideo: (file: File, fixedPath?: string) => storageService.uploadVideo(file, fixedPath),
   listVideos: () => storageService.listAllVideos(),
   getStorageUsage: (bucket?: string) => storageService.getStorageUsage(bucket),
   deleteFile: (bucket: string, filePath: string) => storageService.deleteFile(bucket, filePath),

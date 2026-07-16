@@ -107,35 +107,40 @@ export function shouldCompress(file: File): boolean {
 
 /**
  * Upload first, compress later pattern.
- * 1. Upload the original file immediately (fast)
- * 2. Compress in background and show savings toast
+ * 1. Upload the original file immediately with a fixed path
+ * 2. Compress in background and replace the file in storage if smaller
  * Returns the public URL of the uploaded file immediately.
  */
 export async function compressAndUpload(
   file: File,
-  uploadFn: (f: File) => Promise<string>,
+  uploadFn: (f: File, fixedPath?: string) => Promise<string>,
   showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
   onCompressProgress?: (percent: number) => void,
 ): Promise<string> {
+  // Generate a fixed path so compression can replace the file
+  const fileExt = file.name.split('.').pop() || 'mp4';
+  const fixedPath = `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+
   // Step 1: Upload original immediately
   showToast('Uploading video...', 'info');
-  const url = await uploadFn(file);
+  const url = await uploadFn(file, fixedPath);
 
-  // Step 2: Compress in background if needed (for future uploads / storage savings info)
+  // Step 2: Compress in background if needed, replacing the original
   if (shouldCompress(file)) {
-    compressInBackground(file, showToast, onCompressProgress);
+    compressInBackground(file, fixedPath, uploadFn, showToast, onCompressProgress);
   }
 
   return url;
 }
 
 /**
- * Background compression — logs savings for future reference.
- * Since Supabase always creates new files on upload, we can't replace
- * the already-returned URL. This just measures potential savings.
+ * Background compression — compresses the file and replaces it in storage.
+ * Uses upsert with the same fixed path to overwrite the original.
  */
 async function compressInBackground(
   originalFile: File,
+  fixedPath: string,
+  uploadFn: (f: File, fixedPath?: string) => Promise<string>,
   showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
   onCompressProgress?: (percent: number) => void,
 ): Promise<void> {
@@ -146,6 +151,8 @@ async function compressInBackground(
     const compressed = await compressVideo(originalFile, onCompressProgress);
 
     if (compressed.size < originalFile.size) {
+      // Re-upload with same path (upsert overwrites the original)
+      await uploadFn(compressed, fixedPath);
       const saved = originalFile.size - compressed.size;
       const pct = Math.round((saved / originalFile.size) * 100);
       showToast(`Video optimized! Saved ${formatBytes(saved)} (${pct}% smaller)`, 'success');

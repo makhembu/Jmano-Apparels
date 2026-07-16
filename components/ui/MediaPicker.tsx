@@ -6,15 +6,13 @@ import { useToast } from '../../context/ToastContext';
 const VideoTrimmer = React.lazy(() => import('./VideoTrimmer').then(m => ({ default: m.VideoTrimmer })));
 
 // Lazy-load video compression to avoid TDZ issues with @ffmpeg/ffmpeg in minified bundles
-let compressVideoLazy: typeof import('../../lib/video-compress').compressVideo | null = null;
-let shouldCompressLazy: typeof import('../../lib/video-compress').shouldCompress | null = null;
+let compressAndUploadLazy: typeof import('../../lib/video-compress').compressAndUpload | null = null;
 const loadCompression = async () => {
-  if (!compressVideoLazy) {
+  if (!compressAndUploadLazy) {
     const mod = await import('../../lib/video-compress');
-    compressVideoLazy = mod.compressVideo;
-    shouldCompressLazy = mod.shouldCompress;
+    compressAndUploadLazy = mod.compressAndUpload;
   }
-  return { compress: compressVideoLazy, shouldCompress: shouldCompressLazy! };
+  return compressAndUploadLazy;
 };
 import { formatBytes } from '../../lib/utils';
 
@@ -226,7 +224,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     let current = 0;
     let uploaded = 0;
     let skipped = 0;
-    let totalSaved = 0;
     const failed: File[] = [];
 
     setUploading(true);
@@ -240,13 +237,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         continue;
       }
       try {
-        const { compress, shouldCompress: shouldCompressFn } = await loadCompression();
-        const needsCompress = shouldCompressFn(file);
-        if (needsCompress) setCompressionProgress(0);
-        const fileToUpload = needsCompress ? await compress(file, setCompressionProgress) : file;
-        setCompressionProgress(null);
-        if (fileToUpload.size < file.size) totalSaved += file.size - fileToUpload.size;
-        await api.uploadVideo(fileToUpload);
+        const compressAndUpload = await loadCompression();
+        await compressAndUpload(file, api.uploadVideo, showToast, setCompressionProgress);
         uploaded++;
       } catch (err) {
         console.error('Upload failed:', err);
@@ -265,7 +257,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     if (uploaded > 0) parts.push(`${uploaded} uploaded`);
     if (skipped > 0) parts.push(`${skipped} skipped (over 100 MB)`);
     if (failed.length > 0) parts.push(`${failed.length} failed`);
-    if (totalSaved > 0) parts.push(`${formatBytes(totalSaved)} saved`);
+
     if (parts.length > 0) {
       const msg = parts.join(', ');
       if (failed.length > 0 && uploaded === 0) {

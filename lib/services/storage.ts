@@ -61,22 +61,23 @@ export class StorageService {
   /**
    * Uploads a video to Supabase storage with fallback logic for bucket names.
    */
-  async uploadVideo(file: File): Promise<string> {
+  async uploadVideo(file: File, fixedPath?: string): Promise<string> {
     const primaryBucket = 'videos';
     const fallbackBucket = 'images';
     
     log('VIDEO_UPLOAD_ATTEMPT', primaryBucket, file.name);
     
     const fileExt = file.name.split('.').pop();
-    const fileName = `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const fileName = fixedPath || `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = fileName;
+    const isUpsert = !!fixedPath;
 
     try {
       const { data, error: uploadError } = await supabase.storage
         .from(primaryBucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: isUpsert
         });
 
       if (uploadError) {
