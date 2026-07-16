@@ -158,7 +158,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [storageUsed, setStorageUsed] = useState(0);
   const [storageFiles, setStorageFiles] = useState(0);
-  const [storageLimit, setStorageLimit] = useState(1024 * 1024 * 1024); // default 1 GB
+  const [storageLimit, setStorageLimit] = useState(10 * 1024 * 1024 * 1024); // 10 GB (R2 free tier)
   const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -169,6 +169,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [mediaTab, setMediaTab] = useState<'all' | 'images' | 'videos'>('all');
   const dragCounterRef = useRef(0);
   const failedFilesRef = useRef<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -347,9 +348,23 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
 
   const videoKey = (v: { bucket: string; path: string }) => `${v.bucket}:${v.path}`;
 
-  const filteredVideos = videos.filter(v =>
-    v.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isVideoFile = (name: string) => {
+    const ext = '.' + name.split('.').pop()?.toLowerCase();
+    return VIDEO_EXTENSIONS.includes(ext);
+  };
+
+  const isImageFile = (name: string) => {
+    const ext = '.' + name.split('.').pop()?.toLowerCase();
+    return IMAGE_EXTENSIONS.includes(ext);
+  };
+
+  const filteredVideos = videos.filter(v => {
+    const matchesSearch = v.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    if (mediaTab === 'videos') return isVideoFile(v.name);
+    if (mediaTab === 'images') return isImageFile(v.name);
+    return true;
+  });
 
   const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
   const paginatedVideos = filteredVideos.slice(
@@ -518,6 +533,27 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
               <span className="text-[9px] text-slate-400">{storageFiles} files</span>
               <span className="text-[9px] text-slate-400">{usagePercent.toFixed(0)}% used</span>
             </div>
+          </div>
+
+          {/* Media Tabs */}
+          <div className="flex gap-1 mb-3">
+            {(['all', 'images', 'videos'] as const).map(tab => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => { setMediaTab(tab); setCurrentPage(1); }}
+                className={`flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${
+                  mediaTab === tab
+                    ? 'bg-brand-green text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <span className="ml-1 opacity-60">
+                  ({tab === 'all' ? videos.length : videos.filter(v => tab === 'videos' ? isVideoFile(v.name) : isImageFile(v.name)).length})
+                </span>
+              </button>
+            ))}
           </div>
 
           <input
