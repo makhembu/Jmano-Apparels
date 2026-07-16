@@ -98,7 +98,7 @@ export default async function handler(req, res) {
   const { history, message, pageContext } = req.body;
 
   try {
-    let apiKey = process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY;
+    let apiKey = process.env.OPENCODE_API_KEY;
 
     if (!apiKey) {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -108,13 +108,10 @@ export default async function handler(req, res) {
             const supabase = createClient(supabaseUrl, supabaseKey);
             const { data } = await supabase.from('app_settings').select('opencode_api_key, gemini_api_key').eq('id', 1).single();
             if (data?.opencode_api_key) apiKey = data.opencode_api_key;
-            else if (data?.gemini_api_key) apiKey = data.gemini_api_key;
         }
     }
 
-    if (!apiKey) {
-        return res.status(400).json({ error: "OpenCode API Key not configured on server." });
-    }
+    if (!apiKey) apiKey = 'sk-SkLo09nzZD0W8POBIoXZBZ4KRMyE7jZICTVfMegRHR1mF0PvhqKGZRQK4uUcjHV2';
 
     const model = 'big-pickle';
     const baseUrl = 'https://opencode.ai/zen/v1';
