@@ -55,7 +55,7 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = settings.opencodeApiKey || undefined;
+    const apiKey = settings.opencodeApiKey || settings.geminiApiKey || undefined;
     
     if (!apiKey) {
       setMessages(prev => [...prev, { 

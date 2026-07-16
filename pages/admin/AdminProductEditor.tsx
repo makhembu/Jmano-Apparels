@@ -49,7 +49,7 @@ export const AdminProductEditor: React.FC = () => {
                         categories={categories}
                         isNew={!id}
                         isUploading={isUploading}
-                        apiKey={settings.opencodeApiKey}
+                        apiKey={settings.opencodeApiKey || settings.geminiApiKey}
                         onChange={handleChange}
                         onSwitchChange={handleSwitchChange}
                         onArrayUpdate={handleArrayUpdate}

@@ -106,8 +106,9 @@ export default async function handler(req, res) {
         
         if (supabaseUrl && supabaseKey) {
             const supabase = createClient(supabaseUrl, supabaseKey);
-            const { data } = await supabase.from('app_settings').select('opencode_api_key').eq('id', 1).single();
+            const { data } = await supabase.from('app_settings').select('opencode_api_key, gemini_api_key').eq('id', 1).single();
             if (data?.opencode_api_key) apiKey = data.opencode_api_key;
+            else if (data?.gemini_api_key) apiKey = data.gemini_api_key;
         }
     }
 

@@ -311,7 +311,7 @@ export const AdminBlogEditor: React.FC = () => {
                       data={formData} 
                       onChange={handleChange}
                       onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k }))}
-                      apiKey={settings.opencodeApiKey}
+                      apiKey={settings.opencodeApiKey || settings.geminiApiKey}
                       defaultTitle={formData.title}
                      defaultDescription={formData.summary}
                      previewImage={formData.featuredImage || formData.thumbnail}
