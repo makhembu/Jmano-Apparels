@@ -77,7 +77,8 @@ export class StorageService {
         .from(primaryBucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: isUpsert
+          upsert: isUpsert,
+          contentType: file.type || 'video/mp4'
         });
 
       if (uploadError) {
@@ -88,7 +89,8 @@ export class StorageService {
             .from(fallbackBucket)
             .upload(`videos/${filePath}`, file, {
               cacheControl: '3600',
-              upsert: false
+              upsert: false,
+              contentType: file.type || 'video/mp4'
             });
 
           if (fallbackError) {
