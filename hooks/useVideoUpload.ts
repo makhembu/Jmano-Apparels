@@ -1,18 +1,23 @@
 import { useState, useCallback } from 'react';
 import { api } from '../lib/db';
 import { useToast } from '../context/ToastContext';
-import { compressAndUpload } from '../lib/video-compress';
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+
+// Lazy-load video-compress to avoid circular dependency with MediaPicker
+let compressAndUploadFn: ((...args: any[]) => Promise<string>) | null = null;
+
+async function getCompressAndUpload() {
+  if (!compressAndUploadFn) {
+    const mod = await import('../lib/video-compress');
+    compressAndUploadFn = mod.compressAndUpload;
+  }
+  return compressAndUploadFn;
+}
 
 /**
  * Shared hook for single-file video upload with compression.
  * Handles size validation, compression, upload, progress, and error toasts.
- *
- * Usage:
- *   const { uploadVideo, isUploading, compressionProgress } = useVideoUpload();
- *   const url = await uploadVideo(file);
- *   if (url) { /* use url *\/ }
  */
 export function useVideoUpload() {
   const { showToast } = useToast();
@@ -27,6 +32,7 @@ export function useVideoUpload() {
 
     setIsUploading(true);
     try {
+      const compressAndUpload = await getCompressAndUpload();
       const url = await compressAndUpload(
         file,
         api.uploadVideo,
