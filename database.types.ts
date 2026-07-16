@@ -96,6 +96,7 @@ export type Database = {
           founder_quote: string | null
           free_shipping_threshold: number | null
           gemini_api_key: string | null
+          opencode_api_key: string | null
           google_analytics_id: string | null
           hero_banner_image: string | null
           hero_banner_text: string | null
@@ -1238,6 +1239,7 @@ export type Database = {
           founder_quote: string | null
           free_shipping_threshold: number | null
           gemini_api_key: string | null
+          opencode_api_key: string | null
           google_analytics_id: string | null
           hero_banner_image: string | null
           hero_banner_text: string | null

@@ -18,7 +18,7 @@ export const AdminBlogEditor: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
-  const { products } = useShop();
+  const { products, settings } = useShop();
   const { uploadVideo: uploadVideoFile } = useVideoUpload();
   const submitActionRef = useRef<'publish' | 'schedule'>('publish');
   
@@ -307,11 +307,12 @@ export const AdminBlogEditor: React.FC = () => {
 
                {/* Advanced SEO Group */}
                <div className="bg-white p-6 shadow rounded-lg">
-                  <SeoFieldGroup 
-                     data={formData} 
-                     onChange={handleChange}
-                     onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k }))}
-                     defaultTitle={formData.title}
+                   <SeoFieldGroup 
+                      data={formData} 
+                      onChange={handleChange}
+                      onKeywordsChange={(k) => setFormData(prev => ({...prev, keywords: k }))}
+                      apiKey={settings.opencodeApiKey}
+                      defaultTitle={formData.title}
                      defaultDescription={formData.summary}
                      previewImage={formData.featuredImage || formData.thumbnail}
                      permalink={`https://jamboapparels.com/blog/${formData.slug || 'new-post'}`}

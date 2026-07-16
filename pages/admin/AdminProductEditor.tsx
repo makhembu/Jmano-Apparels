@@ -7,7 +7,7 @@ import { ProductOverviewTab } from '../../components/admin/products/editor/Produ
 import { ProductSettingsTab } from '../../components/admin/products/editor/ProductSettingsTab';
 
 export const AdminProductEditor: React.FC = () => {
-    const { categories } = useShop();
+    const { categories, settings } = useShop();
     const {
         id,
         formData,
@@ -49,6 +49,7 @@ export const AdminProductEditor: React.FC = () => {
                         categories={categories}
                         isNew={!id}
                         isUploading={isUploading}
+                        apiKey={settings.opencodeApiKey}
                         onChange={handleChange}
                         onSwitchChange={handleSwitchChange}
                         onArrayUpdate={handleArrayUpdate}

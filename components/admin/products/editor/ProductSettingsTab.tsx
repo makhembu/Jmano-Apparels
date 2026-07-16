@@ -17,6 +17,7 @@ interface ProductSettingsTabProps {
     categories: Category[];
     isNew: boolean;
     isUploading: boolean;
+    apiKey?: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     onSwitchChange: (name: string, val: boolean) => void;
     onArrayUpdate: (field: 'sizes' | 'colors' | 'tags' | 'keywords', value: string[]) => void;
@@ -59,6 +60,7 @@ export const ProductSettingsTab: React.FC<ProductSettingsTabProps> = (props) => 
                             data={props.formData}
                             onChange={props.onChange}
                             onKeywordsChange={(k) => props.onArrayUpdate('keywords', k)}
+                            apiKey={props.apiKey}
                             defaultTitle={props.formData.title}
                             defaultDescription={props.formData.description?.substring(0, 160)}
                             previewImage={props.formData.images?.[0]}

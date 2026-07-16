@@ -162,6 +162,7 @@ export class SettingsService {
       shipping_policy: settings.shippingPolicy, tax_rate: settings.taxRate, free_shipping_threshold: settings.freeShippingThreshold,
       require_login_for_checkout: settings.requireLoginForCheckout, featured_categories: settings.featuredCategories,
       gemini_api_key: settings.geminiApiKey,
+      opencode_api_key: settings.opencodeApiKey,
       
       // Email Notifications
       enable_email_notifications: settings.enableEmailNotifications,

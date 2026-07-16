@@ -1,50 +1,67 @@
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from './_lib/auth.js';
 
-// Define tools server-side (must match client-side expectations)
+// OpenAI-compatible tool definitions
 const functionDeclarations = [
   {
-    name: 'navigate',
-    description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
-    parameters: {
-      type: 'OBJECT',
-      properties: {
-        path: { type: 'STRING', description: 'The full destination route starting with /admin.' },
-        tab: { type: 'STRING', description: 'The specific tab ID to open.' }
-      },
-      required: ['path']
+    type: 'function',
+    function: {
+      name: 'navigate',
+      description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'The full destination route starting with /admin.' },
+          tab: { type: 'string', description: 'The specific tab ID to open.' }
+        },
+        required: ['path']
+      }
     }
   },
   {
-    name: 'getDetailedInventoryReport',
-    description: 'Get a full breakdown of products, stock levels, and historical sales performance.',
-    parameters: { type: 'OBJECT', properties: {} }
+    type: 'function',
+    function: {
+      name: 'getDetailedInventoryReport',
+      description: 'Get a full breakdown of products, stock levels, and historical sales performance.',
+      parameters: { type: 'object', properties: {} }
+    }
   },
   {
-    name: 'getLatestOrder',
-    description: 'Fetches the most recent order record.',
-    parameters: { type: 'OBJECT', properties: {} }
+    type: 'function',
+    function: {
+      name: 'getLatestOrder',
+      description: 'Fetches the most recent order record.',
+      parameters: { type: 'object', properties: {} }
+    }
   },
   {
-    name: 'getDashboardStats',
-    description: 'Retrieve store performance KPIs.',
-    parameters: { type: 'OBJECT', properties: {} }
+    type: 'function',
+    function: {
+      name: 'getDashboardStats',
+      description: 'Retrieve store performance KPIs.',
+      parameters: { type: 'object', properties: {} }
+    }
   },
   {
-    name: 'getLiveTraffic',
-    description: 'Get real-time data about who is currently on the website.',
-    parameters: { type: 'OBJECT', properties: {} }
+    type: 'function',
+    function: {
+      name: 'getLiveTraffic',
+      description: 'Get real-time data about who is currently on the website.',
+      parameters: { type: 'object', properties: {} }
+    }
   },
   {
-    name: 'highlightElement',
-    description: 'Visually pulse a gold ring around a specific UI element.',
-    parameters: {
-      type: 'OBJECT',
-      properties: {
-        elementId: { type: 'STRING', description: 'The DOM ID of the target element.' }
-      },
-      required: ['elementId']
+    type: 'function',
+    function: {
+      name: 'highlightElement',
+      description: 'Visually pulse a gold ring around a specific UI element.',
+      parameters: {
+        type: 'object',
+        properties: {
+          elementId: { type: 'string', description: 'The DOM ID of the target element.' }
+        },
+        required: ['elementId']
+      }
     }
   }
 ];
@@ -72,7 +89,6 @@ Route: ${context?.route || '/'}
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // SECURITY: Ensure only authenticated Admins can access this endpoint
   try {
     await verifyAuth(req, true);
   } catch (e) {
@@ -82,51 +98,66 @@ export default async function handler(req, res) {
   const { history, message, pageContext } = req.body;
 
   try {
-    // 1. Get API Key (Env or DB)
-    let apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    let apiKey = process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        // Use service role to fetch settings securely
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
         if (supabaseUrl && supabaseKey) {
             const supabase = createClient(supabaseUrl, supabaseKey);
-            const { data } = await supabase.from('app_settings').select('gemini_api_key').eq('id', 1).single();
-            if (data?.gemini_api_key) apiKey = data.gemini_api_key;
+            const { data } = await supabase.from('app_settings').select('opencode_api_key').eq('id', 1).single();
+            if (data?.opencode_api_key) apiKey = data.opencode_api_key;
         }
     }
 
     if (!apiKey) {
-        return res.status(400).json({ error: "Gemini API Key not configured on server." });
+        return res.status(400).json({ error: "OpenCode API Key not configured on server." });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    const model = 'gemini-3-flash-preview';
+    const model = 'Big Pickle';
+    const baseUrl = 'https://opencode.ai/zen/v1';
 
-    // 2. Prepare History for SDK
-    // The SDK expects history without the very last user message, which is passed in generateContent
     const validHistory = (history || []).map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
+        role: msg.role === 'model' ? 'assistant' : 'user',
+        content: msg.content
     }));
 
-    // 3. Generate Content
-    const response = await ai.models.generateContent({
-        model: model,
-        contents: [...validHistory, { role: 'user', parts: [{ text: message }] }],
-        config: {
-            systemInstruction: generateSystemPrompt(pageContext),
-            tools: [{ functionDeclarations }],
-        }
+    const messages = [
+        { role: 'system', content: generateSystemPrompt(pageContext) },
+        ...validHistory,
+        { role: 'user', content: message }
+    ];
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        tools: functionDeclarations,
+        tool_choice: 'auto',
+      }),
     });
 
-    const functionCalls = response.functionCalls; 
-    const text = response.text;
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenCode API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    const assistantMessage = data.choices[0]?.message;
 
     return res.status(200).json({ 
-        text, 
-        functionCalls 
+        text: assistantMessage?.content || null, 
+        functionCalls: assistantMessage?.tool_calls?.map(tc => ({
+            name: tc.function.name,
+            args: JSON.parse(tc.function.arguments),
+            id: tc.id
+        })) || null
     });
 
   } catch (error) {

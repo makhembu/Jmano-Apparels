@@ -124,6 +124,7 @@ export const Mappers = {
 
     // AI Configuration
     geminiApiKey: s.gemini_api_key || undefined,
+    opencodeApiKey: s.opencode_api_key || undefined,
     
     // Notifications
     enableEmailNotifications: s.enable_email_notifications ?? false,

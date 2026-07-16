@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../../ui/Button';
 import { isAbortError } from '../../../lib/utils';
+import { openCodeClient } from '../../../lib/ai/opencode-client';
 
 interface AIAnalystProps {
   apiKey?: string;
@@ -16,16 +16,12 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ apiKey, contextData }) => 
 
   const generateAiInsights = async () => {
     if (!apiKey) {
-        setAiReport("⚠️ AI features require a Gemini API Key. Please configure it in App Settings.");
+        setAiReport("AI features require an API Key. Please configure it in App Settings.");
         return;
     }
 
     setAnalyzing(true);
     try {
-        const ai = new GoogleGenAI({ apiKey });
-        // Standard model for text tasks
-        const model = 'gemini-3-flash-preview';
-
         const prompt = `
         You are a strict Data Analyst for "Jambo Apparels".
         Analyze the following JSON metrics.
@@ -47,12 +43,8 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ apiKey, contextData }) => 
         Format as a clean markdown report.
         `;
 
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: prompt,
-        });
-
-        setAiReport(response.text || "Could not generate insights.");
+        const text = await openCodeClient.generateContent(prompt, apiKey);
+        setAiReport(text || "Could not generate insights.");
     } catch (e: any) {
         if (!isAbortError(e)) {
             console.error("AI Error:", e);

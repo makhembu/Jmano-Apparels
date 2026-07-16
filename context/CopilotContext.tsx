@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AVAILABLE_MODELS } from '../lib/ai/gemini-client';
+import { AVAILABLE_MODELS } from '../lib/ai/opencode-client';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
 import { useAuth } from './AuthContext';

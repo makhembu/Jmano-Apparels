@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { SeoConfig } from '../../../types';
-import { GoogleGenAI } from "@google/genai";
 import { useToast } from '../../../context/ToastContext';
+import { openCodeClient } from '../../../lib/ai/opencode-client';
 
 interface SeoFieldGroupProps {
   data: SeoConfig;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onKeywordsChange: (keywords: string[]) => void;
-  // Context for AI generation and preview
+  apiKey?: string;
   contextData?: {
     title: string;
     description: string;
@@ -23,6 +23,7 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
   data, 
   onChange, 
   onKeywordsChange,
+  apiKey,
   contextData,
   defaultTitle = 'Page Title',
   defaultDescription = 'Page description...',
@@ -45,35 +46,33 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
 
   // AI Generation Logic
   const handleGenerate = async (field: 'title' | 'desc') => {
-    if (!contextData?.title) {
+    const mainTitle = contextData?.title || defaultTitle;
+    if (!mainTitle) {
         showToast("Please enter a main title first.", 'info');
+        return;
+    }
+    
+    const key = apiKey || undefined;
+    if (!key) {
+        showToast("API Key not configured. Please add it in App Settings.", 'error');
         return;
     }
     
     setGenerating(field);
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const modelName = 'gemini-3-flash-preview';
-        
         let prompt = "";
         if (field === 'title') {
-            prompt = `Generate a single, catchy, SEO-friendly meta title (max 60 characters) for a ${contextData.type} titled "${contextData.title}". Don't use quotes.`;
+            prompt = `Generate a single, catchy, SEO-friendly meta title (max 60 characters) for a ${contextData?.type || 'page'} titled "${mainTitle}". Don't use quotes.`;
         } else {
-            prompt = `Generate a compelling meta description (max 155 characters) for a ${contextData.type} titled "${contextData.title}". Content summary: "${contextData.description || contextData.title}". Include a call to action. Don't use quotes.`;
+            prompt = `Generate a compelling meta description (max 155 characters) for a ${contextData?.type || 'page'} titled "${mainTitle}". Content summary: "${contextData?.description || mainTitle}". Include a call to action. Don't use quotes.`;
         }
 
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-        });
-
-        const text = response.text?.trim();
+        const text = await openCodeClient.generateContent(prompt, key);
         
         if (text) {
-            // Create synthetic event to update parent state
             const name = field === 'title' ? 'seoTitle' : 'seoDescription';
             const event = {
-                target: { name, value: text }
+                target: { name, value: text.trim() }
             } as unknown as React.ChangeEvent<HTMLInputElement>;
             onChange(event);
             showToast('SEO content generated!', 'success');

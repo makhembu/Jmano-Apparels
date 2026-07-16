@@ -1,100 +1,118 @@
-import { FunctionDeclaration, Type } from '@google/genai';
+import { ToolDefinition } from './opencode-client';
 
-export const functionDeclarations: FunctionDeclaration[] = [
+export const functionDeclarations: ToolDefinition[] = [
   {
-    name: 'navigate',
-    description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        path: {
-          type: Type.STRING,
-          description: 'The full destination route starting with /admin.',
+    type: 'function',
+    function: {
+      name: 'navigate',
+      description: 'Navigate to a specific page or record. For detail pages, the path must include the ID (e.g., "/admin/orders/123").',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'The full destination route starting with /admin.',
+          },
+          tab: {
+            type: 'string',
+            description: 'The specific tab ID to open on that page (if applicable).',
+          }
         },
-        tab: {
-          type: Type.STRING,
-          description: 'The specific tab ID to open on that page (if applicable).',
-        }
-      },
-      required: ['path']
+        required: ['path']
+      }
     }
   },
   {
-    name: 'getDetailedInventoryReport',
-    description: 'Get a full breakdown of products, stock levels, and historical sales performance for trend analysis.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getDetailedInventoryReport',
+      description: 'Get a full breakdown of products, stock levels, and historical sales performance for trend analysis.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'getLatestOrder',
-    description: 'Fetches the most recent order record.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getLatestOrder',
+      description: 'Fetches the most recent order record.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'getDashboardStats',
-    description: 'Retrieve store performance KPIs.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getDashboardStats',
+      description: 'Retrieve store performance KPIs.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'getLiveTraffic',
-    description: 'Get real-time data about who is currently on the website.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getLiveTraffic',
+      description: 'Get real-time data about who is currently on the website.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'highlightElement',
-    description: 'Visually pulse a gold ring around a specific UI element to guide the user.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        elementId: {
-          type: Type.STRING,
-          description: 'The DOM ID of the target element.',
-          enum: [
-            'btn-create-order',
-            'btn-refresh-data',
-            'btn-print-invoice',
-            'btn-save-settings',
-            'btn-publish-post',
-            'btn-update-profile',
-            'btn-update-password',
-            'input-tracking-number',
-            'select-order-status',
-            'card-kpi-revenue',
-            'card-kpi-orders',
-            'user-list-top-row',
-            'section-change-password',
-            'input-new-password',
-            'tab-brand',
-            'tab-seo',
-            'tab-payments',
-            'tab-emails',
-            'tab-contact',
-            'tab-content',
-            'tab-system',
-            'live-traffic-card',
-            'btn-new-product',
-            'btn-new-post',
-            'btn-export-subscribers',
-            'section-customer-info',
-            'section-order-items',
-            'btn-test-config',
-            'btn-filter-paid',
-            'btn-filter-pending'
-          ]
-        }
-      },
-      required: ['elementId']
+    type: 'function',
+    function: {
+      name: 'highlightElement',
+      description: 'Visually pulse a gold ring around a specific UI element to guide the user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          elementId: {
+            type: 'string',
+            description: 'The DOM ID of the target element.',
+            enum: [
+              'btn-create-order',
+              'btn-refresh-data',
+              'btn-print-invoice',
+              'btn-save-settings',
+              'btn-publish-post',
+              'btn-update-profile',
+              'btn-update-password',
+              'input-tracking-number',
+              'select-order-status',
+              'card-kpi-revenue',
+              'card-kpi-orders',
+              'user-list-top-row',
+              'section-change-password',
+              'input-new-password',
+              'tab-brand',
+              'tab-seo',
+              'tab-payments',
+              'tab-emails',
+              'tab-contact',
+              'tab-content',
+              'tab-system',
+              'live-traffic-card',
+              'btn-new-product',
+              'btn-new-post',
+              'btn-export-subscribers',
+              'section-customer-info',
+              'section-order-items',
+              'btn-test-config',
+              'btn-filter-paid',
+              'btn-filter-pending'
+            ]
+          }
+        },
+        required: ['elementId']
+      }
     }
   }
 ];

@@ -1,12 +1,11 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-// FIX: Imported AVAILABLE_MODELS
-import { geminiClient, AVAILABLE_MODELS } from '../lib/ai/gemini-client';
+import { openCodeClient, AVAILABLE_MODELS, ChatMessage, ToolDefinition } from '../lib/ai/opencode-client';
 import { generateSystemPrompt } from '../lib/ai/system-prompt';
 import { createFunctionExecutors } from '../lib/ai/function-executors';
+import { functionDeclarations } from '../lib/ai/tools';
 import { CopilotContextType, Message, PageContext } from '../lib/ai/types';
-import { Chat } from '@google/genai';
 import { useShop } from '../context/ShopContext';
 
 const CopilotContext = createContext<CopilotContextType | undefined>(undefined);
@@ -15,7 +14,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [messages, setMessages] = useState<Message[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // FIX: Added currentModel state
   const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,13 +25,12 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     availableActions: []
   });
 
-  const chatSession = useRef<Chat | null>(null);
+  const chatHistory = useRef<ChatMessage[]>([]);
 
   const setPageData = useCallback((data: Record<string, unknown> | undefined) => {
     setPageContext(prev => ({ ...prev, pageData: data }));
   }, []);
 
-  // Update context on route change
   useEffect(() => {
     const path = location.pathname;
     let name = 'Dashboard';
@@ -50,30 +47,28 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   }, [location.pathname]);
 
-  // Handle Session Initialization - Prioritizing DB Key
   useEffect(() => {
     if (settingsLoading) return;
-
-    const apiKey = settings.geminiApiKey || undefined;
-    if (geminiClient.isAvailable(apiKey)) {
-        const prompt = generateSystemPrompt(pageContext);
-        // FIX: Passed currentModel to createChat
-        chatSession.current = geminiClient.createChat(prompt, apiKey, currentModel);
-    }
-  }, [pageContext.pageName, pageContext.pageData, settings.geminiApiKey, settingsLoading, currentModel]); 
+    chatHistory.current = [];
+  }, [pageContext.pageName, pageContext.pageData, settings.opencodeApiKey, settingsLoading, currentModel]); 
 
   const executors = createFunctionExecutors({ navigate });
 
   const sendMessage = useCallback(async (content: string) => {
-    const apiKey = settings.geminiApiKey || undefined;
+    const apiKey = settings.opencodeApiKey || undefined;
     
-    if (!chatSession.current) {
-      const prompt = generateSystemPrompt(pageContext);
-      // FIX: Passed currentModel to createChat
-      chatSession.current = geminiClient.createChat(prompt, apiKey, currentModel);
+    if (!apiKey) {
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString(), 
+        role: 'model', 
+        content: "OpenCode API Key not configured. Please add it in App Settings.", 
+        timestamp: new Date(), 
+        isError: true 
+      }]);
+      return;
     }
     
-    if (!chatSession.current || !content.trim()) return;
+    if (!content.trim()) return;
 
     const userMsg: Message = { 
         id: Date.now().toString(), 
@@ -85,32 +80,52 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoading(true);
 
     try {
-        let response = await chatSession.current.sendMessage({ message: content });
+      const systemPrompt = generateSystemPrompt(pageContext);
+      const apiMessages: ChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory.current,
+        { role: 'user', content }
+      ];
+
+      let response = await openCodeClient.chat(apiMessages, functionDeclarations, apiKey, currentModel);
+      
+      let assistantMessage = response.choices[0].message;
+      
+      while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+        const toolResults: ChatMessage[] = [];
         
-        while (response.functionCalls && response.functionCalls.length > 0) {
-            const functionResponses = await Promise.all(
-                response.functionCalls.map(async (call) => {
-                    const executor = (executors as any)[call.name];
-                    const result = executor ? await executor(call.args) : { error: `Function ${call.name} not found` };
-                    return { 
-                        functionResponse: { 
-                            name: call.name, 
-                            id: call.id, 
-                            response: { result } 
-                        } 
-                    };
-                })
-            );
-            response = await chatSession.current.sendMessage({ message: functionResponses });
+        for (const call of assistantMessage.tool_calls) {
+          const executor = (executors as any)[call.function.name];
+          const args = JSON.parse(call.function.arguments);
+          const result = executor ? await executor(args) : { error: `Function ${call.function.name} not found` };
+          toolResults.push({
+            role: 'tool',
+            content: JSON.stringify({ result }),
+            tool_call_id: call.id
+          });
         }
 
-        const text = response.text || "I've handled that request for you.";
-        setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'model', 
-            content: text, 
-            timestamp: new Date() 
-        }]);
+        apiMessages.push(
+          { role: 'assistant', content: assistantMessage.content || '', tool_calls: assistantMessage.tool_calls },
+          ...toolResults
+        );
+
+        response = await openCodeClient.chat(apiMessages, functionDeclarations, apiKey, currentModel);
+        assistantMessage = response.choices[0].message;
+      }
+
+      const text = assistantMessage.content || "I've handled that request for you.";
+      chatHistory.current.push(
+        { role: 'user', content },
+        { role: 'assistant', content: text }
+      );
+      
+      setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'model', 
+          content: text, 
+          timestamp: new Date() 
+      }]);
 
     } catch (e: any) {
         console.error("Jambo Copilot Error:", e);
@@ -124,20 +139,15 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
         setIsLoading(false);
     }
-  }, [pageContext, executors, settings.geminiApiKey, currentModel]);
+  }, [pageContext, executors, settings.opencodeApiKey, currentModel]);
 
   const toggleDrawer = () => setIsOpen(prev => !prev);
   
   const clearHistory = () => {
       setMessages([]);
-      const apiKey = settings.geminiApiKey || undefined;
-      if (geminiClient.isAvailable(apiKey)) {
-        // FIX: Passed currentModel to createChat
-        chatSession.current = geminiClient.createChat(generateSystemPrompt(pageContext), apiKey, currentModel);
-      }
+      chatHistory.current = [];
   };
 
-  // FIX: Implemented setModel
   const setModel = (model: string) => {
     setCurrentModel(model);
   };
@@ -148,7 +158,6 @@ export const CopilotProvider: React.FC<{ children: React.ReactNode }> = ({ child
         sendMessage, toggleDrawer, clearHistory, 
         updatePageContext: (ctx) => setPageContext(prev => ({...prev, ...ctx})),
         setPageData,
-        // FIX: Included missing properties
         currentModel,
         availableModels: AVAILABLE_MODELS,
         setModel

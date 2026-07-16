@@ -237,6 +237,7 @@ export interface AppSettings {
   resendApiKey?: string;
   resendFromEmail?: string;
   geminiApiKey?: string;
+  opencodeApiKey?: string;
   
   // WhatsApp Configuration
   whatsappAccessToken?: string;
