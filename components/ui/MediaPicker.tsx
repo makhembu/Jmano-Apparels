@@ -2,7 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { VideoTrimmer } from './VideoTrimmer';
-import { compressVideo, shouldCompress } from '../../lib/video-compress';
+// Lazy-load video compression to avoid TDZ issues with @ffmpeg/ffmpeg in minified bundles
+let compressVideoLazy: typeof import('../../lib/video-compress').compressVideo | null = null;
+let shouldCompressLazy: typeof import('../../lib/video-compress').shouldCompress | null = null;
+const loadCompression = async () => {
+  if (!compressVideoLazy) {
+    const mod = await import('../../lib/video-compress');
+    compressVideoLazy = mod.compressVideo;
+    shouldCompressLazy = mod.shouldCompress;
+  }
+  return { compress: compressVideoLazy, shouldCompress: shouldCompressLazy! };
+};
 import { formatBytes } from '../../lib/utils';
 
 interface MediaPickerProps {
@@ -219,9 +229,10 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
         continue;
       }
       try {
-        const needsCompress = shouldCompress(file);
+        const { compress, shouldCompress: shouldCompressFn } = await loadCompression();
+        const needsCompress = shouldCompressFn(file);
         if (needsCompress) setCompressionProgress(0);
-        const fileToUpload = needsCompress ? await compressVideo(file, setCompressionProgress) : file;
+        const fileToUpload = needsCompress ? await compress(file, setCompressionProgress) : file;
         setCompressionProgress(null);
         if (fileToUpload.size < file.size) totalSaved += file.size - fileToUpload.size;
         await api.uploadVideo(fileToUpload);
