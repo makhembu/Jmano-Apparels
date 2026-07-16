@@ -139,19 +139,27 @@ export class StorageService {
   }
 
   /**
-   * Lists video files from both 'videos' and 'images' buckets.
+   * Lists video files from both 'videos' and 'images' buckets,
+   * including the 'videos/' subfolder inside 'images' (fallback path).
    */
   async listAllVideos(): Promise<{ name: string; url: string; bucket: string; path: string; size: number }[]> {
-    const buckets = ['videos', 'images'];
     const allVideos: { name: string; url: string; bucket: string; path: string; size: number }[] = [];
 
-    for (const bucket of buckets) {
+    for (const bucket of ['videos', 'images']) {
       try {
         const files = await this.listFiles(bucket);
         allVideos.push(...files);
       } catch (e) {
         // Bucket may not exist, skip
       }
+    }
+
+    // Also list the 'videos/' subfolder inside 'images' (fallback upload path)
+    try {
+      const subFiles = await this.listFiles('images', 'videos');
+      allVideos.push(...subFiles);
+    } catch (e) {
+      // Subfolder may not exist, skip
     }
 
     return allVideos;
