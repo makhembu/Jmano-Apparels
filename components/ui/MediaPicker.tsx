@@ -292,6 +292,18 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
 
   const videoKey = (v: { bucket: string; path: string }) => `${v.bucket}:${v.path}`;
 
+  const filteredVideos = videos.filter(v =>
+    v.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
+  const paginatedVideos = filteredVideos.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const allVisibleSelected = paginatedVideos.length > 0 && paginatedVideos.every(v => selectedIds.has(videoKey(v)));
+
   const toggleSelect = (video: { bucket: string; path: string }) => {
     const key = videoKey(video);
     setSelectedIds(prev => {
@@ -300,8 +312,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       return next;
     });
   };
-
-  const allVisibleSelected = paginatedVideos.length > 0 && paginatedVideos.every(v => selectedIds.has(videoKey(v)));
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
@@ -339,16 +349,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       },
     });
   };
-
-  const filteredVideos = videos.filter(v =>
-    v.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
-  const paginatedVideos = filteredVideos.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const STORAGE_LIMIT = 1024 * 1024 * 1024;
   const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
