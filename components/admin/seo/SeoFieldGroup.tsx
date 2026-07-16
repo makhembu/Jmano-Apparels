@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { SeoConfig } from '../../../types';
 import { useToast } from '../../../context/ToastContext';
-import { openCodeClient } from '../../../lib/ai/opencode-client';
 
 interface SeoFieldGroupProps {
   data: SeoConfig;
@@ -67,7 +66,14 @@ export const SeoFieldGroup: React.FC<SeoFieldGroupProps> = ({
             prompt = `Generate a compelling meta description (max 155 characters) for a ${contextData?.type || 'page'} titled "${mainTitle}". Content summary: "${contextData?.description || mainTitle}". Include a call to action. Don't use quotes.`;
         }
 
-        const text = await openCodeClient.generateContent(prompt, key);
+        const response = await fetch('/api/seo-generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, apiKey: key }),
+        });
+        const result = await response.json();
+        const text = result.text;
+        if (!response.ok) throw new Error(result.error || 'Generation failed');
         
         if (text) {
             const name = field === 'title' ? 'seoTitle' : 'seoDescription';
