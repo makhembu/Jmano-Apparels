@@ -1,7 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import React, { useCallback } from 'react';
-import { getVideoEmbedUrl } from './video-utils';
 
 /**
  * VideoEmbed — custom Tiptap node that renders a live video preview
@@ -27,8 +26,7 @@ const VideoEmbedComponent: React.FC<{ node: any; updateAttributes: any; deleteNo
   const handleUpdateUrl = useCallback(() => {
     const newUrl = window.prompt('Update video URL', src);
     if (newUrl !== null && newUrl.trim()) {
-      const normalized = getVideoEmbedUrl(newUrl.trim()) || newUrl.trim();
-      updateAttributes({ src: normalized });
+      updateAttributes({ src: newUrl.trim() });
     }
   }, [src, updateAttributes]);
 
@@ -147,7 +145,7 @@ export const VideoEmbed = Node.create({
         (attrs: { src: string; type?: 'iframe' | 'video' }) =>
         ({ commands }: any) => {
           return commands.insertContent({
-            type: this.name,
+            type: 'videoEmbed',
             attrs: { src: attrs.src, type: attrs.type || 'iframe' },
           });
         },
