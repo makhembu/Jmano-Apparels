@@ -331,6 +331,9 @@ export interface AppSettings {
   aboutValue2Body?: string;
   aboutValue3Title?: string;
   aboutValue3Body?: string;
+
+  // Storage
+  storageLimitBytes?: number;
 }
 
 export interface ShippingOption {

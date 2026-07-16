@@ -131,6 +131,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [storageUsed, setStorageUsed] = useState(0);
   const [storageFiles, setStorageFiles] = useState(0);
+  const [storageLimit, setStorageLimit] = useState(1024 * 1024 * 1024); // default 1 GB
   const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -160,6 +161,13 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       setLoading(false);
     }
   };
+
+  // Fetch storage limit from app_settings
+  useEffect(() => {
+    api.getAppSettings().then(settings => {
+      if (settings?.storageLimitBytes) setStorageLimit(settings.storageLimitBytes);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => { loadVideos(); }, []);
 
@@ -350,8 +358,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     });
   };
 
-  const STORAGE_LIMIT = 1024 * 1024 * 1024;
-  const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
+  const usagePercent = Math.min((storageUsed / storageLimit) * 100, 100);
 
   return (
     <div
@@ -431,7 +438,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Storage</span>
               <span className="text-[10px] font-bold text-slate-600">
-                {formatBytes(storageUsed)} / 1 GB
+                {formatBytes(storageUsed)} / {formatBytes(storageLimit)}
               </span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5">

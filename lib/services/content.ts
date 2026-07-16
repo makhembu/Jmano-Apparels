@@ -218,6 +218,7 @@ export class SettingsService {
       about_value_1_title: settings.aboutValue1Title, about_value_1_body: settings.aboutValue1Body,
       about_value_2_title: settings.aboutValue2Title, about_value_2_body: settings.aboutValue2Body,
       about_value_3_title: settings.aboutValue3Title, about_value_3_body: settings.aboutValue3Body,
+      storage_limit_bytes: settings.storageLimitBytes,
 
       // Business Info
       company_name: settings.companyName,

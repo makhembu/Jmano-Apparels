@@ -212,7 +212,10 @@ export const Mappers = {
     aboutValue2Title: s.about_value_2_title || undefined,
     aboutValue2Body: s.about_value_2_body || undefined,
     aboutValue3Title: s.about_value_3_title || undefined,
-    aboutValue3Body: s.about_value_3_body || undefined
+    aboutValue3Body: s.about_value_3_body || undefined,
+
+    // Storage
+    storageLimitBytes: s.storage_limit_bytes || 1073741824, // default 1 GB
   }),
 
   toEmailTemplate: (t: any): EmailTemplate => ({
