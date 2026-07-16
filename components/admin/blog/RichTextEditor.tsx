@@ -10,6 +10,7 @@ import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
 import { MediaPicker } from '../../ui/MediaPicker';
 import { useVideoUpload } from '../../../hooks/useVideoUpload';
+import { getVideoEmbedUrl } from '../../../lib/video-utils';
 
 interface RichTextEditorProps {
   value: string;
@@ -252,9 +253,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                  <Button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} variant="ghost" size="sm">Cancel</Button>
                  <Button onClick={() => {
                     if (!videoUrl.trim()) return;
+                    const embedUrl = getVideoEmbedUrl(videoUrl.trim());
+                    if (!embedUrl) { showToast('Could not parse video URL', 'error'); return; }
                     const iframeHtml = videoUrl.trim().startsWith('<iframe')
                        ? videoUrl.trim()
-                       : `<div class=\"video-responsive\"><iframe src=\"${videoUrl.trim()}\" title=\"Embedded video\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowFullScreen></iframe></div>`;
+                       : `<div class=\"video-responsive\"><iframe src=\"${embedUrl}\" title=\"Embedded video\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowFullScreen></iframe></div>`;
                     editor?.chain().focus().insertContent(iframeHtml).run();
                     setShowVideoModal(false);
                     setVideoUrl('');
