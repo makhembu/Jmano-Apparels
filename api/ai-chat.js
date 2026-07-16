@@ -116,7 +116,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "OpenCode API Key not configured on server." });
     }
 
-    const model = 'Big Pickle';
+    const model = 'big-pickle';
     const baseUrl = 'https://opencode.ai/zen/v1';
 
     const validHistory = (history || []).map(msg => ({

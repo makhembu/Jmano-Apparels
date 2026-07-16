@@ -1,10 +1,10 @@
 const OPENCODE_BASE_URL = 'https://opencode.ai/zen/v1';
 
 export const AVAILABLE_MODELS = [
-  'Big Pickle',
-  'DeepSeek V4 Flash Free',
-  'MiMo-V2.5 Free',
-  'North Mini Code Free',
+  'big-pickle',
+  'deepseek-v4-flash-free',
+  'mimo-v2.5-free',
+  'north-mini-code-free',
 ];
 
 export interface ChatMessage {

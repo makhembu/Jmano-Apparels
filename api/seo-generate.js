@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'Big Pickle',
+        model: 'big-pickle',
         messages: [
           { role: 'system', content: 'You are an SEO expert. Generate concise, compelling meta titles and descriptions optimized for search engines. Return ONLY the generated text with no quotes or extra explanation.' },
           { role: 'user', content: prompt }
