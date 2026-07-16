@@ -144,8 +144,16 @@ export const BlogPost: React.FC = () => {
     return /<[a-z][\s\S]*>/i.test(content) && !content.trim().startsWith('#');
   };
 
+  // Fix stored YouTube /watch?v= URLs → /embed/ format so iframes work
+  const normalizeVideoUrls = (html: string): string => {
+    return html.replace(
+      /src=["']https?:\/\/(?:www\.)?youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})["']/g,
+      'src="https://www.youtube.com/embed/$1"'
+    );
+  };
+
   const renderContent = () => {
-     const raw = unescapeHtml(post.content);
+     const raw = normalizeVideoUrls(unescapeHtml(post.content));
      if (isHtml(raw)) {
          // Sanitize HTML — allow iframe tags for video embeds
          const cleanHtml = DOMPurify.sanitize(raw, {
