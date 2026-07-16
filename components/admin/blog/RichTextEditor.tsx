@@ -21,7 +21,7 @@ interface RichTextEditorProps {
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
   const { showToast } = useToast();
-  const { uploadVideo: uploadVideoFile } = useVideoUpload();
+  const { uploadVideo: uploadVideoFile, isUploading, compressionProgress } = useVideoUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUpdatingRef = useRef(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -229,32 +229,54 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                     className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-900 text-sm focus:ring-2 focus:ring-brand-green/10 outline-none h-20 font-mono text-xs"
                  />
                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setShowMediaPicker(true)} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
+                    <button type="button" onClick={() => setShowMediaPicker(true)} disabled={isUploading} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors disabled:opacity-50">
                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                        Browse Media
                     </button>
-                    <button type="button" onClick={() => videoFileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors">
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                       Upload New
+                    <button type="button" onClick={() => videoFileInputRef.current?.click()} disabled={isUploading} className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 hover:border-brand-green/50 hover:text-brand-green hover:bg-slate-50 transition-colors disabled:opacity-50">
+                       {isUploading ? (
+                          <div className="w-4 h-4 border-2 border-brand-green border-t-transparent rounded-full animate-spin"></div>
+                       ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                       )}
+                       {isUploading ? 'Uploading...' : 'Upload New'}
                     </button>
                  </div>
+                 {isUploading && (
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                       <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold text-slate-600">
+                             {compressionProgress !== null ? `Compressing... ${compressionProgress}%` : 'Uploading to storage...'}
+                          </span>
+                          <span className="text-[10px] font-bold text-brand-green">
+                             {compressionProgress !== null ? `${compressionProgress}%` : ''}
+                          </span>
+                       </div>
+                       <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                          {compressionProgress !== null ? (
+                             <div
+                                className="h-1.5 rounded-full bg-brand-green transition-all duration-300"
+                                style={{ width: `${compressionProgress}%` }}
+                             />
+                          ) : (
+                             <div className="h-1.5 rounded-full bg-brand-green animate-pulse" style={{ width: '100%' }} />
+                          )}
+                       </div>
+                       <p className="text-[9px] text-slate-400 mt-1.5">Please don't close this dialog</p>
+                    </div>
+                 )}
               </div>
               <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
                  const file = e.target.files?.[0];
                  if (!file) return;
-                 try {
-                    const url = await uploadVideoFile(file);
-                    if (url) {
-                       editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
-                       setShowVideoModal(false);
-                       setVideoUrl('');
-                       showToast('Video embedded', 'success');
-                    }
-                 } catch (err) {
-                    console.error('Video upload failed:', err);
-                 } finally {
-                    if (e.target) e.target.value = '';
+                 const url = await uploadVideoFile(file);
+                 if (url) {
+                    editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
+                    setShowVideoModal(false);
+                    setVideoUrl('');
+                    showToast('Video embedded', 'success');
                  }
+                 if (e.target) e.target.value = '';
               }} />
               <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
                  <Button onClick={() => { setShowVideoModal(false); setVideoUrl(''); }} variant="ghost" size="sm">Cancel</Button>
