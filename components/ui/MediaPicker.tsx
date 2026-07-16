@@ -421,6 +421,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                 </span>
               )}
               <button
+                type="button"
                 onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); }}
                 className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-colors ${
                   selectMode
@@ -443,12 +444,13 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                 }}
               />
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-brand-green bg-brand-green/10 text-brand-green hover:bg-brand-green hover:text-white transition-colors"
               >
                 + Upload New
               </button>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
+              <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -512,6 +514,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                     {/* Selection checkbox */}
                     {selectMode && (
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); toggleSelect(video); }}
                         className="absolute top-2 left-2 z-20 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shadow-lg"
                         style={{
@@ -525,6 +528,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => { if (selectMode) { toggleSelect(video); } else { onSelect(video.url); onClose(); } }}
                       className="w-full h-full"
                     >
@@ -540,6 +544,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                     {/* Trim Button */}
                     {!selectMode && (
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); setTrimVideo({ url: video.url, name: video.name }); }}
                         className="absolute top-2 left-2 bg-brand-green/80 hover:bg-brand-green text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
                         title="Trim video"
@@ -551,6 +556,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                     {/* Delete Button */}
                     {!selectMode && (
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
                         disabled={deleting === video.name}
                         className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
@@ -575,12 +581,14 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                   </span>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={toggleSelectAll}
                       className="px-3 py-1.5 text-[10px] font-bold text-slate-600 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                       {allVisibleSelected ? 'Deselect page' : 'Select page'}
                     </button>
                     <button
+                      type="button"
                       onClick={handleBulkDelete}
                       disabled={bulkDeleting}
                       className="px-3 py-1.5 text-[10px] font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
@@ -599,6 +607,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                   </p>
                   <div className="flex items-center gap-1.5">
                     <button
+                      type="button"
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"
@@ -607,6 +616,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                     </button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <button
+                        type="button"
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={`w-7 h-7 text-[10px] font-bold rounded-lg transition-colors ${
@@ -619,6 +629,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                       </button>
                     ))}
                     <button
+                      type="button"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                       className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"
