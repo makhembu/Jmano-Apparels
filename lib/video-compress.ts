@@ -6,6 +6,7 @@ const COMPRESS_THRESHOLD = 50 * 1024 * 1024; // 50MB — only compress files lar
 let ffmpegInstance: any = null;
 let ffmpegLoaded = false;
 let ffmpegLoading = false;
+let isCompressing = false;
 
 /**
  * Dynamically loads ffmpeg.wasm (singleton, only loads once).
@@ -138,6 +139,8 @@ async function compressInBackground(
   showToast: (msg: string, type: 'info' | 'success' | 'error') => void,
   onCompressProgress?: (percent: number) => void,
 ): Promise<void> {
+  if (isCompressing) return; // skip — already running
+  isCompressing = true;
   try {
     showToast('Optimizing video in background...', 'info');
     const compressed = await compressVideo(originalFile, onCompressProgress);
@@ -150,6 +153,7 @@ async function compressInBackground(
   } catch (err) {
     console.warn('Background compression failed:', err);
   } finally {
+    isCompressing = false;
     onCompressProgress?.(0);
   }
 }
