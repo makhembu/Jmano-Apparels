@@ -291,17 +291,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
                  }} size="sm">Embed</Button>
               </div>
 
-              {showMediaPicker && (
-                 <MediaPicker onSelect={(url) => {
-                    const videoHtml = `<div class="video-responsive"><video src="${url}" controls preload="metadata" class="w-full h-full"></video></div>`;
-                    editor?.chain().focus().insertContent(videoHtml).run();
-                    setShowVideoModal(false);
-                    setVideoUrl('');
-                    showToast('Video embedded', 'success');
-                 }} onClose={() => setShowMediaPicker(false)} />
-              )}
            </div>
         </div>
+      )}
+
+      {showMediaPicker && (
+         <MediaPicker onSelect={(url) => {
+            const videoHtml = `<div class="video-responsive"><video src="${url}" controls preload="metadata" class="w-full h-full"></video></div>`;
+            editor?.chain().focus().insertContent(videoHtml).run();
+            setShowVideoModal(false);
+            setVideoUrl('');
+            showToast('Video embedded', 'success');
+         }} onClose={() => setShowMediaPicker(false)} />
       )}
 
       {/* HELP MODAL */}
