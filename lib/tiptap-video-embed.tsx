@@ -1,6 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import React, { useCallback } from 'react';
+import { getVideoEmbedUrl } from './video-utils';
 
 /**
  * VideoEmbed — custom Tiptap node that renders a live video preview
@@ -26,7 +27,6 @@ const VideoEmbedComponent: React.FC<{ node: any; updateAttributes: any; deleteNo
   const handleUpdateUrl = useCallback(() => {
     const newUrl = window.prompt('Update video URL', src);
     if (newUrl !== null && newUrl.trim()) {
-      const { getVideoEmbedUrl } = require('../../../lib/video-utils');
       const normalized = getVideoEmbedUrl(newUrl.trim()) || newUrl.trim();
       updateAttributes({ src: normalized });
     }
@@ -159,7 +159,7 @@ export const VideoEmbed = Node.create({
   },
 });
 
-// ─── Convenience command helpers ───────────────────────────────────────────
+// ─── TypeScript command declarations ──────────────────────────────────────
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     videoEmbed: {
@@ -167,14 +167,3 @@ declare module '@tiptap/core' {
     };
   }
 }
-
-export const VideoEmbedCommand = {
-  insertVideoEmbed:
-    (attrs: { src: string; type?: 'iframe' | 'video' }) =>
-    ({ commands }: any) => {
-      return commands.insertContent({
-        type: 'videoEmbed',
-        attrs: { src: attrs.src, type: attrs.type || 'iframe' },
-      });
-    },
-};
