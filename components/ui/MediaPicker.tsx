@@ -142,6 +142,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const dragCounterRef = useRef(0);
   const failedFilesRef = useRef<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVideos = async () => {
     try {
@@ -220,7 +221,17 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const { showToast } = useToast();
 
   const uploadFiles = useCallback(async (files: File[]) => {
-    const total = files.length;
+    // Filter to video files only
+    const videoFiles = files.filter(f => {
+      const ext = '.' + f.name.split('.').pop()?.toLowerCase();
+      return VIDEO_EXTENSIONS.includes(ext);
+    });
+    if (videoFiles.length === 0) {
+      showToast('No video files selected', 'info');
+      return;
+    }
+
+    const total = videoFiles.length;
     let current = 0;
     let uploaded = 0;
     let skipped = 0;
@@ -229,7 +240,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
     setUploading(true);
     setUploadProgress({ current: 0, total });
 
-    for (const file of files) {
+    for (const file of videoFiles) {
       if (file.size > MAX_FILE_SIZE) {
         skipped++;
         current++;
@@ -418,6 +429,24 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
                 }`}
               >
                 {selectMode ? 'Cancel' : 'Select'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length > 0) await uploadFiles(files);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-brand-green bg-brand-green/10 text-brand-green hover:bg-brand-green hover:text-white transition-colors"
+              >
+                + Upload New
               </button>
               <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
