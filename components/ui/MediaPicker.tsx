@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
 import { VideoTrimmer } from './VideoTrimmer';
@@ -339,7 +340,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
   const STORAGE_LIMIT = 1024 * 1024 * 1024;
   const usagePercent = Math.min((storageUsed / STORAGE_LIMIT) * 100, 100);
 
-  return (
+  const content = (
     <div
       className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
@@ -613,4 +614,6 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({ onSelect, onClose }) =
       )}
     </div>
   );
+
+  return createPortal(content, document.body);
 };

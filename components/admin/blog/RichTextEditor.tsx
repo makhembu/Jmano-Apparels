@@ -242,12 +242,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               <input type="file" ref={videoFileInputRef} accept="video/*" className="hidden" onChange={async (e) => {
                  const file = e.target.files?.[0];
                  if (!file) return;
-                 const url = await uploadVideoFile(file);
-                 if (url) {
-                    editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
-                    setShowVideoModal(false);
-                    setVideoUrl('');
-                    showToast('Video embedded', 'success');
+                 try {
+                    const url = await uploadVideoFile(file);
+                    if (url) {
+                       editor?.chain().focus().insertVideoEmbed({ src: url, type: 'video' }).run();
+                       setShowVideoModal(false);
+                       setVideoUrl('');
+                       showToast('Video embedded', 'success');
+                    }
+                 } catch (err) {
+                    console.error('Video upload failed:', err);
+                 } finally {
+                    if (e.target) e.target.value = '';
                  }
               }} />
               <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
