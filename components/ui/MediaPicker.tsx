@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/db';
 import { useToast } from '../../context/ToastContext';
-import { VideoTrimmer } from './VideoTrimmer';
+
+// Lazy-load VideoTrimmer to defer @ffmpeg/ffmpeg import (causes TDZ in minified bundles)
+const VideoTrimmer = React.lazy(() => import('./VideoTrimmer').then(m => ({ default: m.VideoTrimmer })));
+
 // Lazy-load video compression to avoid TDZ issues with @ffmpeg/ffmpeg in minified bundles
 let compressVideoLazy: typeof import('../../lib/video-compress').compressVideo | null = null;
 let shouldCompressLazy: typeof import('../../lib/video-compress').shouldCompress | null = null;
