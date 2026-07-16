@@ -6,4 +6,6 @@ export const SECRETS = {
   SUPABASE_ANON_KEY: "",
   // AI Configuration
   GEMINI_API_KEY: "", 
+  // R2 Configuration
+  R2_WORKER_URL: "https://r2-signer.shelflix.workers.dev",
 };

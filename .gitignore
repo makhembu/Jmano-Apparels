@@ -115,3 +115,7 @@ src/secrets.ts
 
 # Supabase Edge Functions (Deprecated/Replaced by Vercel API)
 supabase/functions/
+
+# Cloudflare Worker secrets
+workers/**/.dev.vars
+workers/**/wrangler-state
