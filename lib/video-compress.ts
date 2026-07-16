@@ -1,29 +1,35 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { formatBytes } from './utils';
-
-let ffmpegInstance: FFmpeg | null = null;
-let ffmpegLoaded = false;
-let ffmpegLoading = false;
 
 const COMPRESS_THRESHOLD = 10 * 1024 * 1024; // 10MB — only compress files larger than this
 
+// Lazy-loaded ffmpeg references (loaded on first use)
+let ffmpegInstance: any = null;
+let ffmpegLoaded = false;
+let ffmpegLoading = false;
+
 /**
  * Dynamically loads ffmpeg.wasm (singleton, only loads once).
+ * Uses dynamic imports to keep @ffmpeg/ffmpeg out of the initial bundle.
  * Returns null if loading fails (graceful fallback).
  */
-async function getFFmpeg(): Promise<FFmpeg | null> {
+async function getFFmpeg(): Promise<any | null> {
   if (ffmpegInstance && ffmpegLoaded) return ffmpegInstance;
   if (ffmpegLoading) return null; // prevent concurrent loads
 
   ffmpegLoading = true;
   try {
+    const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+    const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
+
     ffmpegInstance = new FFmpeg();
     const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
     await ffmpegInstance.load({
       coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
+
+    // Store fetchFile on the instance for use in compressVideo
+    (ffmpegInstance as any)._fetchFile = fetchFile;
     ffmpegLoaded = true;
     return ffmpegInstance;
   } catch (err) {
@@ -51,6 +57,7 @@ export async function compressVideo(
   const ffmpeg = await getFFmpeg();
   if (!ffmpeg) return file; // graceful fallback — upload original
 
+  const fetchFile = ffmpeg._fetchFile;
   const inputName = 'input.mp4';
   const outputName = 'output.mp4';
 
