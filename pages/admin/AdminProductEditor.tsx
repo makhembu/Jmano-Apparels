@@ -27,6 +27,13 @@ export const AdminProductEditor: React.FC = () => {
 
     if (isFormLoading) return <LoadingSpinner fullScreen />;
 
+    const handleAiApply = (field: string, value: string) => {
+        const syntheticEvent = {
+            target: { name: field, value, type: 'text' }
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleChange(syntheticEvent);
+    };
+
     return (
         <div className="animate-fade-in relative pb-20">
             <ProductEditorHeader
@@ -51,6 +58,7 @@ export const AdminProductEditor: React.FC = () => {
                         isUploading={isUploading}
                         apiKey={settings.opencodeApiKey || settings.geminiApiKey}
                         onChange={handleChange}
+                        onAiApply={handleAiApply}
                         onSwitchChange={handleSwitchChange}
                         onArrayUpdate={handleArrayUpdate}
                         onImageUpload={handleImageUpload}

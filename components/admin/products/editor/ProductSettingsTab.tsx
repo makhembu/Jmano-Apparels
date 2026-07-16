@@ -19,6 +19,7 @@ interface ProductSettingsTabProps {
     isUploading: boolean;
     apiKey?: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    onAiApply?: (field: string, value: string) => void;
     onSwitchChange: (name: string, val: boolean) => void;
     onArrayUpdate: (field: 'sizes' | 'colors' | 'tags' | 'keywords', value: string[]) => void;
     onImageUpload: (file: File) => void;
@@ -37,6 +38,7 @@ export const ProductSettingsTab: React.FC<ProductSettingsTabProps> = (props) => 
                         categories={props.categories}
                         isNew={props.isNew}
                         onChange={props.onChange}
+                        onAiApply={props.onAiApply}
                     />
                     <VisualsForm
                         images={props.formData.images || []}

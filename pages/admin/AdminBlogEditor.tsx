@@ -12,6 +12,7 @@ import { RichTextEditor } from '../../components/admin/blog/RichTextEditor';
 import { SeoFieldGroup } from '../../components/admin/seo/SeoFieldGroup';
 import { useShop } from '../../context/ShopContext';
 import { useVideoUpload } from '../../hooks/useVideoUpload';
+import { AiFieldActions } from '../../components/ui/AiFieldActions';
 
 export const AdminBlogEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -273,8 +274,19 @@ export const AdminBlogEditor: React.FC = () => {
             {/* Main Editor */}
             <div className="lg:col-span-2 space-y-6">
                <div className="bg-white p-6 shadow rounded-lg space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Post Title</label>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700">
+                       Post Title
+                       <AiFieldActions
+                         currentValue={formData.title}
+                         context={formData.title || 'Christian apparel and faith-based fashion'}
+                         generateType="blog-title"
+                         polishType="blog-polish"
+                         extraContext="Generate a catchy blog title for Jambo Apparels, a Christian streetwear brand."
+                         onApply={(text) => setFormData(prev => ({ ...prev, title: text }))}
+                         label="title"
+                       />
+                     </label>
                     <input 
                       type="text" 
                       name="title" 
@@ -286,8 +298,19 @@ export const AdminBlogEditor: React.FC = () => {
                     />
                   </div>
                   
-                  <div className="mb-12 flex flex-col">
-                     <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                   <div className="mb-12 flex flex-col">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-medium text-gray-700">Content</label>
+                        <AiFieldActions
+                          currentValue={formData.content}
+                          context={formData.title || 'Christian apparel blog post'}
+                          generateType="blog-content"
+                          polishType="blog-polish"
+                          extraContext={`Write a blog post for Jambo Apparels, a Christian streetwear brand. Title: "${formData.title || 'Untitled'}". Category: ${formData.category || 'general'}.`}
+                          onApply={(text) => handleEditorChange(text)}
+                          label="content"
+                        />
+                      </div>
                      {editorMode === 'rich' ? (
                         <RichTextEditor
                            value={formData.content || ''}
